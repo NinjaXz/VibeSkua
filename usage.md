@@ -7,7 +7,7 @@
 
 ## Building the Project
 
-To build the project and output the files directly to your Desktop, navigate to the root folder, right-click, select **"Open in Terminal"**, and run:
+To build the project, navigate to the root folder, right-click, select **"Open in Terminal"**, and run:
 
 ```bash
 dotnet build Skua.sln -c Release -p:WarningLevel=0; mkdir VibeSkua_Release -Force; Get-ChildItem -Path ".\*\bin\Release\net10.0-windows\*" -Recurse | Copy-Item -Destination ".\VibeSkua_Release" -Force"
