@@ -30,3 +30,9 @@ To build the project, navigate to the root folder, right-click, select **"Open i
 
 ```bash
 dotnet build Skua.sln -c Release -o "%USERPROFILE%\Desktop\VibeSkua"
+```
+### Copyright & Disclaimer
+
+**Educational & Personal Use Only:** This project is a derivative of [auqw/skua](https://github.com/auqw/skua) and is provided "as-is" under the MIT License. I do not claim ownership of the original assets, game data, or the intellectual property of the game developers.
+
+**Disclaimer:** Use of this software may violate the Terms of Service of the associated game. The author assumes no responsibility for any account actions, bans, or other consequences taken by game developers against users of this software. By using this tool, you acknowledge that you do so entirely at your own risk.
