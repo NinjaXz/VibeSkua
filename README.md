@@ -24,7 +24,9 @@ The following overview compares the systems and core features between the origin
 * **Active Memory Management:** Introduced `MemoryUtils.cs` to periodically trim the application’s working set, ensuring RAM stability during long, multi-day farming sessions.
 * And alot more that i cannot remember.
 
----
+## Building the Project
 
-### Disclaimer
-*This project is a derivative of [auqw/skua](https://github.com/auqw/skua) and is licensed under the MIT License. It is intended for educational and quality-of-life improvement purposes only. Use of this software may violate the Terms of Service of the associated game; the author assumes no responsibility for any account actions taken by game developers.*
+To build the project, navigate to the root folder, right-click, select **"Open in Terminal"**, and run:
+
+```bash
+dotnet build Skua.sln -c Release
