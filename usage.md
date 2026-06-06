@@ -1,5 +1,4 @@
-# Usage Guide: Skua Enhanced
-
+# Usage Guide: VibeSkua
 ## Installation & Setup
 
 1. **[.NET 10 SDK (x64) Installer](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-10.0.102-windows-x64-installer)**
@@ -11,7 +10,7 @@
 To build the project and output the files directly to your Desktop, navigate to the root folder, right-click, select **"Open in Terminal"**, and run:
 
 ```bash
-dotnet build Skua.sln -c Release -o "%USERPROFILE%\Desktop\SkuaEnhanced"
+dotnet build Skua.sln -c Release -o "%USERPROFILE%\Desktop\VibeSkua"
 
 3. Before you start using scripts it is strongly **recomended** to setup your `CoreBot` Options
 
