@@ -1,20 +1,16 @@
-# Usage Guide
-
+# Usage Guide: VibeSkua
 ## Installation & Setup
 
-1. [.net 10 SDK (x64) installer](<https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-10.0.102-windows-x64-installer>)
+1. **[.NET 10 SDK (x64) Installer](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-10.0.102-windows-x64-installer)**
+2. **[CleanFlash](https://github.com/wtffidy/CleanFlashBackUp/blob/main/CleanFlash_34.0.0.175_Installer.exe)** (Follow this [Installation Guide](https://imgur.com/ztsLYZ1) to ensure proper setup).
+3. Install both and restart your PC if prompted.
 
-2. [CleanFlash](<https://github.com/wtffidy/CleanFlashBackUp/blob/main/CleanFlash_34.0.0.175_Installer.exe>) (and for it to be installed properly do this: [CleanFlash Installation](https://imgur.com/ztsLYZ1))
+## Building the Project
 
-3. Install both `.net 10 SDK` and `CleanFlash` before continuing to install `Skua`.
+To build the project and output the files directly to your Desktop, navigate to the root folder, right-click, select **"Open in Terminal"**, and run:
 
-4. [Skua Latest Release](<https://github.com/auqw/Skua/releases/latest>)
-
-## Once everything is properly installed and working
-
-1. Open `Skua` or the `Skua Manager` (these will be placed on your desktop by default.)
-
-2. Close the Changelog that appears, if Skua isnt showing its more then likely in the system tray (little `^` in the bottom right. just RightClick it and "show client").
+```bash
+dotnet build Skua.sln -c Release -o "%USERPROFILE%\Desktop\VibeSkua"
 
 3. Before you start using scripts it is strongly **recomended** to setup your `CoreBot` Options
 
