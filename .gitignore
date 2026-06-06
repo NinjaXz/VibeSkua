@@ -375,9 +375,6 @@ FodyWeavers.xsd
 /Skua.Installer/Installs
 
 /Skua.App.WPF/App.config
-/Skua.App.WPF.Follower
-/Build
-/Assets
 /Skua.App.WPF/Properties/launchSettings.json
 /Skua.Installer/ComponentsGenerated.wxs
 /Skua.Installer/FFDecComponentsGenerated.wxs

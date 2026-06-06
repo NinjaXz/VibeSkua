@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Skua.App.WPF.Follower": {
+      "commandName": "Project",
+      "commandLineArgs": "--usr \"Test\" --psw \"Test\""
+    }
+  }
+}
