@@ -29,7 +29,7 @@ The following overview compares the systems and core features between the origin
 To build the project, navigate to the root folder, right-click, select **"Open in Terminal"**, and run:
 
 ```bash
-dotnet build Skua.sln -c Release -o "%USERPROFILE%\Desktop\VibeSkua"
+dotnet build Skua.sln -c Release -p:WarningLevel=0; mkdir VibeSkua_Release -Force; Get-ChildItem -Path ".\*\bin\Release\net10.0-windows\*" -Recurse | Copy-Item -Destination ".\VibeSkua_Release" -Force"
 ```
 ### Copyright & Disclaimer
 
