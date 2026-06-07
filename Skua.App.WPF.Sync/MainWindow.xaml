@@ -1,4 +1,4 @@
-﻿<wpf:CustomWindow
+<wpf:CustomWindow
     x:Class="Skua.App.WPF.Sync.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -7,7 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:usercontrols="clr-namespace:Skua.WPF.UserControls;assembly=Skua.WPF"
     xmlns:wpf="clr-namespace:Skua.WPF;assembly=Skua.WPF"
-    Title="MainWindow"
+    Title="VibeSkua V1.2"
     Width="800"
     Height="450"
     Style="{StaticResource CustomWindow}"

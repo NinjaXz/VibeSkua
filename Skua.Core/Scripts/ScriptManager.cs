@@ -71,6 +71,19 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
     private bool _scriptRunning = false;
 
     [ObservableProperty]
+    private bool _scriptPaused = false;
+
+    public ManualResetEventSlim ScriptPauseEvent { get; } = new(true);
+
+    partial void OnScriptPausedChanged(bool value)
+    {
+        if (value)
+            ScriptPauseEvent.Reset();
+        else
+            ScriptPauseEvent.Set();
+    }
+
+    [ObservableProperty]
     private string _loadedScript = string.Empty;
 
     [ObservableProperty]
@@ -255,6 +268,8 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
 
     public async ValueTask StopScript(bool runScriptStoppingEvent = true)
     {
+        ScriptPaused = false;
+        
         lock (_stateLock)
         {
             _runScriptStoppingBool = runScriptStoppingEvent;

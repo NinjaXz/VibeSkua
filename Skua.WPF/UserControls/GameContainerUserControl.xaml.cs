@@ -25,6 +25,19 @@ public partial class GameContainerUserControl : UserControl
         gameContainer.Visibility = Visibility.Hidden;
         WeakReferenceMessenger.Default.Register<GameContainerUserControl, FlashChangedMessage<AxShockwaveFlash>>(this, FlashChanged);
         Loaded += GameContainer_Loaded;
+        gameContainer.SizeChanged += (s, e) =>
+        {
+            try
+            {
+                var flash = gameContainer.Child as AxShockwaveFlash;
+                if (flash != null)
+                {
+                    flash.ScaleMode = 2;
+                }
+                _bot.Flash?.SetGameObject("stage.scaleMode", "exactFit");
+            }
+            catch { }
+        };
         if (_bot.Options is System.ComponentModel.INotifyPropertyChanged npc)
         {
             npc.PropertyChanged += Options_PropertyChanged;
@@ -93,6 +106,18 @@ public partial class GameContainerUserControl : UserControl
             LoadingBar.Visibility = Visibility.Hidden;
             gameContainer.Visibility = Visibility.Visible;
             _bot.Flash.FlashCall -= LoadingFlash;
+            
+            try
+            {
+                var flash = gameContainer.Child as AxShockwaveFlash;
+                if (flash != null)
+                {
+                    flash.ScaleMode = 2;
+                    flash.CtlScale = "ExactFit";
+                }
+                _bot.Flash.SetGameObject("stage.scaleMode", "exactFit");
+            }
+            catch { }
         }
     }
 }

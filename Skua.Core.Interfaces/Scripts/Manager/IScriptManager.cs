@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 
 namespace Skua.Core.Interfaces;
 
@@ -14,6 +14,16 @@ public interface IScriptManager : IScriptStatus, INotifyPropertyChanged
     /// Gets the cancellation token source used to signal cancellation for the script operation.
     /// </summary>
     CancellationTokenSource? ScriptCts { get; }
+
+    /// <summary>
+    /// Gets or sets whether the script is currently paused.
+    /// </summary>
+    bool ScriptPaused { get; set; }
+
+    /// <summary>
+    /// Event used to pause and resume the script execution thread.
+    /// </summary>
+    ManualResetEventSlim ScriptPauseEvent { get; }
 
     /// <summary>
     /// Asynchronously starts the script and returns any exception that occurs during execution.

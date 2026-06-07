@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -16,8 +16,7 @@ public partial class ManagerMainViewModel : ObservableRecipient
         _selectedTab = Tabs[0];
         _dialogService = dialogService;
         _settingsService = settingsService;
-        _isAuthenticated = !string.IsNullOrEmpty(_settingsService.Get<string>("UserGitHubToken"));
-        _title = $"Skua Manager - {_settingsService.Get("ApplicationVersion", "0.0.0.0")}";
+        _title = "VibeSkua V1.2";
     }
 
     [ObservableProperty]
@@ -47,8 +46,6 @@ public partial class ManagerMainViewModel : ObservableRecipient
         StrongReferenceMessenger.Default.Send<UpdateScriptsMessage>(new(true));
     }
 
-    [ObservableProperty]
-    private bool _isAuthenticated;
 
     private readonly IDialogService _dialogService;
     private readonly ISettingsService _settingsService;
@@ -73,16 +70,4 @@ public partial class ManagerMainViewModel : ObservableRecipient
         }
     }
 
-    [RelayCommand]
-    private void OpenGHAuthDialog()
-    {
-        _dialogService.ShowDialog(Ioc.Default.GetRequiredService<GitHubAuthViewModel>());
-
-        string? token = _settingsService.Get<string>("UserGitHubToken");
-        if (!string.IsNullOrWhiteSpace(token))
-        {
-            HttpClients.UserGitHubClient = new(token);
-            IsAuthenticated = true;
-        }
-    }
 }

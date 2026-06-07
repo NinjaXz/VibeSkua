@@ -60,6 +60,8 @@ public class FlashUtil : IFlashUtil
             _messenger.Send<FlashChangedMessage<AxShockwaveFlash>>(new(flash));
             flash.EndInit();
             flash.WMode = "direct"; // Enable hardware acceleration for faster rendering
+            flash.ScaleMode = 2;
+            flash.CtlScale = "ExactFit";
             Flash = flash;
 
             if (_cachedSwf == null)

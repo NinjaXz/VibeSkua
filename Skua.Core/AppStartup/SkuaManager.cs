@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.DependencyInjection;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using Skua.Core.Interfaces;
@@ -15,12 +15,9 @@ internal class SkuaManager
         {
             new("Accounts", s.GetRequiredService<AccountManagerViewModel>()),
             new("Launcher", s.GetRequiredService<LauncherViewModel>()),
-            new("Updates", s.GetRequiredService<ClientUpdatesViewModel>()),
             new("Options", s.GetRequiredService<ManagerOptionsViewModel>()),
             new("Themes", s.GetRequiredService<ApplicationThemesViewModel>()),
-            new("Goals", s.GetRequiredService<GoalsViewModel>()),
             new("About", s.GetRequiredService<AboutViewModel>()),
-            new("Change Logs", s.GetRequiredService<ChangeLogsViewModel>()),
         };
         return new(tabs, s.GetRequiredService<IDialogService>(), s.GetRequiredService<ISettingsService>());
     }
@@ -29,10 +26,7 @@ internal class SkuaManager
     {
         List<DisplayOptionItemViewModelBase> options = new()
         {
-            CreateSettingOptionItem<bool>("Use Manager theme on Skua", "Whether to use, when launching from the Launcher tab, the same theme as the Manager in any launched App", "syncTheme"),
-            CreateSettingOptionItem<bool>("Check for Client Updates", "Whether to check for client updates when launching the Manager", "CheckClientUpdates"),
-            CreateSettingOptionItem<bool>("Check for Client Prereleases", "Whether to check for pre-releases when checking updates", "CheckClientPrereleases"),
-            CreateSettingOptionItem<bool>("Delete .zip after Download", "Whether to delete the .zip folder after downloading and extracting the new version", "DeleteZipFileAfter")
+            CreateSettingOptionItem<bool>("Use Manager theme on Skua", "Whether to use, when launching from the Launcher tab, the same theme as the Manager in any launched App", "syncTheme")
         };
 
         return new(options, s.GetRequiredService<ISettingsService>(), s.GetRequiredService<IFileDialogService>());
