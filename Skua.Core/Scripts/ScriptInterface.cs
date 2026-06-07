@@ -221,6 +221,8 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
 
     private void CheckScriptTermination()
     {
+        if (Manager is IScriptManager scriptManager)
+            scriptManager.ScriptPauseEvent.Wait();
         if (Manager.ShouldExit && Thread.CurrentThread.Name == "Script Thread")
             throw new OperationCanceledException();
     }

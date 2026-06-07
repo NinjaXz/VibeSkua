@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using Newtonsoft.Json;
 using Skua.Core.Interfaces;
 using Skua.Core.Messaging;
@@ -261,6 +261,7 @@ public class ScriptWait : IScriptWait
     {
         while (!predicate() && !Manager.ShouldExit && !token.IsCancellationRequested)
         {
+            Manager.ScriptPauseEvent.Wait();
             loopFunction?.Invoke();
             if (token.IsCancellationRequested)
                 break;
@@ -279,6 +280,7 @@ public class ScriptWait : IScriptWait
         int counter = 0;
         while (!predicate() && !Manager.ShouldExit)
         {
+            Manager.ScriptPauseEvent.Wait();
             if (timeout > 0 && counter >= timeout)
                 return false;
             loopFunction?.Invoke();
@@ -295,6 +297,7 @@ public class ScriptWait : IScriptWait
             int counter = 0;
             while (!predicate() && !Manager.ShouldExit && !token.IsCancellationRequested)
             {
+                Manager.ScriptPauseEvent.Wait();
                 if (timeout > 0 && counter >= timeout)
                     return false;
                 loopFunction?.Invoke();

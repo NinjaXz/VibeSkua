@@ -108,6 +108,16 @@ public partial class ScriptLoaderViewModel : BotControlViewModelBase
         await StartScript();
     }
 
+    [RelayCommand]
+    private void TogglePauseScript()
+    {
+        if (ScriptManager.ScriptRunning)
+        {
+            ScriptManager.ScriptPaused = !ScriptManager.ScriptPaused;
+            ScriptStatus = ScriptManager.ScriptPaused ? "[Paused]" : "[Running]";
+        }
+    }
+
     private async Task StartScript()
     {
         ScriptStatus = "Compiling...";
