@@ -15,6 +15,9 @@ The following overview compares the systems and core features between the origin
 | **Script Scheduling** | Required manual initialization and supervision. | Added `ScriptSchedulerViewModel` for autonomous script queuing via `QueueScriptMessage` at specific dates and times. |
 | **UI Environment** | Spawned multiple external Win32 windows. | Embedded `EmbeddedMainWindow.xaml` with dynamic SWF patching for a unified, tabbed WPF interface. |
 | **Script Sorting** | Basic navigation options. | Expanded `ScriptRepoViewModel.cs` to support dynamic sorting by Name, Date, or File Size (Ascending/Descending). |
+| **Pause Functionality** | Could only fully Stop scripts, entirely losing current progression. | Built a native `Pause` feature that safely freezes the execution thread in place, letting you interact with menus and seamlessly resume later. |
+| **Smart Grid View** | Required managing dozens of overlapping individual windows. | Consolidates all active accounts into a clean, clutter-free grid inside a single window to monitor a full army at once. |
+| **Instance Dashboard** | Vital farming stats buried deep in external plugin menus. | Pinned a highly readable, native Side Dashboard directly to the game frame to track Kills, Drops, and Quests at a glance. |
 
 ### Performance & Engine Optimizations
 
