@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Messaging;
 using Skua.Core.Interfaces;
 using Skua.Core.Messaging;
+using Skua.Core.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -18,10 +19,14 @@ public partial class GameContainerUserControl : UserControl
     private readonly System.Timers.Timer _memoryTrimTimer;
     private readonly System.Windows.Threading.DispatcherTimer _keepAliveTimer;
 
+    public ScriptStatsViewModel StatsVM { get; }
+
     public GameContainerUserControl()
     {
         InitializeComponent();
         _bot = Ioc.Default.GetRequiredService<IScriptInterface>();
+        StatsVM = Ioc.Default.GetRequiredService<ScriptStatsViewModel>();
+        HudPanel.DataContext = StatsVM;
         gameContainer.Visibility = Visibility.Hidden;
         WeakReferenceMessenger.Default.Register<GameContainerUserControl, FlashChangedMessage<AxShockwaveFlash>>(this, FlashChanged);
         Loaded += GameContainer_Loaded;
@@ -32,9 +37,9 @@ public partial class GameContainerUserControl : UserControl
                 var flash = gameContainer.Child as AxShockwaveFlash;
                 if (flash != null)
                 {
-                    flash.ScaleMode = 2;
+                    flash.ScaleMode = 0;
                 }
-                _bot.Flash?.SetGameObject("stage.scaleMode", "exactFit");
+                _bot.Flash?.SetGameObject("stage.scaleMode", "showAll");
             }
             catch { }
         };
@@ -92,6 +97,37 @@ public partial class GameContainerUserControl : UserControl
         recipient.gameContainer.Child = message.Flash;
     }
 
+    private void RootGrid_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (e.NewSize.Width == 0 || e.NewSize.Height == 0) return;
+        
+        double aspect = 960.0 / 550.0;
+        if (e.NewSize.Width / e.NewSize.Height > aspect)
+        {
+            // Window is too wide. Height is the limiting factor.
+            gameContainer.Height = e.NewSize.Height;
+            gameContainer.Width = e.NewSize.Height * aspect;
+        }
+        else
+        {
+            // Window is too tall. Width is the limiting factor.
+            gameContainer.Width = e.NewSize.Width;
+            gameContainer.Height = e.NewSize.Width / aspect;
+        }
+        
+        // Ensure the Dashboard never overlaps the game
+        double emptySpace = (e.NewSize.Width - gameContainer.Width) / 2.0;
+        if (emptySpace > 20)
+        {
+            DashboardContainer.MaxWidth = emptySpace - 10; // keep a 10px margin
+            DashboardContainer.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            DashboardContainer.Visibility = Visibility.Hidden;
+        }
+    }
+
     private void GameContainer_Loaded(object sender, RoutedEventArgs e)
     {
         _bot.Flash.FlashCall += LoadingFlash;
@@ -112,10 +148,10 @@ public partial class GameContainerUserControl : UserControl
                 var flash = gameContainer.Child as AxShockwaveFlash;
                 if (flash != null)
                 {
-                    flash.ScaleMode = 2;
-                    flash.CtlScale = "ExactFit";
+                    flash.ScaleMode = 0;
+                    flash.CtlScale = "ShowAll";
                 }
-                _bot.Flash.SetGameObject("stage.scaleMode", "exactFit");
+                _bot.Flash.SetGameObject("stage.scaleMode", "showAll");
             }
             catch { }
         }
