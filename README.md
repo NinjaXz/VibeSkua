@@ -1,4 +1,5 @@
 # VibeSkua
+> **Note:** This project is **Vibe Coded**—built entirely through AI-assisted development, and pure momentum.
 
 A feature-rich, high-performance derivative of [auqw/skua](https://github.com/auqw/skua), engineered for advanced automation, stability, and streamlined multi-client management.
 
