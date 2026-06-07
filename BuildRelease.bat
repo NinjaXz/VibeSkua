@@ -3,7 +3,7 @@ echo Building VibeSkua Release (this will take a moment)...
 
 if exist "Build" rmdir /s /q "Build"
 
-dotnet build Skua.sln -c Release
+dotnet build Skua.sln -c Release -p:WarningLevel=0 --nologo
 
 echo =========================================
 echo Build Complete!
