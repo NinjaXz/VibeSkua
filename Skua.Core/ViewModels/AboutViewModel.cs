@@ -48,13 +48,20 @@ public class AboutViewModel : BotControlViewModelBase
 
     private async Task GetAboutContent()
     {
-        try
-        {
-            MarkdownDoc = await ValidatedHttpExtensions.GetStringAsync(HttpClients.GitHubRaw, "auqw/Skua/refs/heads/master/readme.md").ConfigureAwait(false);
-        }
-        catch
-        {
-            MarkdownDoc = "### No content found. Please check your internet connection.";
-        }
+        MarkdownDoc = @"# VibeSkua
+> **Note:** This project is **Vibe Coded**—built entirely through AI-assisted development, and pure momentum.
+
+A feature-rich, high-performance derivative of auqw/skua, engineered for advanced automation, stability, and streamlined multi-client management.
+
+### Key Features
+* **Discord Integration:** Native support for automated alerts, rare drops, and live-pings.
+* **Headless Mode:** Hidden 1x1 pixel viewport for drastically reduced CPU/GPU usage per instance.
+* **Autonomous Scheduling:** Built-in queue to schedule scripts at specific dates and times.
+* **Unified UI:** Embedded WPF interface with tabbed, multi-client management.
+* **Engine Optimizations:** SWF Memory Caching, background connection stability, and automatic memory trimming for long sessions.
+
+### Disclaimer
+**Educational & Personal Use Only.** This project is provided ""as-is"" under the MIT License. Use of this software may violate the Terms of Service of the associated game. By using this tool, you acknowledge that you do so entirely at your own risk.";
+        await Task.CompletedTask;
     }
 }

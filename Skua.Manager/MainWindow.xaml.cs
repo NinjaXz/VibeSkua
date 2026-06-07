@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.DependencyInjection;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Messaging;
 using Skua.Core.Messaging;
 using Skua.Core.ViewModels.Manager;
@@ -18,7 +18,7 @@ public partial class MainWindow : CustomWindow
         InitializeComponent();
         DataContext = Ioc.Default.GetRequiredService<ManagerMainViewModel>();
         StrongReferenceMessenger.Default.Register<MainWindow, ShowMainWindowMessage>(this, ShowManager);
-        TitleText = "Skua Manager";
+        TitleText = "VibeSkua V1.1";
     }
 
     private void ShowManager(MainWindow recipient, ShowMainWindowMessage message)

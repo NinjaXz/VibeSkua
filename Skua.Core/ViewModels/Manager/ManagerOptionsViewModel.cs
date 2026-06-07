@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using Skua.Core.Interfaces;
@@ -26,7 +26,6 @@ public class ManagerOptionsViewModel : ObservableObject
 
         _downloadPath = _settingsService.Get("ClientDownloadPath", string.Empty);
         ChangeDownloadPathCommand = new RelayCommand(ChangeDownloadPath);
-        OpenGHAuthCommand = new RelayCommand(OpenGHAuthDialog);
     }
 
     public List<DisplayOptionItemViewModelBase> ManagerOptions { get; }
@@ -46,7 +45,6 @@ public class ManagerOptionsViewModel : ObservableObject
     }
 
     public IRelayCommand ChangeDownloadPathCommand { get; }
-    public IRelayCommand OpenGHAuthCommand { get; }
 
     private void ChangeDownloadPath()
     {
@@ -66,15 +64,5 @@ public class ManagerOptionsViewModel : ObservableObject
             _settingsService.Set("ClientDownloadPath", folderPath);
             DownloadPath = folderPath;
         }
-    }
-
-    private void OpenGHAuthDialog()
-    {
-        string? previousToken = _settingsService.Get<string>("UserGitHubToken");
-        Ioc.Default.GetRequiredService<IDialogService>().ShowDialog(Ioc.Default.GetRequiredService<GitHubAuthViewModel>());
-
-        string? token = _settingsService.Get<string>("UserGitHubToken");
-        if (!string.IsNullOrWhiteSpace(token) && token != previousToken)
-            HttpClients.UserGitHubClient = new(token);
     }
 }

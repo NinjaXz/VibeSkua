@@ -1,4 +1,4 @@
-﻿<UserControl
+<UserControl
     x:Class="Skua.WPF.UserControls.ManagerOptionsUserControl"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -48,12 +48,5 @@
                 Content="Change"
                 Style="{StaticResource MaterialDesignOutlinedButton}" />
         </Grid>
-        <Button
-            Height="32"
-            Margin="6,3"
-            materialdesign:ButtonAssist.CornerRadius="16"
-            Command="{Binding OpenGHAuthCommand}"
-            Content="GitHub Authentication"
-            ToolTip="In case you need to redo the authentication steps." />
     </StackPanel>
 </UserControl>

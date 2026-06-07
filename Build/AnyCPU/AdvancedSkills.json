@@ -1,0 +1,8994 @@
+{
+  "ArchMage": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Aura",
+              "value": 0,
+              "comparison": "less",
+              "auraName": "incinerate",
+              "auraTarget": "target"
+            }
+          ]
+        },
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 70,
+              "comparison": "greater",
+              "isPercentage": true
+            },
+            {
+              "type": "Mana",
+              "value": 70,
+              "comparison": "less",
+              "isPercentage": true
+            },
+            {
+              "type": "Aura",
+              "value": 0,
+              "comparison": "less",
+              "auraName": "Corporeal Ascenion",
+              "auraTarget": "self"
+            }
+          ]
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Mana",
+              "value": 30,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    },
+    "Farm": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Aura",
+              "value": 0,
+              "comparison": "less",
+              "auraName": "Corporeal Ascenion",
+              "auraTarget": "self"
+            }
+          ]
+        },
+        {
+          "skillId": 0
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Abyssal Angel": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Abyssal Angel's Shadow": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Acolyte": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Alpha DOOMmega": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Alpha Omega": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Alpha Pirate": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Arachnomancer": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Arcana Invoker": {
+    "Solo": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "MultiAura",
+              "value": 0,
+              "comparison": "less",
+              "auraName": "XXI - The World",
+              "auraTarget": "self"
+            },
+            {
+              "type": "MultiAura",
+              "value": 0,
+              "comparison": "less",
+              "auraName": "0 - The Fool",
+              "auraTarget": "self"
+            }
+          ],
+          "isMultiAura": true,
+          "multiAuraOperator": "AND"
+        },
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Aura",
+              "value": 0.5,
+              "comparison": "greater",
+              "auraName": "XX - Judgement",
+              "auraTarget": "self"
+            }
+          ]
+        },
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Aura",
+              "value": 22,
+              "comparison": "greater",
+              "auraName": "End of the World",
+              "auraTarget": "self"
+            }
+          ]
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Arcane Dark Caster": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Wait",
+              "timeout": 5000
+            }
+          ]
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "ArchFiend": {
+    "Solo": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    },
+    "Farm": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "ArchPaladin": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 70,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 70,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 70,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 70,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 70,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 70,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    },
+    "Atk": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Aura",
+              "value": 0,
+              "comparison": "less",
+              "auraName": "Righteous Seal",
+              "auraTarget": "target"
+            }
+          ]
+        },
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Aura",
+              "value": 1,
+              "comparison": "greater",
+              "auraName": "Righteous Seal",
+              "auraTarget": "target"
+            }
+          ]
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 70,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Artifact Hunter": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Assassin": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Barber": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Bard": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Battle Bard": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "BattleMage": {
+    "Solo": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    },
+    "Farm": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "BattleMage of Love": {
+    "Solo": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    },
+    "Farm": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Beast Warrior": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "BeastMaster": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Berserker": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Beta Berserker": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "BladeMaster": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "BladeMaster Assassin": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Blaze Binder": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Blood Ancient": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Blood Sorceress": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 70,
+              "comparison": "greater",
+              "isPercentage": true
+            },
+            {
+              "type": "MultiAura",
+              "value": 0,
+              "comparison": "less",
+              "auraName": "Mirrored Pact",
+              "auraTarget": "self"
+            },
+            {
+              "type": "MultiAura",
+              "value": 0,
+              "comparison": "less",
+              "auraName": "Arcane Pact",
+              "auraTarget": "self"
+            }
+          ],
+          "isMultiAura": true,
+          "multiAuraOperator": "OR"
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 70,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 70,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Blood Titan": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "CardClasher": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Chaos Avenger": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Wait",
+              "timeout": 100
+            },
+            {
+              "type": "Mana",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Wait",
+              "timeout": 100
+            },
+            {
+              "type": "Mana",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Wait",
+              "timeout": 100
+            },
+            {
+              "type": "Mana",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Wait",
+              "timeout": 100
+            },
+            {
+              "type": "Mana",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    },
+    "Atk": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Mana",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Mana",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Mana",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Mana",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Chaos Avenger Member Preview": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Mana",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Mana",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Mana",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Mana",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Chaos Champion Prime": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Chaos Shaper": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Chaos Slayer Berserker": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    },
+    "Farm": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Chaos Slayer Cleric": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    },
+    "Farm": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Chaos Slayer Mystic": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    },
+    "Farm": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Chaos Slayer Thief": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    },
+    "Farm": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Corrupted Chronomancer": {
+    "Solo": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    },
+    "Farm": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Chrono Assassin": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Chrono Chaorruptor": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Chrono Commandant": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Chrono DataKnight": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Chrono DragonKnight": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Chrono ShadowSlayer": {
+    "Solo": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Aura",
+              "value": 1,
+              "comparison": "less",
+              "auraName": "Rounds Empty!",
+              "auraTarget": "self"
+            }
+          ]
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 0,
+          "rules": [
+            {
+              "type": "Mana",
+              "value": 15,
+              "comparison": "greater",
+              "isPercentage": true
+            },
+            {
+              "type": "Aura",
+              "value": 1,
+              "comparison": "greater",
+              "auraName": "Gunslinger Stance!",
+              "auraTarget": "self"
+            }
+          ]
+        }
+      ]
+    },
+    "Atk": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    },
+    "Def": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    },
+    "Farm": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Aura",
+              "value": 1,
+              "comparison": "greater",
+              "auraName": "Rounds Empty",
+              "auraTarget": "self"
+            }
+          ]
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "None"
+            }
+          ],
+          "skipOnMatch": true
+        }
+      ]
+    }
+  },
+  "Chrono ShadowHunter": {
+    "Solo": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Aura",
+              "value": 1,
+              "comparison": "less",
+              "auraName": "Rounds Empty!",
+              "auraTarget": "self"
+            }
+          ]
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 0,
+          "rules": [
+            {
+              "type": "Mana",
+              "value": 15,
+              "comparison": "greater",
+              "isPercentage": true
+            },
+            {
+              "type": "Aura",
+              "value": 1,
+              "comparison": "greater",
+              "auraName": "Gunslinger Stance!",
+              "auraTarget": "self"
+            }
+          ]
+        }
+      ]
+    },
+    "Atk": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    },
+    "Def": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    },
+    "Farm": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Aura",
+              "value": 1,
+              "comparison": "greater",
+              "auraName": "Rounds Empty",
+              "auraTarget": "self"
+            }
+          ]
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "None"
+            }
+          ],
+          "skipOnMatch": true
+        }
+      ]
+    }
+  },
+  "Chronomancer": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    },
+    "Solo": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 120,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 60,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Chronocommander": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Chronomancer Prime": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    },
+    "Solo": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 120,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 60,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Chunin": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Classic Alpha Pirate": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Classic Barber": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Classic Defender": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Classic DoomKnight": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Doom Metal Necro": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 35,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Classic Dragonlord": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Classic Exalted Soul Cleaver": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Classic Guardian": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Classic Legion DoomKnight": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Classic Paladin": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Classic Pirate": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Classic Soul Cleaver": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "ClawSuit": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Continuum Chronomancer": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Cryomancer": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Cryomancer Mini Pet Coming Soon": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Daimon": {
+    "Farm": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Dark BattleMage": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Dark Caster": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Dark Chaos Berserker": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Dark Cryomancer": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Dark Harbinger": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Dark Legendary Hero": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Dark Lord": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 40,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Dark Master of Moglins": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Dark Metal Necro": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Dark Ultra OmniNight": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Darkblood StormKing": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Darkside": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "DeathKnight": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "DeathKnight Lord": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Defender": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "DoomKnight": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "DoomKnight OverLord": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Dragon Knight": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Dragon of Time": {
+    "Farm": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    },
+    "Solo": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Dragon Shinobi": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Aura",
+              "value": 0,
+              "comparison": "less",
+              "auraName": "Shadow Soul",
+              "auraTarget": "self"
+            }
+          ]
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 30,
+              "comparison": "less",
+              "isPercentage": true
+            },
+            {
+              "type": "Mana",
+              "value": 70,
+              "comparison": "greater",
+              "isPercentage": true
+            },
+            {
+              "type": "Aura",
+              "value": 0,
+              "comparison": "less",
+              "auraName": "Shadow Soul",
+              "auraTarget": "self"
+            }
+          ]
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 30,
+              "comparison": "greater",
+              "isPercentage": true
+            },
+            {
+              "type": "Mana",
+              "value": 10,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Aura",
+              "value": 0,
+              "comparison": "less",
+              "auraName": "Shadow Soul",
+              "auraTarget": "self"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Dragonlord": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Dragonslayer": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Dragonslayer General": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Aura",
+              "value": 1,
+              "comparison": "less",
+              "auraName": "Forgone Conclusion",
+              "auraTarget": "self"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "DragonSoul Shinobi": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Aura",
+              "value": 0,
+              "comparison": "less",
+              "auraName": "Shadow Soul",
+              "auraTarget": "self"
+            }
+          ]
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 30,
+              "comparison": "less",
+              "isPercentage": true
+            },
+            {
+              "type": "Mana",
+              "value": 70,
+              "comparison": "greater",
+              "isPercentage": true
+            },
+            {
+              "type": "Aura",
+              "value": 0,
+              "comparison": "less",
+              "auraName": "Shadow Soul",
+              "auraTarget": "self"
+            }
+          ]
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 30,
+              "comparison": "greater",
+              "isPercentage": true
+            },
+            {
+              "type": "Mana",
+              "value": 10,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Aura",
+              "value": 0,
+              "comparison": "less",
+              "auraName": "Shadow Soul",
+              "auraTarget": "self"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Drakel Warlord": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Drakkar Knight": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Elemental Dracomancer": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Empyrean Chronomancer": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Enchanted Vampire Lord": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    },
+    "Solo": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Enforcer": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Eternal Chronomancer": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Eternal Inversionist": {
+    "Farm": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Evolved ClawSuit": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Evolved Dark Caster": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Evolved Leprechaun": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Evolved Pumpkin Lord": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Evolved Shaman": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Exalted Harbinger": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Exalted Soul Cleaver": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "FireLord Summoner": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Flame Dragon Warrior": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Frostblood Titan": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Frost SpiritReaver": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Frostval Barbarian": {
+    "Supp": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    },
+    "Farm": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Giftbox": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Glacial Berserker": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Glacial Berserker Test": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Glacial Warlord": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Glaceran Warlord": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Savage Glaceran Warlord": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Dark Glaceran Warlord": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Great Thief": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Mana",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Grim Necromancer": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Grunge Rocker": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Guardian": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Healer": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "less",
+              "isPercentage": true
+            },
+            {
+              "type": "Mana",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Healer (Rare)": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Heavy Metal Necro": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Heavy Metal Rockstar": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Heroic Naval Commander": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Wait",
+              "timeout": 1000
+            }
+          ]
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "HighSeas Commander": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Hobo Highlord": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Horc Evader": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Hollowborn Vindicator Member Preview": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Hollowborn Vindicator": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Immortal Dark Caster": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Immortal Chronomancer": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Imperial Chunin": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Infinite Dark Caster": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Infinite Legion Dark Caster": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Infinity Titan": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    },
+    "Solo": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Mana",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    },
+    "Supp": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Infinity Knight": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Interstellar Knight": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "King's Echo": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Aura",
+              "value": 0,
+              "comparison": "less",
+              "auraName": "Royal Resolve",
+              "auraTarget": "self"
+            }
+          ]
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Mana",
+              "value": 10,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Legendary Elemental Warrior": {
+    "Atk": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    },
+    "Def": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    },
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Legendary ArchFiend": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Legendary Hero": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Legendary Naval Commander": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Wait",
+              "timeout": 1000
+            }
+          ]
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Legion BladeMaster Assassin": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Legion DoomKnight": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Legion DoomKnight Tester": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Legion Evolved Dark Caster": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Legion Paladin": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Legion Revenant": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Legion Revenant Member Test": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Legion SwordMaster Assassin": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Leprechaun": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Lich": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "LightCaster": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "LightCaster Test": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "LightMage": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Lord Of Order": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 0
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Love Caster": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Lycan": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Mage": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Mage (Rare)": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Master of Moglins": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Master Ranger": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    },
+    "Farm": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    },
+    "Solo": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "MechaJouster": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "MindBreaker": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Master Martial Artist": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Martial Artist": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Mystical Dark Caster": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Mythic Elemental Warrior": {
+    "Atk": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    },
+    "Def": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Naval Commander": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Wait",
+              "timeout": 1000
+            }
+          ]
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Nechronomancer": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 60,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Necrotic Chronomancer": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 60,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Necromancer": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Mana",
+              "value": 25,
+              "comparison": "less",
+              "isPercentage": true
+            },
+            {
+              "type": "Health",
+              "value": 30,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Neo Metal Necro": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Ninja": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Ninja Warrior": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Northlands Monk": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "NOT A MOD": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Nu Metal Necro": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Oracle": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "less",
+              "isPercentage": true
+            },
+            {
+              "type": "Mana",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Overworld Chronomancer": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 5
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Paladin": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Paladin Chronomancer": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 30,
+              "comparison": "less",
+              "isPercentage": true
+            },
+            {
+              "type": "Mana",
+              "value": 95,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 60,
+              "comparison": "less",
+              "isPercentage": true
+            },
+            {
+              "type": "Mana",
+              "value": 75,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Phantom Chronomancer": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Phantasm Chronomancer": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Obsidian Paladin Chronomancer": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 30,
+              "comparison": "less",
+              "isPercentage": true
+            },
+            {
+              "type": "Mana",
+              "value": 95,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 60,
+              "comparison": "less",
+              "isPercentage": true
+            },
+            {
+              "type": "Mana",
+              "value": 75,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Obsidian No Class": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Paladin Highlord": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 60,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "PaladinSlayer": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Pink Romancer": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Pinkomancer": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Mana",
+              "value": 25,
+              "comparison": "less",
+              "isPercentage": true
+            },
+            {
+              "type": "Health",
+              "value": 30,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Pirate": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Prismatic ClawSuit": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "ProtoSartorium": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Psionic MindBreaker": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Mana",
+              "value": 25,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Pumpkin Lord": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "PvP Test  |  Bard": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "PvP Test  |  Healer": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Pyromancer": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Renegade": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Rogue": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Rogue (Rare)": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Royal BattleMage": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Royal Vampire Lord": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    },
+    "Solo": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Rustbucket": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Quantum Chronomancer": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Sakura Cryomancer": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Scarlet Sorceress": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 70,
+              "comparison": "greater",
+              "isPercentage": true
+            },
+            {
+              "type": "MultiAura",
+              "value": 0,
+              "comparison": "greater",
+              "auraName": "Mirrored Pact",
+              "auraTarget": "self"
+            },
+            {
+              "type": "MultiAura",
+              "value": 0,
+              "comparison": "less",
+              "auraName": "Arcane Pact",
+              "auraTarget": "self"
+            }
+          ],
+          "isMultiAura": true,
+          "multiAuraOperator": "OR"
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 70,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 70,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Sentinel": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Shadow Dragon Shinobi": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Aura",
+              "value": 0,
+              "comparison": "less",
+              "auraName": "Shadow Soul",
+              "auraTarget": "self"
+            }
+          ]
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 30,
+              "comparison": "less",
+              "isPercentage": true
+            },
+            {
+              "type": "Mana",
+              "value": 70,
+              "comparison": "greater",
+              "isPercentage": true
+            },
+            {
+              "type": "Aura",
+              "value": 0,
+              "comparison": "less",
+              "auraName": "Shadow Soul",
+              "auraTarget": "self"
+            }
+          ]
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 30,
+              "comparison": "greater",
+              "isPercentage": true
+            },
+            {
+              "type": "Mana",
+              "value": 10,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Aura",
+              "value": 0,
+              "comparison": "less",
+              "auraName": "Shadow Soul",
+              "auraTarget": "self"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Shadow Ripper": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Shadow Rocker": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "ShadowFlame DragonLord": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "ShadowScythe General": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "ShadowStalker of Time": {
+    "Solo": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    },
+    "Def": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "ShadowWalker of Time": {
+    "Solo": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    },
+    "Def": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "ShadowWeaver of Time": {
+    "Solo": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    },
+    "Def": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Shaman": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    },
+    "Farm": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    },
+    "Solo": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Silver Paladin": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "SkyCharged Grenadier": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "SkyGuard Grenadier": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Sorcerer": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Sovereign of Storms": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Soul Cleaver": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Star Captain": {
+    "Def": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 300,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    },
+    "Atk": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 300,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    },
+    "Solo": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 300,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "StarLord": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "StoneCrusher": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    },
+    "Solo": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Mana",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    },
+    "Supp": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "SwordMaster": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "SwordMaster Assassin": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "The Collector": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Wait",
+              "timeout": 2000
+            }
+          ]
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Thief of Hours": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "TimeKeeper": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    },
+    "Farm": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "TimeKiller": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    },
+    "Farm": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Timeless Chronomancer": {
+    "Solo": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    },
+    "Farm": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    }
+  },
+  "Timeless Dark Caster": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Troll Spellsmith": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Troubador of Love": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Ultra Elemental Warrior": {
+    "Atk": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        }
+      ]
+    },
+    "Def": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Ultra OmniKnight": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Underworld Chronomancer": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Unchained Rocker": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Unchained Rockstar": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Undead Goat": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Unundead Goat": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Undead Leperchaun": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "UndeadSlayer": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "less",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Unlucky Leperchaun": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Vampire": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    },
+    "Solo": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Vampire Lord": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    },
+    "Solo": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        }
+      ]
+    }
+  },
+  "Verus DoomKnight": {
+    "Def": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    },
+    "Atk": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Vindicator Of They": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Wait",
+              "timeout": 2000
+            }
+          ]
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    }
+  },
+  "Void Highlord": {
+    "Atk": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 30,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 90,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 30,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 30,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    },
+    "Def": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 90,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    },
+    "Farm": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 30,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Void Highlord (IoDA)": {
+    "Atk": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 30,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 30,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 30,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    },
+    "Def": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 90,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    },
+    "Farm": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 50,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 30,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Void Highlord Tester": {
+    "Base": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 1
+        }
+      ]
+    },
+    "Def": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 3,
+          "rules": [
+            {
+              "type": "Health",
+              "value": 90,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Warlord": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Warrior": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Warrior (Rare)": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "WarriorScythe General": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Witch": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 3
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "Yami no Ronin": {
+    "Solo": {
+      "skillUseMode": "WaitForCooldown",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 2,
+          "rules": [
+            {
+              "type": "Mana",
+              "value": 60,
+              "comparison": "greater",
+              "isPercentage": true
+            }
+          ]
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    },
+    "Def": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": [
+        {
+          "skillId": 1
+        },
+        {
+          "skillId": 2
+        },
+        {
+          "skillId": 4
+        }
+      ]
+    }
+  },
+  "": {
+    "Base": {
+      "skillUseMode": "UseIfAvailable",
+      "skillTimeout": 100,
+      "skills": []
+    }
+  }
+}
