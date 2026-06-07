@@ -10,11 +10,11 @@ namespace Skua.Core.ViewModels;
 public sealed partial class MainViewModel : ObservableObject
 {
     [ObservableProperty]
-    private string _title = "VibeSkua V1.2";
+    private string _title = "VibeSkua V1.3";
 
     public MainViewModel()
     {
-        _title = "VibeSkua V1.2";
+        _title = "VibeSkua V1.3";
         Ioc.Default.GetRequiredService<IDiscordWebhookService>().Initialize();
     }
 
