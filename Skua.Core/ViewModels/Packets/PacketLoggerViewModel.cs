@@ -103,7 +103,7 @@ public partial class PacketLoggerViewModel : BotControlViewModelBase
             return;
         }
 
-        string[] packet = args[0].ToString()!.Split(new[] { '%' }, StringSplitOptions.RemoveEmptyEntries);
+        string[] packet = args[0].ToString()!.Split('%', StringSplitOptions.RemoveEmptyEntries);
         foreach (PacketLogFilterViewModel filterVM in _packetFilters)
         {
             if (!filterVM.IsChecked && filterVM.Filter.Invoke(packet))
@@ -128,8 +128,8 @@ public partial class PacketLoggerViewModel : BotControlViewModelBase
         _dispatcherService.Invoke(() => 
         {
             PacketLogs.AddRange(toAdd);
-            if (PacketLogs.Count > 5000)
-                PacketLogs.RemoveRange(0, PacketLogs.Count - 5000);
+            if (PacketLogs.Count > 1000)
+                PacketLogs.RemoveRange(0, PacketLogs.Count - 1000);
         });
     }
 }

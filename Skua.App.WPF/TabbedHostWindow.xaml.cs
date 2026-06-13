@@ -104,7 +104,7 @@ namespace Skua.App.WPF
 
         private string _initialArgs = "";
         private readonly Dictionary<TabItem, TabInfo> _tabs = new();
-        private System.Windows.Threading.DispatcherTimer _repositionTimer;
+        private bool _needsReposition = false;
         private bool _isClosing = false;
         private bool _isGridViewEnabled = false;
         private TabItem _lastSelectedTab;
@@ -135,14 +135,21 @@ namespace Skua.App.WPF
             _initialArgs = initialArgs ?? "";
             InitializeComponent();
 
-            _repositionTimer = new System.Windows.Threading.DispatcherTimer
+            System.Windows.Media.CompositionTarget.Rendering += (s, e) => 
             {
-                Interval = TimeSpan.FromMilliseconds(16)
+                if (_needsReposition)
+                {
+                    _needsReposition = false;
+                    DoReposition();
+                }
             };
-            _repositionTimer.Tick += (s, e) => { _repositionTimer.Stop(); DoReposition(); };
+
+            var options = CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<Skua.Core.Interfaces.IScriptOption>();
+            MiscOptionsMenu.DataContext = options;
+            options.PropertyChanged += Options_PropertyChanged;
 
             Loaded += TabbedHostWindow_Loaded;
-            LocationChanged += (s, e) => ScheduleReposition();
+            LocationChanged += (s, e) => _needsReposition = true;
             SizeChanged += (s, e) => ScheduleReposition();
             DpiChanged += (s, e) => ScheduleReposition();
             StateChanged += (s, e) => DoReposition(); // Immediate for minimize/restore
@@ -229,6 +236,12 @@ namespace Skua.App.WPF
 
         #region Tab Switching & Positioning
         private const int WM_SKUA_GRIDVIEW = 0x0400 + 444;
+        private const int WM_SKUA_START_SCRIPT = 0x0400 + 445;
+        private const int WM_SKUA_STOP_SCRIPT = 0x0400 + 446;
+        private const int WM_SKUA_LOGIN = 0x0400 + 447;
+        private const int WM_SKUA_LOGOUT = 0x0400 + 448;
+        private const int WM_SKUA_JUMP_MAP = 0x0400 + 449;
+        private const int WM_SKUA_SET_OPTION = 0x0400 + 450;
 
         private void GridViewBorder_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
@@ -279,6 +292,98 @@ namespace Skua.App.WPF
             UpdateGridViewBorderColor();
         }
 
+        private void GlobeBorder_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            e.Handled = true;
+            GlobeBorder.ContextMenu.IsOpen = true;
+        }
+
+        private void GlobeBorder_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            GlobeBorder.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 48)); // #2D2D30
+        }
+
+        private void GlobeBorder_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            GlobeBorder.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(37, 37, 38)); // #252526
+        }
+
+        private void Options_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            var options = sender as Skua.Core.Interfaces.IScriptOption;
+            if (options == null) return;
+            
+            int optionId = -1;
+            bool val = false;
+            
+            switch (e.PropertyName)
+            {
+                case "LagKiller": optionId = 1; val = options.LagKiller; break;
+                case "HeadlessMode": optionId = 2; val = options.HeadlessMode; break;
+                case "HidePlayers": optionId = 3; val = options.HidePlayers; break;
+                case "DisableFX": optionId = 4; val = options.DisableFX; break;
+                case "InfiniteRange": optionId = 5; val = options.InfiniteRange; break;
+            }
+            
+            if (optionId != -1)
+            {
+                foreach (var info in _tabs.Values)
+                    if (info.ChildHwnd != IntPtr.Zero)
+                        PostMessage(info.ChildHwnd, WM_SKUA_SET_OPTION, new IntPtr(optionId), new IntPtr(val ? 1 : 0));
+            }
+        }
+
+        private void MenuItem_StartAllScripts_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var info in _tabs.Values)
+                if (info.ChildHwnd != IntPtr.Zero)
+                    PostMessage(info.ChildHwnd, WM_SKUA_START_SCRIPT, IntPtr.Zero, IntPtr.Zero);
+        }
+
+        private void MenuItem_StopAllScripts_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var info in _tabs.Values)
+                if (info.ChildHwnd != IntPtr.Zero)
+                    PostMessage(info.ChildHwnd, WM_SKUA_STOP_SCRIPT, IntPtr.Zero, IntPtr.Zero);
+        }
+
+        private void MenuItem_LoginAll_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var info in _tabs.Values)
+                if (info.ChildHwnd != IntPtr.Zero)
+                    PostMessage(info.ChildHwnd, WM_SKUA_LOGIN, IntPtr.Zero, IntPtr.Zero);
+        }
+
+        private void MenuItem_LogoutAll_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var info in _tabs.Values)
+                if (info.ChildHwnd != IntPtr.Zero)
+                    PostMessage(info.ChildHwnd, WM_SKUA_LOGOUT, IntPtr.Zero, IntPtr.Zero);
+        }
+
+        private string _lastJumpMap = "";
+
+        private void MenuItem_JumpMap_Click(object sender, RoutedEventArgs e)
+        {
+            var vm = new Skua.Core.ViewModels.InputDialogViewModel("Jump Army to Map", "Enter map name and room number:", "e.g., yulgar-829472", false);
+            vm.DialogTextInput = _lastJumpMap;
+            
+            if (CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<Skua.Core.Interfaces.IDialogService>().ShowDialog(vm) == true)
+            {
+                string targetMap = vm.DialogTextInput;
+                if (!string.IsNullOrWhiteSpace(targetMap))
+                {
+                    _lastJumpMap = targetMap;
+                    string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "skua_global_jump.txt");
+                    System.IO.File.WriteAllText(tempFile, targetMap);
+                    
+                    foreach (var info in _tabs.Values)
+                        if (info.ChildHwnd != IntPtr.Zero)
+                            PostMessage(info.ChildHwnd, WM_SKUA_JUMP_MAP, IntPtr.Zero, IntPtr.Zero);
+                }
+            }
+        }
+
         private void UpdateGridViewBorderColor()
         {
             if (_isGridViewEnabled)
@@ -321,8 +426,7 @@ namespace Skua.App.WPF
 
         private void ScheduleReposition()
         {
-            if (!_repositionTimer.IsEnabled)
-                _repositionTimer.Start();
+            _needsReposition = true;
         }
 
         /// <summary>

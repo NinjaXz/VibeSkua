@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using Skua.Core.Interfaces;
 using Skua.Core.Messaging;
@@ -27,17 +27,17 @@ public class LogService : ObservableRecipient, ILogService, IDisposable
         recipient.FlashLog($"{message.Function} Args[{message.Args.Length}] {(message.Args.Length > 0 ? $"= {{{string.Join(",", message.Args.Select(a => a?.ToString()))}}}" : string.Empty)}");
     }
 
-    private readonly List<string> _debugLogs = new();
-    private readonly List<string> _scriptLogs = new();
-    private readonly List<string> _flashLogs = new();
+    private readonly Queue<string> _debugLogs = new();
+    private readonly Queue<string> _scriptLogs = new();
+    private readonly Queue<string> _flashLogs = new();
 
     public void DebugLog(string message)
     {
         lock (_debugLock)
         {
             if (_debugLogs.Count >= MaxLogEntries)
-                _debugLogs.RemoveAt(0);
-            _debugLogs.Add(message);
+                _debugLogs.Dequeue();
+            _debugLogs.Enqueue(message);
         }
         Messenger.Send(new LogsChangedMessage(LogType.Debug));
         Messenger.Send(new AddLogMessage(LogType.Debug, message));
@@ -50,8 +50,8 @@ public class LogService : ObservableRecipient, ILogService, IDisposable
         lock (_flashLock)
         {
             if (_flashLogs.Count >= MaxLogEntries)
-                _flashLogs.RemoveAt(0);
-            _flashLogs.Add(message);
+                _flashLogs.Dequeue();
+            _flashLogs.Enqueue(message);
         }
         Messenger.Send(new LogsChangedMessage(LogType.Flash));
         Messenger.Send(new AddLogMessage(LogType.Flash, message));
@@ -64,8 +64,8 @@ public class LogService : ObservableRecipient, ILogService, IDisposable
         lock (_scriptLock)
         {
             if (_scriptLogs.Count >= MaxLogEntries)
-                _scriptLogs.RemoveAt(0);
-            _scriptLogs.Add(message);
+                _scriptLogs.Dequeue();
+            _scriptLogs.Enqueue(message);
         }
         Messenger.Send(new LogsChangedMessage(LogType.Script));
         Messenger.Send(new AddLogMessage(LogType.Script, message));

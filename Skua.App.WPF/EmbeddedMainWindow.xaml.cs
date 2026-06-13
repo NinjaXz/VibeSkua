@@ -1,13 +1,21 @@
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using CommunityToolkit.Mvvm.DependencyInjection;
 using Skua.Core.ViewModels;
+using Skua.Core.Interfaces;
 
 namespace Skua.App.WPF
 {
     public partial class EmbeddedMainWindow : Window
     {
         private const int WM_SKUA_GRIDVIEW = 0x0400 + 444;
+        private const int WM_SKUA_START_SCRIPT = 0x0400 + 445;
+        private const int WM_SKUA_STOP_SCRIPT = 0x0400 + 446;
+        private const int WM_SKUA_LOGIN = 0x0400 + 447;
+        private const int WM_SKUA_LOGOUT = 0x0400 + 448;
+        private const int WM_SKUA_JUMP_MAP = 0x0400 + 449;
+        private const int WM_SKUA_SET_OPTION = 0x0400 + 450;
 
         public EmbeddedMainWindow()
         {
@@ -33,6 +41,67 @@ namespace Skua.App.WPF
             {
                 int actionId = wParam.ToInt32();
                 Skua.Core.AppStartup.HotKeys.ExecuteHotkeyAction(actionId);
+                handled = true;
+            }
+            else if (msg == WM_SKUA_START_SCRIPT)
+            {
+                Task.Run(() => Ioc.Default.GetRequiredService<IScriptManager>().StartScript());
+                handled = true;
+            }
+            else if (msg == WM_SKUA_STOP_SCRIPT)
+            {
+                Task.Run(() => Ioc.Default.GetRequiredService<IScriptManager>().StopScript());
+                handled = true;
+            }
+            else if (msg == WM_SKUA_LOGIN)
+            {
+                Task.Run(() => 
+                {
+                    var options = Ioc.Default.GetRequiredService<IScriptOption>();
+                    var servers = Ioc.Default.GetRequiredService<IScriptServers>();
+                    string targetServer = string.IsNullOrWhiteSpace(options.ReloginServer) ? "Twilly" : options.ReloginServer;
+                    servers.Relogin(targetServer);
+                });
+                handled = true;
+            }
+            else if (msg == WM_SKUA_LOGOUT)
+            {
+                Ioc.Default.GetRequiredService<IScriptServers>().Logout();
+                handled = true;
+            }
+            else if (msg == WM_SKUA_JUMP_MAP)
+            {
+                Task.Run(() => 
+                {
+                    try 
+                    {
+                        string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "skua_global_jump.txt");
+                        if (System.IO.File.Exists(tempFile))
+                        {
+                            string targetMap = System.IO.File.ReadAllText(tempFile);
+                            if (!string.IsNullOrWhiteSpace(targetMap))
+                                Ioc.Default.GetRequiredService<IScriptMap>().Join(targetMap);
+                        }
+                    } 
+                    catch { }
+                });
+                handled = true;
+            }
+            else if (msg == WM_SKUA_SET_OPTION)
+            {
+                int optionId = wParam.ToInt32();
+                bool value = lParam.ToInt32() == 1;
+                var options = Ioc.Default.GetRequiredService<IScriptOption>();
+                switch (optionId)
+                {
+                    case 1: options.LagKiller = value; break;
+                    case 2: options.HeadlessMode = value; break;
+                    case 3: options.HidePlayers = value; break;
+                    case 4: options.DisableFX = value; break;
+                    case 5: options.InfiniteRange = value; break;
+                    case 6: options.Magnetise = value; break;
+                    case 7: options.SkipCutscenes = value; break;
+                }
                 handled = true;
             }
             return IntPtr.Zero;

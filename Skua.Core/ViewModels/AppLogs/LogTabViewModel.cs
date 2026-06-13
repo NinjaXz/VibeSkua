@@ -77,8 +77,8 @@ public partial class LogTabViewModel : ObservableRecipient
         _dispatcherService.Invoke(() =>
         {
             Logs.AddRange(toAdd);
-            if (Logs.Count > 5000)
-                Logs.RemoveRange(0, Logs.Count - 5000);
+            if (Logs.Count > 1000)
+                Logs.RemoveRange(0, Logs.Count - 1000);
         });
     }
 

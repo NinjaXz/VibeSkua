@@ -120,9 +120,35 @@
             </TabItem>
         </TabControl>
 
-        <Border x:Name="GridViewBorder" Grid.Column="1" Cursor="Hand" BorderThickness="1,1,1,0" BorderBrush="#333" Background="#252526" Margin="2,0,5,0" CornerRadius="4,4,0,0" PreviewMouseLeftButtonDown="GridViewBorder_PreviewMouseLeftButtonDown" MouseEnter="GridViewBorder_MouseEnter" MouseLeave="GridViewBorder_MouseLeave">
-            <TextBlock x:Name="GridViewText" Text="⊞ Grid View" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource PrimaryHueMidBrush}" VerticalAlignment="Center" Margin="10,5" />
-        </Border>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,5,0">
+            <!-- Globe Button -->
+            <Border x:Name="GlobeBorder" Cursor="Hand" BorderThickness="1,1,1,0" BorderBrush="#333" Background="#252526" Margin="2,0,2,0" CornerRadius="4,4,0,0" PreviewMouseLeftButtonDown="GlobeBorder_PreviewMouseLeftButtonDown" MouseEnter="GlobeBorder_MouseEnter" MouseLeave="GlobeBorder_MouseLeave">
+                <TextBlock Text="🌐 Army Control" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource PrimaryHueMidBrush}" VerticalAlignment="Center" Margin="10,5" />
+                <Border.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Start All Scripts" Click="MenuItem_StartAllScripts_Click" />
+                        <MenuItem Header="Stop All Scripts" Click="MenuItem_StopAllScripts_Click" />
+                        <Separator />
+                        <MenuItem Header="Login All Clients" Click="MenuItem_LoginAll_Click" />
+                        <MenuItem Header="Logout All Clients" Click="MenuItem_LogoutAll_Click" />
+                        <Separator />
+                        <MenuItem Header="Jump All to Map..." Click="MenuItem_JumpMap_Click" />
+                        <Separator />
+                        <MenuItem x:Name="MiscOptionsMenu" Header="Misc Options">
+                            <MenuItem Header="Lag Killer" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding LagKiller, Mode=TwoWay}" />
+                            <MenuItem Header="Headless Mode" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding HeadlessMode, Mode=TwoWay}" />
+                            <MenuItem Header="Hide Players" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding HidePlayers, Mode=TwoWay}" />
+                            <MenuItem Header="Disable FX" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding DisableFX, Mode=TwoWay}" />
+                            <MenuItem Header="Infinite Range" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding InfiniteRange, Mode=TwoWay}" />
+                        </MenuItem>
+                    </ContextMenu>
+                </Border.ContextMenu>
+            </Border>
+            
+            <Border x:Name="GridViewBorder" Cursor="Hand" BorderThickness="1,1,1,0" BorderBrush="#333" Background="#252526" Margin="2,0,0,0" CornerRadius="4,4,0,0" PreviewMouseLeftButtonDown="GridViewBorder_PreviewMouseLeftButtonDown" MouseEnter="GridViewBorder_MouseEnter" MouseLeave="GridViewBorder_MouseLeave">
+                <TextBlock x:Name="GridViewText" Text="⊞ Grid View" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource PrimaryHueMidBrush}" VerticalAlignment="Center" Margin="10,5" />
+            </Border>
+        </StackPanel>
     </Grid>
         
         <Grid Grid.Row="1" Background="#252526">

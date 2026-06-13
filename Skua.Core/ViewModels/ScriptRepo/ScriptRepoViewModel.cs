@@ -70,7 +70,12 @@ public partial class ScriptRepoViewModel : BotControlViewModelBase
     [ObservableProperty]
     private bool _sortDescending = false;
 
-    public List<string> SortOptions { get; } = new() { "Name", "Date Created", "Size" };
+    [ObservableProperty]
+    private string _filterBy = "All";
+
+    public List<string> SortOptions { get; } = new() { "Name", "Date Created" };
+    
+    public List<string> FilterOptions { get; } = new() { "All", "Army", "Classes", "Dailies", "Evil", "Farm", "Good", "Legion", "Nation", "Other", "Rep", "Seasonal", "Story", "Ultras" };
 
     partial void OnSortByChanged(string value)
     {
@@ -82,6 +87,11 @@ public partial class ScriptRepoViewModel : BotControlViewModelBase
         ApplySort();
     }
 
+    partial void OnFilterByChanged(string value)
+    {
+        _ = RefreshScriptsList();
+    }
+
     private void ApplySort()
     {
         if (_scripts.Count == 0) return;
@@ -89,8 +99,6 @@ public partial class ScriptRepoViewModel : BotControlViewModelBase
         IEnumerable<ScriptInfoViewModel> sorted;
         if (SortBy == "Date Created")
             sorted = SortDescending ? _scripts.OrderByDescending(x => x.Info.CreationDate ?? DateTime.MinValue) : _scripts.OrderBy(x => x.Info.CreationDate ?? DateTime.MinValue);
-        else if (SortBy == "Size")
-            sorted = SortDescending ? _scripts.OrderByDescending(x => x.Info.Size) : _scripts.OrderBy(x => x.Info.Size);
         else
             sorted = SortDescending ? _scripts.OrderByDescending(x => x.FileName) : _scripts.OrderBy(x => x.FileName);
 
@@ -157,6 +165,20 @@ public partial class ScriptRepoViewModel : BotControlViewModelBase
                 List<ScriptInfoViewModel> viewModels = new();
                 foreach (ScriptInfo script in _getScriptsService.Scripts)
                 {
+                    if (FilterBy != "All")
+                    {
+                        bool matches = false;
+                        foreach (var part in script.FilePath.Split('/'))
+                        {
+                            if (part.StartsWith(FilterBy, StringComparison.OrdinalIgnoreCase))
+                            {
+                                matches = true;
+                                break;
+                            }
+                        }
+                        if (!matches) continue;
+                    }
+                        
                     if (script?.Name != null && !script.Name.Equals("null"))
                     {
                         if (script.Description?.Equals("null") == true)
@@ -172,8 +194,6 @@ public partial class ScriptRepoViewModel : BotControlViewModelBase
 
                 if (SortBy == "Date Created")
                     return SortDescending ? viewModels.OrderByDescending(x => x.Info.CreationDate ?? DateTime.MinValue).ToList() : viewModels.OrderBy(x => x.Info.CreationDate ?? DateTime.MinValue).ToList();
-                else if (SortBy == "Size")
-                    return SortDescending ? viewModels.OrderByDescending(x => x.Info.Size).ToList() : viewModels.OrderBy(x => x.Info.Size).ToList();
                 else
                     return SortDescending ? viewModels.OrderByDescending(x => x.FileName).ToList() : viewModels.OrderBy(x => x.FileName).ToList();
             });

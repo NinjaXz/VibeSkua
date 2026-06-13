@@ -48,7 +48,7 @@ public partial class GameContainerUserControl : UserControl
             npc.PropertyChanged += Options_PropertyChanged;
         }
 
-        _memoryTrimTimer = new System.Timers.Timer(TimeSpan.FromMinutes(30).TotalMilliseconds);
+        _memoryTrimTimer = new System.Timers.Timer(TimeSpan.FromMinutes(1).TotalMilliseconds);
         _memoryTrimTimer.Elapsed += (s, e) => Skua.Core.Utils.MemoryUtils.TrimWorkingSet();
         _memoryTrimTimer.Start();
 
@@ -80,13 +80,14 @@ public partial class GameContainerUserControl : UserControl
                     gameContainer.Height = 1;
                     gameContainer.Margin = new Thickness(-5000, 0, 0, 0);
                     HeadlessOverlay.Visibility = Visibility.Visible;
+                    try { _bot.Flash?.SetGameObject("stage.frameRate", 1); } catch { }
                 }
                 else
                 {
-                    gameContainer.Width = double.NaN;
-                    gameContainer.Height = double.NaN;
                     gameContainer.Margin = new Thickness(1, 0, 1, 1);
                     HeadlessOverlay.Visibility = Visibility.Collapsed;
+                    RecalculateGameContainerSize();
+                    try { _bot.Flash?.SetGameObject("stage.frameRate", 24); } catch { }
                 }
             });
         }
@@ -108,22 +109,32 @@ public partial class GameContainerUserControl : UserControl
     private void RootGrid_SizeChanged(object sender, SizeChangedEventArgs e)
     {
         if (e.NewSize.Width == 0 || e.NewSize.Height == 0) return;
+        RecalculateGameContainerSize();
+        UpdateDashboardVisibility();
+    }
+
+    private void RecalculateGameContainerSize()
+    {
+        if (_bot.Options.HeadlessMode) return;
         
+        double width = RootGrid.ActualWidth;
+        double height = RootGrid.ActualHeight;
+        
+        if (width == 0 || height == 0) return;
+
         double aspect = 960.0 / 550.0;
-        if (e.NewSize.Width / e.NewSize.Height > aspect)
+        if (width / height > aspect)
         {
             // Window is too wide. Height is the limiting factor.
-            gameContainer.Height = e.NewSize.Height;
-            gameContainer.Width = e.NewSize.Height * aspect;
+            gameContainer.Height = height;
+            gameContainer.Width = height * aspect;
         }
         else
         {
             // Window is too tall. Width is the limiting factor.
-            gameContainer.Width = e.NewSize.Width;
-            gameContainer.Height = e.NewSize.Width / aspect;
+            gameContainer.Width = width;
+            gameContainer.Height = width / aspect;
         }
-        
-        UpdateDashboardVisibility();
     }
 
     private void UpdateDashboardVisibility()

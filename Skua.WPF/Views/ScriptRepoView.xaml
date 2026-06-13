@@ -43,6 +43,13 @@
                 <ComboBox
                     Margin="6,0,0,0"
                     DockPanel.Dock="Right"
+                    Width="100"
+                    ItemsSource="{Binding FilterOptions}"
+                    SelectedItem="{Binding FilterBy, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    materialDesign:HintAssist.Hint="Filter by" />
+                <ComboBox
+                    Margin="6,0,0,0"
+                    DockPanel.Dock="Right"
                     Width="120"
                     ItemsSource="{Binding SortOptions}"
                     SelectedItem="{Binding SortBy, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"

@@ -60,6 +60,9 @@
             Grid.Column="0"
             Grid.ColumnSpan="2"
             Margin="0,4,0,4"
+            VirtualizingPanel.IsVirtualizing="True"
+            VirtualizingPanel.VirtualizationMode="Recycling"
+            ScrollViewer.CanContentScroll="True"
             ItemsSource="{Binding Items}">
             <ListBox.ItemsPanel>
                 <ItemsPanelTemplate>

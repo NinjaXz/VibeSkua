@@ -18,9 +18,7 @@ public static class MemoryUtils
     {
         try
         {
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
+            GC.Collect(2, GCCollectionMode.Optimized, blocking: false);
 
             SetProcessWorkingSetSize(Process.GetCurrentProcess().Handle, (UIntPtr)unchecked((uint)-1), (UIntPtr)unchecked((uint)-1));
         }
