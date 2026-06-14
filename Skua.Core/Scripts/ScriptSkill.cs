@@ -1,8 +1,10 @@
-﻿using Skua.Core.Flash;
+using Skua.Core.Flash;
 using Skua.Core.Interfaces;
 using Skua.Core.Messaging;
 using Skua.Core.Models.Skills;
 using Skua.Core.Skills;
+using CommunityToolkit.Mvvm.DependencyInjection;
+using System.IO;
 
 namespace Skua.Core.Scripts;
 
@@ -80,6 +82,17 @@ public partial class ScriptSkill : IScriptSkill
 
     public void Start()
     {
+        if (Options.UseFunctionBasedSkills)
+        {
+            try
+            {
+                var masterProvider = new MasterSkillProvider();
+                masterProvider.Init(Player, Self, Target, Combat, Flash);
+                OverrideProvider = masterProvider;
+            }
+            catch { }
+        }
+
         if (BaseProvider is null)
         {
             BaseProvider = new AdvancedSkillProvider(Player, Self, Target, Combat, Flash);
@@ -150,6 +163,9 @@ public partial class ScriptSkill : IScriptSkill
 
     public void LoadAdvanced(string className, bool autoEquip, ClassUseMode useMode = ClassUseMode.Base)
     {
+        if (Options.UseFunctionBasedSkills)
+            return;
+
         OverrideProvider = new AdvancedSkillProvider(Player, Self, Target, Combat, Flash);
 
         if (className == "generic")
@@ -185,6 +201,9 @@ public partial class ScriptSkill : IScriptSkill
 
     public void LoadAdvanced(string skills, int skillTimeout = -1, SkillUseMode skillMode = SkillUseMode.UseIfAvailable)
     {
+        if (Options.UseFunctionBasedSkills)
+            return;
+
         OverrideProvider = new AdvancedSkillProvider(Player, Self, Target, Combat, Flash);
         SkillTimeout = skillTimeout;
         SkillUseMode = skillMode;
@@ -193,6 +212,9 @@ public partial class ScriptSkill : IScriptSkill
 
     public void LoadAdvanced(string className, string mode, bool autoEquip = true)
     {
+        if (Options.UseFunctionBasedSkills)
+            return;
+
         if (Enum.TryParse<ClassUseMode>(mode, ignoreCase: true, out ClassUseMode classMode))
         {
             LoadAdvanced(className, autoEquip, classMode);
@@ -218,6 +240,44 @@ public partial class ScriptSkill : IScriptSkill
                 OverrideProvider.Load(genericSkills);
                 SkillUseMode = SkillUseMode.UseIfAvailable;
             }
+        }
+    }
+
+    public void LoadCompiled(string file)
+    {
+        if (!File.Exists(file))
+            throw new FileNotFoundException($"Compiled skillset file not found: {file}");
+
+        string code = File.ReadAllText(file);
+        Compiler compiler = Ioc.Default.GetRequiredService<Compiler>();
+
+        dynamic? compiledProvider = compiler.CompileClass(code);
+
+        if (compiler.Error)
+            throw new Exception($"Error compiling skillset '{file}':\n{compiler.ErrorMessage}");
+
+        if (compiledProvider is ISkillProvider provider)
+        {
+            var initMethod = compiledProvider.GetType().GetMethod("Init");
+            if (initMethod != null)
+            {
+                var parameters = initMethod.GetParameters();
+                if (parameters.Length == 5 && 
+                    parameters[0].ParameterType == typeof(IScriptPlayer) &&
+                    parameters[1].ParameterType == typeof(IScriptSelfAuras) &&
+                    parameters[2].ParameterType == typeof(IScriptTargetAuras) &&
+                    parameters[3].ParameterType == typeof(IScriptCombat) &&
+                    parameters[4].ParameterType == typeof(IFlashUtil))
+                {
+                    initMethod.Invoke(compiledProvider, new object[] { Player, Self, Target, Combat, Flash });
+                }
+            }
+
+            OverrideProvider = provider;
+        }
+        else
+        {
+            throw new Exception($"The compiled skillset from '{file}' does not implement ISkillProvider.");
         }
     }
 

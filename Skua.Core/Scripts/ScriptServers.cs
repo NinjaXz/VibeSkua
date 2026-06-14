@@ -481,7 +481,6 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         bool finalServerListExists = !Flash.IsNull("mcLogin.sl.iList");
         int finalServerEntries = Flash.GetGameObject<int>("mcLogin.sl.iList.numChildren", 0);
         return finalLoginVisible && finalServerListExists && finalServerEntries > 0 && ServerList.Exists(IsValidReloginServerData);
-        return ServerList.Exists(IsValidReloginServerData);
     }
 
     private async Task<bool> EnsureLogin(Server server, CancellationToken token)
@@ -510,7 +509,10 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
                 ReloginLog($"Attempt {tries}/{Options.ReloginTries}: trying {targetServer.Name} [{targetServer.PlayerCount}/{targetServer.MaxPlayers}].");
 
                 if (IsConnected || tries > 1)
+                {
                     Logout();
+                    await Task.Delay(2000, token);
+                }
 
                 Login();
                 ReloginLog($"Attempt {tries}/{Options.ReloginTries}: waiting for server list screen.");
