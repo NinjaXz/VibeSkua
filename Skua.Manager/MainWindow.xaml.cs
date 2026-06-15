@@ -18,7 +18,7 @@ public partial class MainWindow : CustomWindow
         InitializeComponent();
         DataContext = Ioc.Default.GetRequiredService<ManagerMainViewModel>();
         StrongReferenceMessenger.Default.Register<MainWindow, ShowMainWindowMessage>(this, ShowManager);
-        TitleText = "VibeSkua V1.1";
+        TitleText = "VibeSkua V1.6";
     }
 
     private void ShowManager(MainWindow recipient, ShowMainWindowMessage message)

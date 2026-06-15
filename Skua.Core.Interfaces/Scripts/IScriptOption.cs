@@ -240,6 +240,16 @@ public interface IScriptOption : INotifyPropertyChanged
     HuntPriorities HuntPriority { get; set; }
 
     /// <summary>
+    /// When enabled, the bot will use dynamically compiled C# function-based skills instead of JSON advanced skills.
+    /// </summary>
+    bool UseFunctionBasedSkills { get; set; }
+
+    /// <summary>
+    /// When enabled, anonymizes the player's name, guild, and hides the room number to protect the user's identity.
+    /// </summary>
+    bool StreamerMode { get; set; }
+
+    /// <summary>
     /// Resets the options to the user defined defaults. If no user settings are found, uses the application default values.
     /// </summary>
     void Reset();

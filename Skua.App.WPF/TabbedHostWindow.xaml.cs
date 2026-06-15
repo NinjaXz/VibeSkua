@@ -262,7 +262,6 @@ namespace Skua.App.WPF
             {
                 if (InstancesTabControl.SelectedItem != null && InstancesTabControl.SelectedItem != AddTabItem)
                     _lastSelectedTab = InstancesTabControl.SelectedItem as TabItem;
-                InstancesTabControl.SelectedItem = null;
             }
             else
             {
@@ -323,6 +322,8 @@ namespace Skua.App.WPF
                 case "HidePlayers": optionId = 3; val = options.HidePlayers; break;
                 case "DisableFX": optionId = 4; val = options.DisableFX; break;
                 case "InfiniteRange": optionId = 5; val = options.InfiniteRange; break;
+                case "UseFunctionBasedSkills": optionId = 8; val = options.UseFunctionBasedSkills; break;
+                case "StreamerMode": optionId = 9; val = options.StreamerMode; break;
             }
             
             if (optionId != -1)
@@ -333,18 +334,34 @@ namespace Skua.App.WPF
             }
         }
 
-        private void MenuItem_StartAllScripts_Click(object sender, RoutedEventArgs e)
+        private async void MenuItem_StartAllScripts_Click(object sender, RoutedEventArgs e)
         {
+            if (MenuStartScripts != null) MenuStartScripts.IsEnabled = false;
+            if (MenuStopScripts != null) MenuStopScripts.IsEnabled = false;
+            
             foreach (var info in _tabs.Values)
                 if (info.ChildHwnd != IntPtr.Zero)
-                    PostMessage(info.ChildHwnd, WM_SKUA_START_SCRIPT, IntPtr.Zero, IntPtr.Zero);
+                    PostMessage(info.ChildHwnd, WM_SKUA_SET_OPTION, new IntPtr(99), new IntPtr(1));
+            
+            await Task.Delay(2000);
+            
+            if (MenuStartScripts != null) MenuStartScripts.IsEnabled = true;
+            if (MenuStopScripts != null) MenuStopScripts.IsEnabled = true;
         }
 
-        private void MenuItem_StopAllScripts_Click(object sender, RoutedEventArgs e)
+        private async void MenuItem_StopAllScripts_Click(object sender, RoutedEventArgs e)
         {
+            if (MenuStartScripts != null) MenuStartScripts.IsEnabled = false;
+            if (MenuStopScripts != null) MenuStopScripts.IsEnabled = false;
+            
             foreach (var info in _tabs.Values)
                 if (info.ChildHwnd != IntPtr.Zero)
-                    PostMessage(info.ChildHwnd, WM_SKUA_STOP_SCRIPT, IntPtr.Zero, IntPtr.Zero);
+                    PostMessage(info.ChildHwnd, WM_SKUA_SET_OPTION, new IntPtr(99), new IntPtr(0));
+            
+            await Task.Delay(4000); // 4 second wait to ensure graceful stop
+            
+            if (MenuStartScripts != null) MenuStartScripts.IsEnabled = true;
+            if (MenuStopScripts != null) MenuStopScripts.IsEnabled = true;
         }
 
         private void MenuItem_LoginAll_Click(object sender, RoutedEventArgs e)
@@ -881,6 +898,20 @@ namespace Skua.App.WPF
             {
                 startPoint = ev.GetPosition(null);
                 InstancesTabControl.SelectedItem = newTab;
+                
+                if (_isGridViewEnabled)
+                {
+                    _isGridViewEnabled = false;
+                    UpdateGridViewBorderColor();
+                    foreach (var info in _tabs.Values)
+                    {
+                        if (info.ChildHwnd != IntPtr.Zero)
+                        {
+                            PostMessage(info.ChildHwnd, WM_SKUA_GRIDVIEW, IntPtr.Zero, IntPtr.Zero);
+                        }
+                    }
+                    DoReposition();
+                }
             };
             headerPanel.MouseLeftButtonDown += (s, ev) => 
             {
