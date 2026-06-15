@@ -27,6 +27,7 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
         GetOptions();
         OptionDictionary = GenerateDictionary().ToImmutableDictionary();
         StrongReferenceMessenger.Default.Register<ScriptOption, ScriptStoppedMessage, int>(this, (int)MessageChannels.ScriptStatus, ScriptStopped);
+        StrongReferenceMessenger.Default.Register<ScriptOption, MapChangedMessage, int>(this, (int)MessageChannels.GameEvents, MapChanged);
     }
 
     private void ScriptStopped(ScriptOption recipient, ScriptStoppedMessage message)
@@ -38,6 +39,26 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
         recipient.AggroAllMonsters = false;
         recipient.AggroMonsters = false;
         recipient.SkipCutscenes = false;
+    }
+
+    private void MapChanged(ScriptOption recipient, MapChangedMessage message)
+    {
+        if (recipient.StreamerMode)
+        {
+            Task.Run(async () => 
+            {
+                await Task.Delay(1000); // Give the Flash map UI time to load the string
+                var rawMapName = recipient._lazyFlash.Value.GetGameObject("world.strMapName") ?? "";
+                if (!string.IsNullOrEmpty(rawMapName))
+                {
+                    var cleanMapName = rawMapName.Length > 1 
+                        ? char.ToUpper(rawMapName[0]) + rawMapName.Substring(1).ToLower() 
+                        : rawMapName.ToUpper();
+                    
+                    recipient._lazyFlash.Value.Call("setGameObject", "ui.mcInterface.areaList.title.t1.text", cleanMapName);
+                }
+            });
+        }
     }
 
     private readonly Lazy<IFlashUtil> _lazyFlash;
@@ -163,6 +184,112 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
     [ObjectBinding("world.myAvatar.pMC.pname.tg.textColor", Get = false, HasSetter = true)]
     public int _guildColor;
 
+    private bool _streamerMode;
+    public bool StreamerMode
+    {
+        get => _streamerMode;
+        set
+        {
+            if (SetProperty(ref _streamerMode, value, true))
+            {
+                ApplyStreamerMode(value);
+            }
+        }
+    }
+    
+    private string _originalName = string.Empty;
+    private string _originalGuild = string.Empty;
+    private bool _originalHidePlayers = false;
+    private System.Threading.CancellationTokenSource? _streamerModeCts;
+
+    private void ApplyStreamerMode(bool enabled)
+    {
+        if (enabled)
+        {
+            if (CustomName != "Hidden" && CustomName != "VibeSkuaUser")
+                _originalName = CustomName;
+            if (CustomGuild != "Hidden")
+                _originalGuild = CustomGuild;
+                
+            _originalHidePlayers = HidePlayers;
+            HidePlayers = true;
+            CustomName = "VibeSkuaUser";
+            CustomGuild = "Hidden";
+            
+            _streamerModeCts = new System.Threading.CancellationTokenSource();
+            System.Threading.Tasks.Task.Run(async () => 
+            {
+                while (_streamerModeCts != null && !_streamerModeCts.Token.IsCancellationRequested)
+                {
+                    try
+                    {
+                        var flash = _lazyFlash.Value;
+                        if (flash == null) return;
+                        
+                        // Force avatar floating name and portrait UI
+                        flash.Call("setGameObject", "world.myAvatar.objData.strUsername", "VibeSkuaUser");
+                        flash.Call("setGameObject", "world.myAvatar.pMC.pname.ti.text", "VibeSkuaUser");
+                        flash.Call("setGameObject", "world.myAvatar.pMC.pname.tg.text", "Hidden");
+                        
+                        flash.Call("setGameObject", "world.rootClass.ui.mcPortrait.strName.text", "VibeSkuaUser");
+                        flash.Call("setGameObject", "world.rootClass.ui.mcPortraitTarget.strName.text", "Hidden");
+
+                        // Hide Gold and Coins visually by setting the client-side cache to 0
+                        flash.Call("setGameObject", "world.myAvatar.objData.intGold", 0);
+                        flash.Call("setGameObject", "world.myAvatar.objData.intCoins", 0);
+                        
+                        // Hide main HUD gold and coins (middle bottom UI)
+                        flash.Call("setGameObject", "world.rootClass.ui.mcInterface.teGold.text", "0");
+                        flash.Call("setGameObject", "world.rootClass.ui.mcInterface.teCoins.text", "0");
+                        flash.Call("setGameObject", "world.rootClass.ui.mcInterface.strGold.text", "0");
+                        flash.Call("setGameObject", "world.rootClass.ui.mcInterface.strCoins.text", "0");
+                        flash.Call("setGameObject", "world.rootClass.ui.mcInterface.txtGold.text", "0");
+                        flash.Call("setGameObject", "world.rootClass.ui.mcInterface.txtCoins.text", "0");
+                        
+                        // Hide chat
+                        flash.Call("setGameObject", "world.rootClass.ui.mcInterface.t1.visible", false);
+                        flash.Call("setGameObject", "world.rootClass.ui.mcInterface.te.visible", false);
+                        
+                        // Force map UI text to strictly be the base map name
+                        var rawMapName = flash.GetGameObject("world.strMapName") ?? "";
+                        if (!string.IsNullOrEmpty(rawMapName))
+                        {
+                            // Capitalize first letter for visual polish
+                            var cleanMapName = rawMapName.Length > 1 
+                                ? char.ToUpper(rawMapName[0]) + rawMapName.Substring(1).ToLower() 
+                                : rawMapName.ToUpper();
+                            
+                            flash.Call("setGameObject", "ui.mcInterface.areaList.title.t1.text", cleanMapName);
+                        }
+                    }
+                    catch { }
+                    await System.Threading.Tasks.Task.Delay(500, _streamerModeCts.Token);
+                }
+            });
+        }
+        else
+        {
+            _streamerModeCts?.Cancel();
+            _streamerModeCts?.Dispose();
+            _streamerModeCts = null;
+            
+            CustomName = _originalName;
+            CustomGuild = _originalGuild;
+            HidePlayers = _originalHidePlayers;
+            
+            try
+            {
+                var flash = _lazyFlash.Value;
+                if (flash != null)
+                {
+                    flash.Call("setGameObject", "world.rootClass.ui.mcInterface.t1.visible", true);
+                    flash.Call("setGameObject", "world.rootClass.ui.mcInterface.te.visible", true);
+                }
+            }
+            catch { }
+        }
+    }
+
     [ObjectBinding("world.WALKSPEED", Get = false, HasSetter = true, Default = "8")]
     private int _walkSpeed = 8;
 
@@ -201,6 +328,20 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
 
     [ObservableProperty]
     private HuntPriorities _HuntPriority = HuntPriorities.None;
+
+    private bool _useFunctionBasedSkills = false;
+
+    public bool UseFunctionBasedSkills
+    {
+        get => _useFunctionBasedSkills;
+        set
+        {
+            if (SetProperty(ref _useFunctionBasedSkills, value, true))
+            {
+                CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetService<Skua.Core.Interfaces.IAdvancedSkillContainer>()?.LoadSkills();
+            }
+        }
+    }
 
     public void Save()
     {

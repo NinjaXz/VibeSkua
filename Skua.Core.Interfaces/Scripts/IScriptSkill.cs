@@ -1,4 +1,4 @@
-﻿using Skua.Core.Models.Skills;
+using Skua.Core.Models.Skills;
 
 namespace Skua.Core.Interfaces;
 
@@ -209,4 +209,20 @@ public interface IScriptSkill
     /// Sets the current skill provider to the base provider.
     /// </summary>
     void UseBaseProvider();
+
+    /// <summary>
+    /// Loads a skillset from a C# script file that implements ISkillProvider, compiling it at runtime.
+    /// </summary>
+    /// <param name="file">Path to the .cs file</param>
+    void LoadCompiled(string file);
+
+    /// <summary>
+    /// Loads a skillset from a C# script file that implements ISkillProvider, compiling it at runtime, and starts the skill thread.
+    /// </summary>
+    /// <param name="file">Path to the .cs file</param>
+    void StartCompiled(string file)
+    {
+        LoadCompiled(file);
+        Start();
+    }
 }

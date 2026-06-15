@@ -43,16 +43,7 @@ namespace Skua.App.WPF
                 Skua.Core.AppStartup.HotKeys.ExecuteHotkeyAction(actionId);
                 handled = true;
             }
-            else if (msg == WM_SKUA_START_SCRIPT)
-            {
-                Task.Run(() => Ioc.Default.GetRequiredService<IScriptManager>().StartScript());
-                handled = true;
-            }
-            else if (msg == WM_SKUA_STOP_SCRIPT)
-            {
-                Task.Run(() => Ioc.Default.GetRequiredService<IScriptManager>().StopScript());
-                handled = true;
-            }
+
             else if (msg == WM_SKUA_LOGIN)
             {
                 Task.Run(() => 
@@ -80,7 +71,7 @@ namespace Skua.App.WPF
                         {
                             string targetMap = System.IO.File.ReadAllText(tempFile);
                             if (!string.IsNullOrWhiteSpace(targetMap))
-                                Ioc.Default.GetRequiredService<IScriptMap>().Join(targetMap);
+                                Ioc.Default.GetRequiredService<IScriptMap>().Join(targetMap, "Enter", "Spawn", true);
                         }
                     } 
                     catch { }
@@ -101,6 +92,29 @@ namespace Skua.App.WPF
                     case 5: options.InfiniteRange = value; break;
                     case 6: options.Magnetise = value; break;
                     case 7: options.SkipCutscenes = value; break;
+                    case 8: options.UseFunctionBasedSkills = value; break;
+                    case 9: options.StreamerMode = value; break;
+                    case 99:
+                        var sm = Ioc.Default.GetRequiredService<ScriptLoaderViewModel>();
+                        if (value && !sm.ScriptManager.ScriptRunning && sm.ToggleScriptCommand.CanExecute(null))
+                            sm.ToggleScriptCommand.Execute(null);
+                        else if (!value && sm.ScriptManager.ScriptRunning && sm.ToggleScriptCommand.CanExecute(null))
+                            sm.ToggleScriptCommand.Execute(null);
+                        break;
+                }
+                handled = true;
+            }
+            else if (msg == 0x0400 + 452) // WM_SKUA_THROTTLE
+            {
+                bool throttle = wParam.ToInt32() == 1;
+                var bot = Ioc.Default.GetRequiredService<IScriptInterface>();
+                if (!bot.Options.HeadlessMode)
+                {
+                    try { bot.Flash?.SetGameObject("stage.frameRate", throttle ? 2 : 24); } catch { }
+                }
+                if (throttle)
+                {
+                    Skua.Core.Utils.MemoryUtils.TrimWorkingSet();
                 }
                 handled = true;
             }

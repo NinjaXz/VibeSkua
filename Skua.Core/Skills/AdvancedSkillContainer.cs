@@ -97,6 +97,14 @@ public class AdvancedSkillContainer : ObservableRecipient, IAdvancedSkillContain
         LoadedSkills.Clear();
         _jsonConfig = null;
 
+        IScriptOption? options = Ioc.Default.GetService<IScriptOption>();
+        if (options != null && options.UseFunctionBasedSkills)
+        {
+            OnPropertyChanged(nameof(LoadedSkills));
+            Broadcast(new(), _loadedSkills, nameof(LoadedSkills));
+            return;
+        }
+
         _loadedFilePath = _userSkillsSetsPath;
 
         if (File.Exists(_userSkillsSetsPath))

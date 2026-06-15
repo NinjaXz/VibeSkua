@@ -100,6 +100,7 @@ namespace Skua.App.WPF
         {
             public Process Process { get; set; }
             public IntPtr ChildHwnd { get; set; } = IntPtr.Zero;
+            public bool IsThrottled { get; set; } = false;
         }
 
         private string _initialArgs = "";
@@ -242,6 +243,7 @@ namespace Skua.App.WPF
         private const int WM_SKUA_LOGOUT = 0x0400 + 448;
         private const int WM_SKUA_JUMP_MAP = 0x0400 + 449;
         private const int WM_SKUA_SET_OPTION = 0x0400 + 450;
+        private const int WM_SKUA_THROTTLE = 0x0400 + 452;
 
         private void GridViewBorder_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
@@ -262,7 +264,6 @@ namespace Skua.App.WPF
             {
                 if (InstancesTabControl.SelectedItem != null && InstancesTabControl.SelectedItem != AddTabItem)
                     _lastSelectedTab = InstancesTabControl.SelectedItem as TabItem;
-                InstancesTabControl.SelectedItem = null;
             }
             else
             {
@@ -323,6 +324,8 @@ namespace Skua.App.WPF
                 case "HidePlayers": optionId = 3; val = options.HidePlayers; break;
                 case "DisableFX": optionId = 4; val = options.DisableFX; break;
                 case "InfiniteRange": optionId = 5; val = options.InfiniteRange; break;
+                case "UseFunctionBasedSkills": optionId = 8; val = options.UseFunctionBasedSkills; break;
+                case "StreamerMode": optionId = 9; val = options.StreamerMode; break;
             }
             
             if (optionId != -1)
@@ -333,18 +336,34 @@ namespace Skua.App.WPF
             }
         }
 
-        private void MenuItem_StartAllScripts_Click(object sender, RoutedEventArgs e)
+        private async void MenuItem_StartAllScripts_Click(object sender, RoutedEventArgs e)
         {
+            if (MenuStartScripts != null) MenuStartScripts.IsEnabled = false;
+            if (MenuStopScripts != null) MenuStopScripts.IsEnabled = false;
+            
             foreach (var info in _tabs.Values)
                 if (info.ChildHwnd != IntPtr.Zero)
-                    PostMessage(info.ChildHwnd, WM_SKUA_START_SCRIPT, IntPtr.Zero, IntPtr.Zero);
+                    PostMessage(info.ChildHwnd, WM_SKUA_SET_OPTION, new IntPtr(99), new IntPtr(1));
+            
+            await Task.Delay(2000);
+            
+            if (MenuStartScripts != null) MenuStartScripts.IsEnabled = true;
+            if (MenuStopScripts != null) MenuStopScripts.IsEnabled = true;
         }
 
-        private void MenuItem_StopAllScripts_Click(object sender, RoutedEventArgs e)
+        private async void MenuItem_StopAllScripts_Click(object sender, RoutedEventArgs e)
         {
+            if (MenuStartScripts != null) MenuStartScripts.IsEnabled = false;
+            if (MenuStopScripts != null) MenuStopScripts.IsEnabled = false;
+            
             foreach (var info in _tabs.Values)
                 if (info.ChildHwnd != IntPtr.Zero)
-                    PostMessage(info.ChildHwnd, WM_SKUA_STOP_SCRIPT, IntPtr.Zero, IntPtr.Zero);
+                    PostMessage(info.ChildHwnd, WM_SKUA_SET_OPTION, new IntPtr(99), new IntPtr(0));
+            
+            await Task.Delay(4000); // 4 second wait to ensure graceful stop
+            
+            if (MenuStartScripts != null) MenuStartScripts.IsEnabled = true;
+            if (MenuStopScripts != null) MenuStopScripts.IsEnabled = true;
         }
 
         private void MenuItem_LoginAll_Click(object sender, RoutedEventArgs e)
@@ -493,6 +512,11 @@ namespace Skua.App.WPF
                     int r = i / cols;
                     int c = i % cols;
                     SetWindowPos(activeWindows[i].ChildHwnd, HWND_TOP, x + c * cellW, y + r * cellH, cellW, cellH, baseFlags);
+                    if (activeWindows[i].IsThrottled)
+                    {
+                        activeWindows[i].IsThrottled = false;
+                        PostMessage(activeWindows[i].ChildHwnd, WM_SKUA_THROTTLE, new IntPtr(0), IntPtr.Zero);
+                    }
                 }
             }
             else
@@ -508,6 +532,11 @@ namespace Skua.App.WPF
                 if (activeChildHwnd != IntPtr.Zero)
                 {
                     SetWindowPos(activeChildHwnd, HWND_TOP, x, y, w, h, baseFlags);
+                    if (activeInfo != null && activeInfo.IsThrottled)
+                    {
+                        activeInfo.IsThrottled = false;
+                        PostMessage(activeChildHwnd, WM_SKUA_THROTTLE, new IntPtr(0), IntPtr.Zero);
+                    }
                 }
 
                 foreach (var kvp in _tabs)
@@ -517,15 +546,21 @@ namespace Skua.App.WPF
                     TabInfo info = kvp.Value;
                     if (info.ChildHwnd == IntPtr.Zero) continue;
 
+                    if (!info.IsThrottled)
+                    {
+                        info.IsThrottled = true;
+                        PostMessage(info.ChildHwnd, WM_SKUA_THROTTLE, new IntPtr(1), IntPtr.Zero);
+                    }
+
                     if (activeChildHwnd != IntPtr.Zero)
                     {
-                        // Stack inactive tabs behind the active one so they stay physically on-screen
-                        SetWindowPos(info.ChildHwnd, activeChildHwnd, x, y, w, h, baseFlags);
+                        // Stack inactive tabs behind the active one and shrink to 1x1 to save GPU
+                        SetWindowPos(info.ChildHwnd, activeChildHwnd, x, y, 1, 1, baseFlags);
                     }
                     else
                     {
                         // Fallback
-                        SetWindowPos(info.ChildHwnd, HWND_TOP, -32000, -32000, w, h, baseFlags);
+                        SetWindowPos(info.ChildHwnd, HWND_TOP, -32000, -32000, 1, 1, baseFlags);
                     }
                 }
             }
@@ -881,6 +916,20 @@ namespace Skua.App.WPF
             {
                 startPoint = ev.GetPosition(null);
                 InstancesTabControl.SelectedItem = newTab;
+                
+                if (_isGridViewEnabled)
+                {
+                    _isGridViewEnabled = false;
+                    UpdateGridViewBorderColor();
+                    foreach (var info in _tabs.Values)
+                    {
+                        if (info.ChildHwnd != IntPtr.Zero)
+                        {
+                            PostMessage(info.ChildHwnd, WM_SKUA_GRIDVIEW, IntPtr.Zero, IntPtr.Zero);
+                        }
+                    }
+                    DoReposition();
+                }
             };
             headerPanel.MouseLeftButtonDown += (s, ev) => 
             {

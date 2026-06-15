@@ -98,11 +98,26 @@ public sealed partial class App : Application
         SkuaStartupHandler startup = new(args, _bot, Services.GetRequiredService<ISettingsService>(), Services.GetRequiredService<IThemeService>());
         startup.Execute();
 
-        Task.Run(async () => 
+        bool isEmbedded = args.Contains("--embed");
+
+        if (!isEmbedded)
         {
-            await Task.Delay(1500);
-            RoslynLifetimeManager.WarmupRoslyn();
-        });
+            Task.Run(async () => 
+            {
+                await Task.Delay(1500);
+                RoslynLifetimeManager.WarmupRoslyn();
+            });
+        }
+
+        System.Timers.Timer globalGcTimer = new(TimeSpan.FromMinutes(1).TotalMilliseconds);
+        globalGcTimer.Elapsed += (s, e) => 
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+            try { Skua.Core.Utils.MemoryUtils.TrimWorkingSet(); } catch { }
+        };
+        globalGcTimer.Start();
         Timeline.DesiredFrameRateProperty.OverrideMetadata(typeof(Timeline), new FrameworkPropertyMetadata { DefaultValue = Services.GetRequiredService<ISettingsService>().Get<int>("AnimationFrameRate") });
 
         Application.Current.Exit += App_Exit;

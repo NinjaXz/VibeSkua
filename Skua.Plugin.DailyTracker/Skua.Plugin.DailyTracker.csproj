@@ -18,6 +18,8 @@
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <MakeDir Directories="$(AppData)\Skua\plugins" />
     <Copy SourceFiles="$(TargetDir)Skua.Plugin.DailyTracker.dll" DestinationFolder="$(AppData)\Skua\plugins" />
+    <MakeDir Directories="..\Build\AnyCPU\plugins" Condition="'$(Configuration)' == 'Release'" />
+    <Copy SourceFiles="$(TargetDir)Skua.Plugin.DailyTracker.dll" DestinationFolder="..\Build\AnyCPU\plugins" Condition="'$(Configuration)' == 'Release'" />
   </Target>
 
 </Project>

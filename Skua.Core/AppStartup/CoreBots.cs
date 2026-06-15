@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Skua.Core.Interfaces;
 using Skua.Core.ViewModels;
 
@@ -26,6 +26,7 @@ internal class CoreBots
             new DisplayOptionItemViewModel<bool>("Public on Difficult Parts", "PublicDifficult"),
             new DisplayOptionItemViewModel<bool>("Bank Misc. AC items on Start-Up", "BankMiscAC", true),
             new DisplayOptionItemViewModel<bool>("Logger in Chat", "LoggerInChat", true),
+            new DisplayOptionItemViewModel<bool>("Use Function-Based Skills", "UseFunctionBasedSkills", false),
 
             new DisplayOptionItemViewModel<bool>("Force Off MessageBoxes", "MessageBoxCheck"),
             new DisplayOptionItemViewModel<bool>("Should Rest", "RestCheck"),

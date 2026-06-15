@@ -149,6 +149,8 @@ public class FlashUtil : IFlashUtil
         }
     }
 
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, (DateTime time, string value)> _callCache = new();
+
     public object Call(string function, Type type, params object[] args)
     {
         if (_lazyManager.Value.ShouldExit && Thread.CurrentThread.Name == "Script Thread")
@@ -163,7 +165,24 @@ public class FlashUtil : IFlashUtil
                 req.Append("</arguments>");
             }
             req.Append("</invoke>");
-            string result = Flash?.CallFunction(req.ToString())!;
+            
+            string reqString = req.ToString();
+            string result;
+
+            bool canCache = function == "getGameObject" || function == "getGameObjectS";
+            if (canCache && _callCache.TryGetValue(reqString, out var cached) && (DateTime.Now - cached.time).TotalMilliseconds < 15)
+            {
+                result = cached.value;
+            }
+            else
+            {
+                result = Flash?.CallFunction(reqString)!;
+                if (canCache)
+                {
+                    _callCache[reqString] = (DateTime.Now, result);
+                }
+            }
+
             XElement el = XElement.Parse(result);
             return el is null || el.FirstNode is null ? default : Convert.ChangeType(el.FirstNode.ToString(), type);
         }

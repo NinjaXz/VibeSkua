@@ -1,4 +1,4 @@
-﻿using Skua.Core.Interfaces;
+using Skua.Core.Interfaces;
 
 namespace Skua.Core.Skills;
 
@@ -42,6 +42,14 @@ public class AdvancedSkillCommand
             return true;
 
         bool shouldUse = true;
+        
+        // BULK FETCHING: Fetch all combat stats at once to avoid multiple COM calls
+        dynamic? dataLeaf = null;
+        if (_flash != null && UseRules[skillIndex].Any(r => r.Rule == SkillRule.Health || r.Rule == SkillRule.Mana))
+        {
+            try { dataLeaf = _flash.GetGameObject<dynamic>("world.myAvatar.dataLeaf"); } catch { }
+        }
+
         foreach (UseRule useRule in UseRules[skillIndex])
         {
             if (!player.Alive)
@@ -50,11 +58,11 @@ public class AdvancedSkillCommand
             switch (useRule.Rule)
             {
                 case SkillRule.Health:
-                    shouldUse = HealthUseRule(player, useRule.Greater, (int)useRule.Value, useRule.IsPercentage);
+                    shouldUse = HealthUseRule(player, dataLeaf, useRule.Greater, (int)useRule.Value, useRule.IsPercentage);
                     break;
 
                 case SkillRule.Mana:
-                    shouldUse = ManaUseRule(player, useRule.Greater, (int)useRule.Value, useRule.IsPercentage);
+                    shouldUse = ManaUseRule(player, dataLeaf, useRule.Greater, (int)useRule.Value, useRule.IsPercentage);
                     break;
 
                 case SkillRule.Aura:
@@ -97,36 +105,42 @@ public class AdvancedSkillCommand
         return shouldUse;
     }
 
-    private bool HealthUseRule(IScriptPlayer player, bool greater, int health, bool isPercentage = true)
+    private bool HealthUseRule(IScriptPlayer player, dynamic? dataLeaf, bool greater, int health, bool isPercentage = true)
     {
-        if (player.Health == 0)
+        int currentHp = dataLeaf != null ? (int)dataLeaf.intHP : player.Health;
+        int maxHp = dataLeaf != null ? (int)dataLeaf.intHPMax : player.MaxHealth;
+
+        if (currentHp == 0)
             return false;
 
         if (isPercentage)
         {
-            if (player.MaxHealth == 0)
+            if (maxHp == 0)
                 return false;
-            int ratio = (int)(player.Health / (double)player.MaxHealth * 100.0);
+            int ratio = (int)(currentHp / (double)maxHp * 100.0);
             return greater ? ratio >= health : ratio <= health;
         }
         else
         {
-            return greater ? player.Health >= health : player.Health <= health;
+            return greater ? currentHp >= health : currentHp <= health;
         }
     }
 
-    private bool ManaUseRule(IScriptPlayer player, bool greater, int mana, bool isPercentage = true)
+    private bool ManaUseRule(IScriptPlayer player, dynamic? dataLeaf, bool greater, int mana, bool isPercentage = true)
     {
+        int currentMp = dataLeaf != null ? (int)dataLeaf.intMP : player.Mana;
+        int maxMp = dataLeaf != null ? (int)dataLeaf.intMPMax : player.MaxMana;
+
         if (isPercentage)
         {
-            if (player.MaxMana == 0)
+            if (maxMp == 0)
                 return false;
-            int ratio = (int)(player.Mana / (double)player.MaxMana * 100.0);
+            int ratio = (int)(currentMp / (double)maxMp * 100.0);
             return greater ? ratio >= mana : ratio <= mana;
         }
         else
         {
-            return greater ? player.Mana >= mana : player.Mana <= mana;
+            return greater ? currentMp >= mana : currentMp <= mana;
         }
     }
 
