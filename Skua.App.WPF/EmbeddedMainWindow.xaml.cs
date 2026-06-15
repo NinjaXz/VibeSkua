@@ -101,6 +101,7 @@ namespace Skua.App.WPF
                         else if (!value && sm.ScriptManager.ScriptRunning && sm.ToggleScriptCommand.CanExecute(null))
                             sm.ToggleScriptCommand.Execute(null);
                         break;
+<<<<<<< HEAD
                 }
                 handled = true;
             }
@@ -115,6 +116,8 @@ namespace Skua.App.WPF
                 if (throttle)
                 {
                     Skua.Core.Utils.MemoryUtils.TrimWorkingSet();
+=======
+>>>>>>> b3f7e6d407dd02159b8b36748edbf7a7b9467799
                 }
                 handled = true;
             }
