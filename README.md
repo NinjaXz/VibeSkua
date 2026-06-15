@@ -14,7 +14,7 @@ The following overview compares the systems and core features between the origin
 | **Headless Mode** | Full-screen rendering; high CPU/GPU demand per instance. | Introduced a 1x1 hidden pixel viewport, forcing Flash to bypass geometry/blitting and significantly reducing resource consumption. |
 | **Script Scheduling** | Required manual initialization and supervision with static script options. | Added autonomous script queuing, supporting independent option profiles and custom display names per instance. |
 | **Account Tabs** | Required running individual instances which clutters the screen. | Embedded `EmbeddedMainWindow.xaml` with dynamic SWF patching for a unified, tabbed WPF interface. |
-| **Script Sorting** | Basic navigation options. | Expanded `ScriptRepoViewModel.cs` to support dynamic sorting by Name, Date, or bot category (Ascending/Descending). |
+| **Script Sorting** | Basic navigation options. | Expanded `ScriptRepoViewModel.cs` to support dynamic sorting by Name, Date, or script category (Ascending/Descending). |
 | **Pause Functionality** | Could only fully Stop scripts, entirely losing current progression. | Built a native `Pause` feature that safely freezes the execution thread in place, letting you interact with menus and seamlessly resume later. |
 | **Smart Grid View** | Required managing dozens of overlapping individual windows. | Consolidates all active accounts into a clean, clutter-free grid inside a single window to monitor a full army at once. |
 | **Instance Dashboard** | Lacked a native farming statistics dashboard. | Pinned a native Side Dashboard directly to the game frame to track Kills, Drops, and Quests at a glance. |
