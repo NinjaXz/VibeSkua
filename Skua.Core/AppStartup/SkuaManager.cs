@@ -15,6 +15,7 @@ internal class SkuaManager
         {
             new("Accounts", s.GetRequiredService<AccountManagerViewModel>()),
             new("Launcher", s.GetRequiredService<LauncherViewModel>()),
+            new("Updater", s.GetRequiredService<AppUpdaterViewModel>()),
             new("Options", s.GetRequiredService<ManagerOptionsViewModel>()),
             new("Themes", s.GetRequiredService<ApplicationThemesViewModel>()),
             new("About", s.GetRequiredService<AboutViewModel>()),

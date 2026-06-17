@@ -37,10 +37,14 @@ public class HotKeyService : IHotKeyService, IDisposable
             return;
 
         StringCollection? hotkeys = _settingsService.Get<StringCollection>("HotKeys");
+        bool isFirstRun = hotkeys == null;
         hotkeys ??= new StringCollection();
 
-        EnsureAllBindingsExist(hotkeys);
-        _settingsService.Set("HotKeys", hotkeys);
+        if (isFirstRun)
+        {
+            EnsureAllBindingsExist(hotkeys);
+            _settingsService.Set("HotKeys", hotkeys);
+        }
 
         foreach (string? hk in hotkeys)
         {
@@ -50,10 +54,14 @@ public class HotKeyService : IHotKeyService, IDisposable
             string[] split = hk.Split('|');
             if (_hotKeys.ContainsKey(split[0]))
             {
-                if (split.Length < 2 || string.IsNullOrWhiteSpace(split[1]))
+                string gesture = split[1].Trim();
+                if (split.Length < 2 || string.IsNullOrWhiteSpace(gesture) || 
+                    gesture.Equals("Unassigned", StringComparison.OrdinalIgnoreCase) || 
+                    gesture.Equals("Failed to bind", StringComparison.OrdinalIgnoreCase) || 
+                    gesture.Equals("Failed to bind.", StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                KeyBinding? kb = ParseToKeyBinding(split[1]);
+                KeyBinding? kb = ParseToKeyBinding(gesture);
                 if (kb is null)
                 {
                     StrongReferenceMessenger.Default.Send<HotKeyErrorMessage>(new(split[0]));
@@ -81,10 +89,15 @@ public class HotKeyService : IHotKeyService, IDisposable
     public List<T> GetHotKeys<T>()
         where T : IHotKey, new()
     {
-        StringCollection hotkeys = _settingsService.Get<StringCollection>("HotKeys") ?? new StringCollection();
+        StringCollection? hotkeys = _settingsService.Get<StringCollection>("HotKeys");
+        bool isFirstRun = hotkeys == null;
+        hotkeys ??= new StringCollection();
 
-        EnsureAllBindingsExist(hotkeys);
-        _settingsService.Set("HotKeys", hotkeys);
+        if (isFirstRun)
+        {
+            EnsureAllBindingsExist(hotkeys);
+            _settingsService.Set("HotKeys", hotkeys);
+        }
 
         List<T> parsed = new();
         foreach (string hk in hotkeys)
@@ -93,7 +106,12 @@ public class HotKeyService : IHotKeyService, IDisposable
                 continue;
             string[] split = hk.Split('|');
             string gesture = split.Length > 1 ? split[1] : string.Empty;
-            parsed.Add(new() { Binding = split[0], Title = _decamelizer.Decamelize(split[0], null), KeyGesture = gesture });
+            parsed.Add(new() { 
+                Binding = split[0], 
+                Title = Skua.Core.AppStartup.HotKeys.GetFormattedTitle(split[0]), 
+                Description = Skua.Core.AppStartup.HotKeys.GetDescription(split[0]),
+                KeyGesture = gesture 
+            });
         }
         return parsed;
     }
@@ -143,6 +161,10 @@ public class HotKeyService : IHotKeyService, IDisposable
             {
                 return null;
             }
+            catch (ArgumentException)
+            {
+                return null;
+            }
 
             if (convertedKey is not Key parsedKey)
                 return null;
@@ -152,6 +174,11 @@ public class HotKeyService : IHotKeyService, IDisposable
 
         return kb.Key == Key.None ? null : kb;
     }
+
+    private static readonly string[] DefaultHotKeys = new[] 
+    { 
+        "ToggleScript", "LoadScript", "OpenBank", "OpenConsole", "ToggleAutoAttack", "ToggleAutoHunt", "ToggleLagKiller" 
+    };
 
     private void EnsureAllBindingsExist(StringCollection hotkeys)
     {
@@ -168,7 +195,7 @@ public class HotKeyService : IHotKeyService, IDisposable
                 usedGestures.Add(split[1]);
         }
 
-        foreach (string key in _hotKeys.Keys)
+        foreach (string key in DefaultHotKeys)
         {
             if (existing.Contains(key))
                 continue;

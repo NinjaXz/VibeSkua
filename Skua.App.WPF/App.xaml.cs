@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Animation;
 using Westwind.Scripting;
+using Velopack;
 
 namespace Skua.App.WPF;
 
@@ -63,6 +64,27 @@ public sealed partial class App : Application
 
     public App()
     {
+        VelopackApp.Build().Run();
+        
+        try 
+        {
+            Type t = Type.GetTypeFromProgID("WScript.Shell");
+            if (t != null)
+            {
+                dynamic shell = Activator.CreateInstance(t);
+                string desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                string shortcutPath = Path.Combine(desktop, "VibeSkua Manager.lnk");
+                
+                if (!File.Exists(shortcutPath))
+                {
+                    var shortcut = shell.CreateShortcut(shortcutPath);
+                    shortcut.TargetPath = Path.Combine(AppContext.BaseDirectory, "Skua.Manager.exe");
+                    shortcut.WorkingDirectory = AppContext.BaseDirectory;
+                    shortcut.Save();
+                }
+            }
+        }
+        catch { }
         try
         {
             System.Diagnostics.Process.GetCurrentProcess().PriorityClass = System.Diagnostics.ProcessPriorityClass.AboveNormal;

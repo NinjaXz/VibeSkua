@@ -1,0 +1,42 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release Version (e.g. 1.0.1)'
+        required: true
+        default: '1.0.0'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Build Solution
+      run: dotnet build Skua.sln -c Release -p:WarningLevel=0 --nologo
+
+    - name: Install Velopack CLI
+      run: dotnet tool install -g vpk
+
+    - name: Package with Velopack
+      run: |
+        vpk pack -u VibeSkua -v ${{ github.event.inputs.version }} -p Build/AnyCPU -e Skua.exe -o Releases
+        Remove-Item Releases/*Portable.zip -Force -ErrorAction SilentlyContinue
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        name: VibeSkua ${{ github.event.inputs.version }}
+        tag_name: v${{ github.event.inputs.version }}
+        files: Releases/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -2,12 +2,20 @@
 echo Building VibeSkua Release (this will take a moment)...
 
 if exist "Build" rmdir /s /q "Build"
+if exist "Releases" rmdir /s /q "Releases"
 
 dotnet build Skua.sln -c Release -p:WarningLevel=0 --nologo
 
 echo =========================================
-echo Build Complete!
-echo You can find your build inside
-echo the newly created /Build folder!
+echo Packaging Velopack Release...
 echo =========================================
-pause
+
+dotnet tool update -g vpk
+vpk pack -u VibeSkua -v 1.7.0 -p Build\AnyCPU -e Skua.exe -o Releases
+del /Q Releases\*Portable.zip
+
+echo =========================================
+echo Build and Packaging Complete!
+echo You can find your final installer (Setup.exe)
+echo and update files in the /Releases folder!
+echo =========================================

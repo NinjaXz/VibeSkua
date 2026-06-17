@@ -51,7 +51,7 @@
             IconSource="SkuaIcon.ico"
             MenuActivation="LeftOrRightClick"
             PopupActivation="DoubleClick"
-            ToolTipText="Skua Manager"
+            ToolTipText="VibeSkua Manager"
             Visibility="Visible">
             <tb:TaskbarIcon.ContextMenu>
                 <ContextMenu>

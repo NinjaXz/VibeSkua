@@ -261,6 +261,9 @@ public class ClientSettings
     [JsonPropertyName("UpgradeRequired")]
     public bool UpgradeRequired { get; set; } = true;
 
+    [JsonPropertyName("HotKeysInitialized")]
+    public bool HotKeysInitialized { get; set; } = false;
+
     [JsonExtensionData]
     public Dictionary<string, object>? ExtensionData { get; set; }
 
@@ -288,18 +291,22 @@ public class ClientSettings
             };
         }
 
-        if (HotKeys == null || HotKeys.Count == 0)
+        if (!HotKeysInitialized)
         {
-            HotKeys = new()
+            if (HotKeys == null || HotKeys.Count == 0)
             {
-                "ToggleScript|F10",
-                "LoadScript|F9",
-                "OpenBank|F2",
-                "OpenConsole|F3",
-                "ToggleAutoAttack|F4",
-                "ToggleAutoHunt|F5",
-                "ToggleLagKiller|F6"
-            };
+                HotKeys = new()
+                {
+                    "ToggleScript|F10",
+                    "LoadScript|F9",
+                    "OpenBank|F2",
+                    "OpenConsole|F3",
+                    "ToggleAutoAttack|F4",
+                    "ToggleAutoHunt|F5",
+                    "ToggleLagKiller|F6"
+                };
+            }
+            HotKeysInitialized = true;
         }
     }
 }

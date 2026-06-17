@@ -1,5 +1,7 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Skua.Core.Models;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Skua.Core.ViewModels;
 
@@ -19,6 +21,8 @@ public partial class AssignHotKeyDialogViewModel : DialogViewModelBase
     {
         _keyInput = string.Empty;
     }
+
+    public IEnumerable<string> UsedGestures { get; set; } = Enumerable.Empty<string>();
 
     [ObservableProperty]
     private bool _ctrlCheck;

@@ -5,6 +5,8 @@ using System.Net;
 using System.Reflection;
 using System.Windows;
 
+using Velopack;
+
 namespace Skua.Manager;
 
 public class Program
@@ -12,6 +14,7 @@ public class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        VelopackApp.Build().Run();
         ServicePointManager.SecurityProtocol = SecurityProtocolType.SystemDefault;
 
         AppDomain currentDomain = AppDomain.CurrentDomain;

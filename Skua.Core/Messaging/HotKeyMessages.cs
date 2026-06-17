@@ -1,4 +1,5 @@
-﻿namespace Skua.Core.Messaging;
+namespace Skua.Core.Messaging;
 
 public record EditHotKeyMessage(string Title, string KeyGesture);
 public record HotKeyErrorMessage(string Binding);
+public record RemoveHotKeyMessage(string Binding);

@@ -1,6 +1,6 @@
 # Skua Build Guide
 
-This document provides instructions for building the Skua project from source, including automated build scripts for x64, x86, and WiX installer creation.
+This document provides instructions for building the Skua project from source, including automated build scripts for x64 and x86.
 
 ## Table of Contents
 - [Prerequisites](#prerequisites)
@@ -19,17 +19,11 @@ This document provides instructions for building the Skua project from source, i
    - Verify installation: `dotnet --version`
    - Project targets: `net10.0-windows` for applications and libraries
 
-2. **Visual Studio 2026** (for MSBuild and WiX support)
+2. **Visual Studio 2026** (for MSBuild support)
    - Workloads required:
      - .NET desktop development
      - Desktop development with C++
    - Or install Build Tools for Visual Studio separately
-
-3. **WiX CLI v6.0+** (for installer)
-   - Install using: [WiX Toolset v6.0.2](https://github.com/wixtoolset/wix/releases/tag/v6.0.2)
-      - Install both: `wix-cli-x64.msi` and `WixAdditionalTools.exe`
-   - The Visual Studio extension: [HeatWave](https://marketplace.visualstudio.com/items?itemName=FireGiant.FireGiantHeatWaveDev17)
-   - [WiX Documentation](https://wixtoolset.org/docs/tools/)
 
 4. **PowerShell 7 or later**
    - For PowerShell: [PowerShell Github](https://github.com/PowerShell/PowerShell/releases)
@@ -57,7 +51,6 @@ This document provides instructions for building the Skua project from source, i
 
 2. Right-click `Build-Skua.ps1` and select "Run with PowerShell"
    - This builds the Release configuration for both `x64` and `x86`
-   - Includes WiX installer creation
    - Output is placed in the `build` folder
    - **The window stays open after completion**, showing build results
 
@@ -70,7 +63,7 @@ The main build automation script with full control over the build process.
 #### Basic Usage
 
 ```powershell
-# Build everything (x64, x86, installer)
+# Build everything (x64, x86)
 .\Build-Skua.ps1
 
 # Build specific configuration
@@ -80,8 +73,7 @@ The main build automation script with full control over the build process.
 .\Build-Skua.ps1 -Platforms "x64"
 .\Build-Skua.ps1 -Platforms "x86"
 
-# Skip installer
-.\Build-Skua.ps1 -SkipInstaller
+
 
 # Skip cleaning
 .\Build-Skua.ps1 -SkipClean
@@ -113,9 +105,6 @@ build/
 │   └── x86/
 │       ├── Skua.App.WPF/
 │       └── Skua.Manager/
-└── Installers/
-    ├── Skua_Release_x64_Skua.Installer.msi
-    └── Skua_Release_x86_Skua.Installer.msi
 ```
 
 ### Running the Build Script
@@ -155,23 +144,6 @@ dotnet build --configuration Release -p:Platform=x86
 dotnet build Skua.App.WPF\Skua.App.WPF.csproj --configuration Release
 ```
 
-### Building the Installer
-
-Requires WiX CLI and MSBuild:
-
-```powershell
-# First install WiX CLI if not already installed
-dotnet tool install --global wix
-
-# Using MSBuild directly
-msbuild Skua.Installer\Skua.Installer.wixproj /p:Configuration=Release /p:Platform=x64
-
-# Or find MSBuild path first
-"C:\Program Files\Microsoft Visual Studio\18\{EDITION}\MSBuild\Current\Bin\MSBuild.exe" ^
-  Skua.Installer\Skua.Installer.wixproj ^
-  /p:Configuration=Release ^
-  /p:Platform=x64
-```
 
 ## CI/CD
 
@@ -190,12 +162,6 @@ Test the build process locally before pushing:
 ## Troubleshooting
 
 ### Common Issues
-
-#### WiX CLI Not Found
-
-- **Error**: "WiX CLI v6+ not found"
-- **Solution**: Install WiX CLI using: `dotnet tool install --global wix` or [get it here](https://github.com/wixtoolset/wix/releases/tag/v6.0.2)
-- **Verify**: Run `wix --version` to confirm installation
 
 #### MSBuild Not Found
 
@@ -259,9 +225,6 @@ Get-ChildItem -Path build -Recurse -Include *.exe, *.dll, *.msi
 
 # Test the application
 .\build\Release\x64\Skua.App.WPF\Skua.exe
-
-# Verify installer
-msiexec /i "build\Installers\Skua_Release_x64_Skua.Installer.msi" /quiet
 ```
 
 ## Advanced Configuration
@@ -288,9 +251,8 @@ When contributing build system changes:
 
 1. Test all platforms (x64, x86)
 2. Test both Debug and Release configurations
-3. Verify the installer builds correctly
-4. Update this documentation if needed
-5. Test GitHub Actions workflow locally if possible
+3. Update this documentation if needed
+4. Test GitHub Actions workflow locally if possible
 
 ## Support
 

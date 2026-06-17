@@ -16,6 +16,15 @@ namespace Skua.App.WPF
         private const int WM_SKUA_LOGOUT = 0x0400 + 448;
         private const int WM_SKUA_JUMP_MAP = 0x0400 + 449;
         private const int WM_SKUA_SET_OPTION = 0x0400 + 450;
+        private const int WM_COPYDATA = 0x004A;
+
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        public struct COPYDATASTRUCT
+        {
+            public IntPtr dwData;
+            public int cbData;
+            public IntPtr lpData;
+        }
 
         public EmbeddedMainWindow()
         {
@@ -37,11 +46,16 @@ namespace Skua.App.WPF
                 GameContainerCtrl.SetGridView(isGrid);
                 handled = true;
             }
-            else if (msg == Skua.Core.AppStartup.HotKeys.WM_SKUA_HOTKEY)
+            else if (msg == WM_COPYDATA)
             {
-                int actionId = wParam.ToInt32();
-                Skua.Core.AppStartup.HotKeys.ExecuteHotkeyAction(actionId);
-                handled = true;
+                COPYDATASTRUCT cds = (COPYDATASTRUCT)System.Runtime.InteropServices.Marshal.PtrToStructure(lParam, typeof(COPYDATASTRUCT));
+                if (cds.dwData == (IntPtr)0x484B)
+                {
+                    string commandName = System.Runtime.InteropServices.Marshal.PtrToStringUni(cds.lpData);
+                    if (!string.IsNullOrEmpty(commandName))
+                        Skua.Core.AppStartup.HotKeys.ExecuteHotkeyAction(commandName);
+                    handled = true;
+                }
             }
 
             else if (msg == WM_SKUA_LOGIN)

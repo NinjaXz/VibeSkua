@@ -1,4 +1,4 @@
-﻿using Skua.Core.ViewModels;
+using Skua.Core.ViewModels;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -47,6 +47,12 @@ public partial class AssignHotKeyDialog : UserControl
         if (IsModifierKeyInput(_vm.KeyInput))
         {
             _vm.InputHint = ModifierOnlyHintText;
+            return;
+        }
+
+        if (System.Linq.Enumerable.Contains(_vm.UsedGestures, _vm.KeyGesture, StringComparer.OrdinalIgnoreCase))
+        {
+            _vm.InputHint = "This hotkey is already assigned to another action.";
             return;
         }
 
