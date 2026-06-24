@@ -59,6 +59,10 @@
     <DataTemplate DataType="{x:Type vms:ScriptRepoViewModel}">
         <views:ScriptRepoView />
     </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vms:LoadoutsViewModel}">
+        <views:LoadoutsView />
+    </DataTemplate>
     <DataTemplate DataType="{x:Type vms:ScriptLoaderViewModel}">
         <views:ScriptLoaderView />
     </DataTemplate>

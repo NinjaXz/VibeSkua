@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Headers;
 
 namespace Skua.Core.Utils;
@@ -8,13 +8,9 @@ namespace Skua.Core.Utils;
 /// </summary>
 public class WebClient : HttpClient
 {
-    //private readonly string _authString1 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("726820423be5c752df62:63b2a5b1a55fbeade88deab3b6c8914808bad7a6"));
-    private readonly string _authString2 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("449f889db3d655d2ef4a:27863d426bc5bb46c410daf7ed6b479ba4a9f7eb"));
-
     /// <param name="accJson"></param>
     public WebClient(bool accJson) : base(CreateHttpClientHandler())
     {
-        DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", _authString2);
         if (accJson)
             DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         DefaultRequestHeaders.UserAgent.ParseAdd("Skua");

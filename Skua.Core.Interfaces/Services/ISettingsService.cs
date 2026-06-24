@@ -19,4 +19,6 @@ public interface ISettingsService
     ManagerSettings GetManager();
 
     void SetApplicationVersion();
+
+    void ReloadSettings();
 }

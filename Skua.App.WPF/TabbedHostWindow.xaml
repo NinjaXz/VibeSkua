@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:wpf="clr-namespace:Skua.WPF;assembly=Skua.WPF"
-        Title="VibeSkua V1.7.1" Height="700" Width="1100"
+        Title="VibeSkua V1.8.0" Height="700" Width="1100"
         Style="{StaticResource CustomWindow}" WindowStartupLocation="CenterScreen" Background="#FF1E1E1E">
     <Grid>
         <Grid.RowDefinitions>
@@ -128,13 +128,15 @@
                     <ContextMenu>
                         <MenuItem x:Name="MenuStartScripts" Header="Start All Scripts" Click="MenuItem_StartAllScripts_Click" />
                         <MenuItem x:Name="MenuStopScripts" Header="Stop All Scripts" Click="MenuItem_StopAllScripts_Click" />
+                        <MenuItem x:Name="MenuLoadScripts" Header="Load Script to All" Click="MenuItem_LoadScriptAll_Click" />
+                        <MenuItem Header="Army Scheduler" Click="MenuItem_ArmyScheduler_Click" />
                         <Separator />
                         <MenuItem Header="Login All Clients" Click="MenuItem_LoginAll_Click" />
                         <MenuItem Header="Logout All Clients" Click="MenuItem_LogoutAll_Click" />
                         <Separator />
                         <MenuItem Header="Jump All to Map..." Click="MenuItem_JumpMap_Click" />
                         <Separator />
-                        <MenuItem x:Name="MiscOptionsMenu" Header="Misc Options">
+                        <MenuItem x:Name="MiscOptionsMenu" Header="Misc Options" StaysOpenOnClick="True">
                             <MenuItem Header="Lag Killer" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding LagKiller, Mode=TwoWay}" />
                             <MenuItem Header="Headless Mode" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding HeadlessMode, Mode=TwoWay}" />
                             <MenuItem Header="Hide Players" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding HidePlayers, Mode=TwoWay}" />

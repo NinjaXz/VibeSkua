@@ -13,6 +13,8 @@ namespace Skua.Core.Scripts;
 
 public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionDictionary
 {
+    public bool IsIpcMessageProcessing { get; set; }
+
     private ScriptOption(Lazy<IFlashUtil> flash)
     {
         _lazyFlash = flash;
@@ -24,10 +26,12 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
     {
         _lazyFlash = flash;
         _settingsService = settingsService;
+        _isInitializing = true;
         GetOptions();
         OptionDictionary = GenerateDictionary().ToImmutableDictionary();
         StrongReferenceMessenger.Default.Register<ScriptOption, ScriptStoppedMessage, int>(this, (int)MessageChannels.ScriptStatus, ScriptStopped);
         StrongReferenceMessenger.Default.Register<ScriptOption, MapChangedMessage, int>(this, (int)MessageChannels.GameEvents, MapChanged);
+        _isInitializing = false;
     }
 
     private void ScriptStopped(ScriptOption recipient, ScriptStoppedMessage message)
@@ -64,6 +68,7 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
     private readonly Lazy<IFlashUtil> _lazyFlash;
     private readonly ISettingsService _settingsService;
     private Dictionary<string, string>? _userOptions;
+    private bool _isInitializing;
 
     private IFlashUtil Flash => _lazyFlash.Value;
 
@@ -193,6 +198,8 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
             if (SetProperty(ref _streamerMode, value, true))
             {
                 ApplyStreamerMode(value);
+                if (!_isInitializing)
+                    Save();
             }
         }
     }
@@ -201,7 +208,6 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
     private string _originalGuild = string.Empty;
     private bool _originalHidePlayers = false;
     private System.Threading.CancellationTokenSource? _streamerModeCts;
-
     private void ApplyStreamerMode(bool enabled)
     {
         if (enabled)
@@ -226,35 +232,31 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
                         var flash = _lazyFlash.Value;
                         if (flash == null) return;
                         
-                        // Force avatar floating name and portrait UI
-                        flash.Call("setGameObject", "world.myAvatar.objData.strUsername", "VibeSkuaUser");
+                        // We must interact with the COM object carefully. The Flash client natively handles calls 
+                        // but setting data fields aggressively breaks the game. 
+                        
+                        // Override visuals only, NEVER overwrite objData as it breaks shops/inventory
                         flash.Call("setGameObject", "world.myAvatar.pMC.pname.ti.text", "VibeSkuaUser");
                         flash.Call("setGameObject", "world.myAvatar.pMC.pname.tg.text", "Hidden");
-                        
                         flash.Call("setGameObject", "world.rootClass.ui.mcPortrait.strName.text", "VibeSkuaUser");
                         flash.Call("setGameObject", "world.rootClass.ui.mcPortraitTarget.strName.text", "Hidden");
 
-                        // Hide Gold and Coins visually by setting the client-side cache to 0
-                        flash.Call("setGameObject", "world.myAvatar.objData.intGold", 0);
-                        flash.Call("setGameObject", "world.myAvatar.objData.intCoins", 0);
-                        
-                        // Hide main HUD gold and coins (middle bottom UI)
-                        flash.Call("setGameObject", "world.rootClass.ui.mcInterface.teGold.text", "0");
-                        flash.Call("setGameObject", "world.rootClass.ui.mcInterface.teCoins.text", "0");
-                        flash.Call("setGameObject", "world.rootClass.ui.mcInterface.strGold.text", "0");
-                        flash.Call("setGameObject", "world.rootClass.ui.mcInterface.strCoins.text", "0");
-                        flash.Call("setGameObject", "world.rootClass.ui.mcInterface.txtGold.text", "0");
-                        flash.Call("setGameObject", "world.rootClass.ui.mcInterface.txtCoins.text", "0");
+                        // Hide Gold/Coins visually instead of wiping the client's cached integer amounts
+                        flash.Call("setGameObject", "world.rootClass.ui.mcInterface.teGold.visible", false);
+                        flash.Call("setGameObject", "world.rootClass.ui.mcInterface.teCoins.visible", false);
+                        flash.Call("setGameObject", "world.rootClass.ui.mcInterface.strGold.visible", false);
+                        flash.Call("setGameObject", "world.rootClass.ui.mcInterface.strCoins.visible", false);
+                        flash.Call("setGameObject", "world.rootClass.ui.mcInterface.txtGold.visible", false);
+                        flash.Call("setGameObject", "world.rootClass.ui.mcInterface.txtCoins.visible", false);
                         
                         // Hide chat
                         flash.Call("setGameObject", "world.rootClass.ui.mcInterface.t1.visible", false);
                         flash.Call("setGameObject", "world.rootClass.ui.mcInterface.te.visible", false);
                         
-                        // Force map UI text to strictly be the base map name
+                        // Force map UI text cleanly
                         var rawMapName = flash.GetGameObject("world.strMapName") ?? "";
-                        if (!string.IsNullOrEmpty(rawMapName))
+                        if (!string.IsNullOrEmpty(rawMapName) && rawMapName != "null")
                         {
-                            // Capitalize first letter for visual polish
                             var cleanMapName = rawMapName.Length > 1 
                                 ? char.ToUpper(rawMapName[0]) + rawMapName.Substring(1).ToLower() 
                                 : rawMapName.ToUpper();
@@ -265,7 +267,7 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
                     catch { }
                     await System.Threading.Tasks.Task.Delay(500, _streamerModeCts.Token);
                 }
-            });
+            }, _streamerModeCts.Token);
         }
         else
         {
@@ -282,8 +284,20 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
                 var flash = _lazyFlash.Value;
                 if (flash != null)
                 {
+                    // Restore Chat
                     flash.Call("setGameObject", "world.rootClass.ui.mcInterface.t1.visible", true);
                     flash.Call("setGameObject", "world.rootClass.ui.mcInterface.te.visible", true);
+                    
+                    // Restore Gold/Coins visibility
+                    flash.Call("setGameObject", "world.rootClass.ui.mcInterface.teGold.visible", true);
+                    flash.Call("setGameObject", "world.rootClass.ui.mcInterface.teCoins.visible", true);
+                    flash.Call("setGameObject", "world.rootClass.ui.mcInterface.strGold.visible", true);
+                    flash.Call("setGameObject", "world.rootClass.ui.mcInterface.strCoins.visible", true);
+                    flash.Call("setGameObject", "world.rootClass.ui.mcInterface.txtGold.visible", true);
+                    flash.Call("setGameObject", "world.rootClass.ui.mcInterface.txtCoins.visible", true);
+                    
+                    // Trigger a game UI refresh to accurately restore names
+                    flash.CallGameFunction("world.setUserData");
                 }
             }
             catch { }

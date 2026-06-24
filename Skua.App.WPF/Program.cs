@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Windows;
+using Velopack;
 
 namespace Skua.App.WPF;
 
@@ -12,15 +13,37 @@ public static class Program
     [STAThread]
     public static void Main()
     {
-        ServicePointManager.SecurityProtocol = SecurityProtocolType.SystemDefault;
-
         AppDomain currentDomain = AppDomain.CurrentDomain;
         currentDomain.AssemblyResolve += new ResolveEventHandler(ResolveAssemblies);
         currentDomain.UnhandledException += CurrentDomain_UnhandledException;
 
+        RunVelopack();
+
+        ServicePointManager.SecurityProtocol = SecurityProtocolType.SystemDefault;
+
         App app = new();
         app.InitializeComponent();
         app.Run();
+    }
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static void RunVelopack()
+    {
+        try
+        {
+            VelopackApp.Build()
+                .OnAfterInstallFastCallback((v) =>
+                {
+                    try
+                    {
+                        var shortcuts = new Velopack.Windows.Shortcuts();
+                        shortcuts.CreateShortcut("Skua.Manager.exe", Velopack.Windows.ShortcutLocation.Desktop | Velopack.Windows.ShortcutLocation.StartMenuRoot, false, null, null);
+                    }
+                    catch { }
+                })
+                .Run();
+        }
+        catch { }
     }
 
     private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)

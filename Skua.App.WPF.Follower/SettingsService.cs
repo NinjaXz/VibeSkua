@@ -1,4 +1,4 @@
-﻿using Skua.Core.Interfaces;
+using Skua.Core.Interfaces;
 using Skua.Core.Models;
 using Skua.Core.Services;
 
@@ -53,4 +53,10 @@ public class SettingsService : ISettingsService
     {
         _unifiedService.SetApplicationVersion();
     }
+
+    public void ReloadSettings()
+    {
+        _unifiedService.ReloadSettings();
+    }
 }
+

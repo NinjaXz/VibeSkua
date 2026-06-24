@@ -151,6 +151,12 @@ public class SharedSettings
     [JsonPropertyName("UserGitHubToken")]
     public string UserGitHubToken { get; set; } = string.Empty;
 
+    [JsonPropertyName("UserCustomScriptsFolder")]
+    public string UserCustomScriptsFolder { get; set; } = string.Empty;
+
+    [JsonPropertyName("UserCustomScriptsList")]
+    public StringCollection UserCustomScriptsList { get; set; } = new();
+
     [JsonPropertyName("ApplicationVersion")]
     public string ApplicationVersion { get; set; } = ClientFileSources.AssemblyVersion;
 

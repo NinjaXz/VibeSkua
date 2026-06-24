@@ -419,11 +419,18 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
             case "openWebsite":
                 if (args is { Length: > 0 } && args[0] is string url)
                 {
-                    Process.Start(new ProcessStartInfo
+                    try
                     {
-                        FileName = url,
-                        UseShellExecute = true
-                    });
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = url,
+                            UseShellExecute = true
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        Log($"Failed to open website: {url}. Error: {ex.Message}");
+                    }
                 }
                 break;
 

@@ -7,7 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:usercontrols="clr-namespace:Skua.WPF.UserControls;assembly=Skua.WPF"
     xmlns:wpf="clr-namespace:Skua.WPF;assembly=Skua.WPF"
-    Title="VibeSkua V1.7.1"
+    Title="VibeSkua V1.8.0"
     Width="800"
     Height="450"
     Style="{StaticResource CustomWindow}"

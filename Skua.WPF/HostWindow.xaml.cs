@@ -19,7 +19,7 @@ public partial class HostWindow : CustomWindow
         Closed -= HostWindow_Closed;
         if (DataContext is not null)
         {
-            StrongReferenceMessenger.Default.Unregister<object>(DataContext);
+            StrongReferenceMessenger.Default.UnregisterAll(DataContext);
             if (DataContext is IDisposable disposable)
             {
                 disposable.Dispose();

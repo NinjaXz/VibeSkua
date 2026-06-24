@@ -1,6 +1,7 @@
 using Skua.Core.ViewModels;
 using System;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -14,11 +15,15 @@ namespace Skua.WPF.Views;
 public partial class ScriptRepoView : UserControl
 {
     private ICollectionView? _collectionView;
+    private System.Threading.Timer? _debounceTimer;
 
     public ScriptRepoView()
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+        
+        // Ensure we clean up the timer when the control is unloaded to prevent memory leaks
+        this.Unloaded += ScriptRepoView_Unloaded;
     }
 
     private readonly object _syncLock = new();
@@ -32,55 +37,37 @@ public partial class ScriptRepoView : UserControl
         }
     }
 
+    private void ScriptRepoView_Unloaded(object sender, RoutedEventArgs e)
+    {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+    }
+
     private bool Search(object obj)
     {
-        bool flag = false;
-        string searchScript = SearchBox.Text.ToLower();
+        string searchScript = SearchBox.Text;
         if (string.IsNullOrWhiteSpace(searchScript))
             return true;
 
-        ScriptInfoViewModel? script = (ScriptInfoViewModel)obj;
-        if (script is null)
+        if (obj is not ScriptInfoViewModel script)
             return false;
 
-        string scriptName = script.Info.Name?.ToLower() ?? string.Empty;
-        if (KMPSearch(scriptName, searchScript))
-            flag = true;
+        // Using native string.Contains with OrdinalIgnoreCase is SIMD accelerated
+        // and avoids KMP algorithm memory allocations and multiple .ToLower() calls.
+        if (script.Info.Name?.Contains(searchScript, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
 
-        if (!flag && script.Info.FileName != null)
-        {
-            if (KMPSearch(script.Info.FileName.ToLower(), searchScript))
-                flag = true;
-        }
+        if (script.Info.FileName?.Contains(searchScript, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
 
-        if (!flag && script.Info.FilePath != null)
-        {
-            if (KMPSearch(script.Info.FilePath.ToLower(), searchScript))
-                flag = true;
-        }
+        if (script.Info.FilePath?.Contains(searchScript, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
         
-        if (!flag && script.Info.Description != null)
-        {
-            if (KMPSearch(script.Info.Description.ToLower(), searchScript))
-                flag = true;
-        }
+        if (script.Info.Description?.Contains(searchScript, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
 
-        if (!flag)
-        {
-            foreach (string tag in script.InfoTags)
-            {
-                if (KMPSearch(tag.ToLower(), searchScript))
-                {
-                    flag = true;
-                    break;
-                }
-            }
-        }
-
-        return flag;
+        return script.InfoTags.Any(tag => tag.Contains(searchScript, StringComparison.OrdinalIgnoreCase));
     }
-
-    private System.Threading.Timer? _debounceTimer;
 
     private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
     {
@@ -96,73 +83,5 @@ public partial class ScriptRepoView : UserControl
                 _collectionView.Refresh();
             });
         }, null, 250, System.Threading.Timeout.Infinite);
-    }
-
-    private bool KMPSearch(string text, string pattern)
-    {
-        int n = text.Length;
-        int m = pattern.Length;
-        int[] lps = new int[m];
-        int j = 0; // index for pattern[]
-
-        // Preprocess the pattern (calculate lps[] array)
-        ComputeLPSArray(pattern, m, lps);
-
-        int i = 0;  // index for text[]
-        while (i < n)
-        {
-            if (pattern[j] == text[i])
-            {
-                j++;
-                i++;
-            }
-
-            if (j == m)
-                return true;
-
-            // mismatch after j matches
-            else if (i < n && pattern[j] != text[i])
-            {
-                // Do not match lps[0..lps[j-1]] characters,
-                // they will match anyway
-                if (j != 0)
-                    j = lps[j - 1];
-                else
-                    i++;
-            }
-        }
-        return false;
-    }
-
-    private void ComputeLPSArray(string pattern, int m, int[] lps)
-    {
-        int len = 0;
-        int i = 1;
-        lps[0] = 0; // lps[0] is always 0
-
-        // the loop calculates lps[i] for i = 1 to m-1
-        while (i < m)
-        {
-            if (pattern[i] == pattern[len])
-            {
-                len++;
-                lps[i] = len;
-                i++;
-            }
-            else // (pat[i] != pat[len])
-            {
-                if (len != 0)
-                {
-                    len = lps[len - 1];
-
-                    // Also, note that we do not increment i here
-                }
-                else  // if (len == 0)
-                {
-                    lps[i] = 0;
-                    i++;
-                }
-            }
-        }
     }
 }

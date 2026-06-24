@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
@@ -457,7 +457,7 @@ public partial class PropertyGrid : UserControl
         {
             try
             {
-                oldPc.PropertyChanged -= grid.OnDispatcherSourcePropertyChanged;
+                WeakEventManager<INotifyPropertyChanged, PropertyChangedEventArgs>.RemoveHandler(oldPc, "PropertyChanged", grid.OnDispatcherSourcePropertyChanged);
             }
             catch { } // Ignore if already unsubscribed
         }

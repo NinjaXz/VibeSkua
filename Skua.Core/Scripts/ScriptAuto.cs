@@ -124,7 +124,7 @@ public partial class ScriptAuto : ObservableObject, IScriptAuto
                 else
                     await _Attack(_ctsAuto!.Token, manualMapIDs);
             }
-            catch { /* ignored */ }
+            catch (OperationCanceledException) { } catch (Exception ex) { System.Diagnostics.Trace.WriteLine($"ScriptAuto task error: {ex}"); }
             finally
             {
                 Drops.Stop();
@@ -195,12 +195,12 @@ public partial class ScriptAuto : ObservableObject, IScriptAuto
                 if (currentTarget.HasValue)
                 {
                     Combat.Attack(currentTarget.Value);
-                    Thread.Sleep(200);
+                    await Task.Delay(Math.Max(0, 200), token);
                     // Immediately re-evaluate priorities (no extra delay)
                     continue;
                 }
                 // No valid target found right now, short yield
-                Thread.Sleep(50);
+                await Task.Delay(Math.Max(0, 50), token);
             }
             else if (_targetMapID > 0)
             {
@@ -210,13 +210,13 @@ public partial class ScriptAuto : ObservableObject, IScriptAuto
                     if (Combat.Attack(_targetMapID))
                         Kill.Monster(_targetMapID, token);
                 }
-                Thread.Sleep(Options.ActionDelay);
+                await Task.Delay(Math.Max(0, Options.ActionDelay), token);
             }
             else if (_target is not "*" and not "")
             {
                 // Target is a player (like yourself)
                 Combat.AttackPlayer(_target);
-                Thread.Sleep(Options.ActionDelay);
+                await Task.Delay(Math.Max(0, Options.ActionDelay), token);
             }
             else
             {
@@ -310,7 +310,7 @@ public partial class ScriptAuto : ObservableObject, IScriptAuto
                         if (Player.Cell != monster.Cell && !token.IsCancellationRequested)
                         {
                             if (Environment.TickCount - _lastHuntTick < Options.HuntDelay)
-                                Thread.Sleep(Options.HuntDelay - Environment.TickCount + _lastHuntTick);
+                                await Task.Delay(Math.Max(0, Options.HuntDelay - Environment.TickCount + _lastHuntTick), token);
                             Map.Jump(monster.Cell, "Left");
                             _lastHuntTick = Environment.TickCount;
                         }
@@ -322,16 +322,16 @@ public partial class ScriptAuto : ObservableObject, IScriptAuto
                         while (targetMonster?.HP > 0 && !token.IsCancellationRequested)
                         {
                             Combat.Attack(currentTarget.Value);
-                            Thread.Sleep(Options.ActionDelay);
+                            await Task.Delay(Math.Max(0, Options.ActionDelay), token);
                             targetMonster = Monsters.MapMonsters.FirstOrDefault(m => m.MapID == currentTarget.Value);
                         }
                     }
-                    Thread.Sleep(200);
+                    await Task.Delay(Math.Max(0, 200), token);
                 }
                 else
                 {
                     // No priority targets available, wait a bit
-                    Thread.Sleep(500);
+                    await Task.Delay(Math.Max(0, 500), token);
                 }
             }
         }
@@ -343,7 +343,7 @@ public partial class ScriptAuto : ObservableObject, IScriptAuto
 
                 if (cells.Count == 0)
                 {
-                    Thread.Sleep(200);
+                    await Task.Delay(Math.Max(0, 200), token);
                     continue;
                 }
 
@@ -355,7 +355,7 @@ public partial class ScriptAuto : ObservableObject, IScriptAuto
                     if (Player.Cell != cell && !token.IsCancellationRequested)
                     {
                         if (Environment.TickCount - _lastHuntTick < Options.HuntDelay)
-                            Thread.Sleep(Options.HuntDelay - Environment.TickCount + _lastHuntTick);
+                            await Task.Delay(Math.Max(0, Options.HuntDelay - Environment.TickCount + _lastHuntTick), token);
                         Map.Jump(cell, "Left");
                         _lastHuntTick = Environment.TickCount;
                     }
@@ -366,12 +366,12 @@ public partial class ScriptAuto : ObservableObject, IScriptAuto
                         while (targetMonster?.HP > 0 && !token.IsCancellationRequested)
                         {
                             Combat.Attack(_targetMapID);
-                            Thread.Sleep(Options.ActionDelay);
+                            await Task.Delay(Math.Max(0, Options.ActionDelay), token);
                             targetMonster = Monsters.MapMonsters.FirstOrDefault(m => m.MapID == _targetMapID);
                         }
                     }
 
-                    Thread.Sleep(200);
+                    await Task.Delay(Math.Max(0, 200), token);
                 }
             }
         }
@@ -383,7 +383,7 @@ public partial class ScriptAuto : ObservableObject, IScriptAuto
 
                 if (cells.Count == 0)
                 {
-                    Thread.Sleep(200);
+                    await Task.Delay(Math.Max(0, 200), token);
                     continue;
                 }
 
@@ -395,7 +395,7 @@ public partial class ScriptAuto : ObservableObject, IScriptAuto
                     if (Player.Cell != cell && !token.IsCancellationRequested)
                     {
                         if (Environment.TickCount - _lastHuntTick < Options.HuntDelay)
-                            Thread.Sleep(Options.HuntDelay - Environment.TickCount + _lastHuntTick);
+                            await Task.Delay(Math.Max(0, Options.HuntDelay - Environment.TickCount + _lastHuntTick), token);
                         Map.Jump(cell, "Left");
                         _lastHuntTick = Environment.TickCount;
                     }
@@ -406,12 +406,12 @@ public partial class ScriptAuto : ObservableObject, IScriptAuto
                         while (targetMonster?.HP > 0 && !token.IsCancellationRequested)
                         {
                             Combat.Attack(_target);
-                            Thread.Sleep(Options.ActionDelay);
+                            await Task.Delay(Math.Max(0, Options.ActionDelay), token);
                             targetMonster = Monsters.CurrentMonsters.FirstOrDefault(m => m.Name == _target);
                         }
                     }
 
-                    Thread.Sleep(200);
+                    await Task.Delay(Math.Max(0, 200), token);
                 }
             }
         }
@@ -426,7 +426,7 @@ public partial class ScriptAuto : ObservableObject, IScriptAuto
                     if (Player.Cell != cells[i] && !token.IsCancellationRequested)
                     {
                         if (Environment.TickCount - _lastHuntTick < Options.HuntDelay)
-                            Thread.Sleep(Options.HuntDelay - Environment.TickCount + _lastHuntTick);
+                            await Task.Delay(Math.Max(0, Options.HuntDelay - Environment.TickCount + _lastHuntTick), token);
                         Map.Jump(cells[i], "Left");
                         _lastHuntTick = Environment.TickCount;
                     }
@@ -443,7 +443,7 @@ public partial class ScriptAuto : ObservableObject, IScriptAuto
                                 cells.RemoveAt(i);
                                 continue;
                             }
-                            Thread.Sleep(Options.ActionDelay);
+                            await Task.Delay(Math.Max(0, Options.ActionDelay), token);
                             Kill.Monster(mon, token);
                             break;
                         }

@@ -31,7 +31,8 @@ internal class MainMenu
             {
                 new("Runtime"),
                 new("Fast Travel"),
-                new("Current Drops")
+                new("Current Drops"),
+                new("Loadouts")
             }),
             new("Tools", new List<MainMenuItemViewModel>()
             {

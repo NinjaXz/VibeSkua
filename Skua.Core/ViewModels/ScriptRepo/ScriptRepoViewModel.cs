@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Skua.Core.Interfaces;
 using Skua.Core.Messaging;
 using Skua.Core.Models.GitHub;
+using Skua.Core.Models;
 using Skua.Core.Utils;
 
 namespace Skua.Core.ViewModels;
@@ -11,7 +12,7 @@ namespace Skua.Core.ViewModels;
 public partial class ScriptRepoViewModel : BotControlViewModelBase
 {
     public ScriptRepoViewModel(IGetScriptsService getScripts, IProcessService processService)
-        : base("Search Scripts", 800, 450)
+        : base("Search Scripts", 969, 500)
     {
         _getScriptsService = getScripts;
         _processService = processService;
@@ -75,7 +76,7 @@ public partial class ScriptRepoViewModel : BotControlViewModelBase
 
     public List<string> SortOptions { get; } = new() { "Name", "Date Created" };
     
-    public List<string> FilterOptions { get; } = new() { "All", "Army", "Classes", "Dailies", "Evil", "Farm", "Good", "Legion", "Nation", "Other", "Rep", "Seasonal", "Story", "Ultras" };
+    public List<string> FilterOptions { get; } = new() { "All", "Army", "Classes", "Dailies", "Evil", "Farm", "Good", "Legion", "Local", "Nation", "Other", "Rep", "Seasonal", "Story", "Ultras" };
 
     partial void OnSortByChanged(string value)
     {
@@ -110,6 +111,49 @@ public partial class ScriptRepoViewModel : BotControlViewModelBase
     public int ScriptQuantity => _getScriptsService?.Total ?? 0;
     public int BotScriptQuantity => _scripts.Count;
     public IRelayCommand OpenScriptFolderCommand { get; }
+
+    [RelayCommand]
+    private void AddCustomFolder()
+    {
+        var fileDialog = CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<IFileDialogService>();
+        string folder = fileDialog.OpenFolder(ClientFileSources.SkuaScriptsDIR);
+        if (!string.IsNullOrEmpty(folder))
+        {
+            CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<ISettingsService>().Set("UserCustomScriptsFolder", folder);
+            _ = RefreshScriptsList();
+        }
+    }
+
+    [RelayCommand]
+    private void ClearCustomFolder()
+    {
+        CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<ISettingsService>().Set("UserCustomScriptsFolder", string.Empty);
+        _ = RefreshScriptsList();
+    }
+
+    [RelayCommand]
+    private void LoadLocalScript()
+    {
+        var fileDialog = CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<IFileDialogService>();
+        string path = fileDialog.OpenFile(ClientFileSources.SkuaScriptsDIR, "Skua Scripts (*.cs)|*.cs");
+        if (!string.IsNullOrEmpty(path))
+        {
+            var settings = CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<ISettingsService>();
+            var list = settings.Get<System.Collections.Specialized.StringCollection>("UserCustomScriptsList");
+            if (list == null)
+            {
+                list = new System.Collections.Specialized.StringCollection();
+            }
+            if (!list.Contains(path))
+            {
+                list.Add(path);
+                settings.Set("UserCustomScriptsList", list);
+                _ = RefreshScriptsList();
+            }
+
+            CommunityToolkit.Mvvm.Messaging.StrongReferenceMessenger.Default.Send<Skua.Core.Messaging.LoadScriptMessage, int>(new(path), (int)Skua.Core.Messaging.MessageChannels.ScriptStatus);
+        }
+    }
 
     [RelayCommand]
     private void OpenScript()
@@ -158,6 +202,8 @@ public partial class ScriptRepoViewModel : BotControlViewModelBase
 
     private async Task RefreshScriptsList()
     {
+        CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<ISettingsService>().ReloadSettings();
+
         if (_getScriptsService?.Scripts != null)
         {
             List<ScriptInfoViewModel> scriptViewModels = await Task.Run(() =>
@@ -192,6 +238,63 @@ public partial class ScriptRepoViewModel : BotControlViewModelBase
                     }
                 }
 
+                try
+                {
+                    var settings = CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<ISettingsService>();
+                    string localFolder = settings.Get<string>("UserCustomScriptsFolder");
+                    
+                    if (!string.IsNullOrEmpty(localFolder) && Directory.Exists(localFolder))
+                    {
+                        var files = Directory.GetFiles(localFolder, "*.cs", new EnumerationOptions { RecurseSubdirectories = true, IgnoreInaccessible = true });
+                        foreach (var file in files)
+                        {
+                            if (FilterBy != "All" && FilterBy != "Local") continue;
+                            
+                            var info = new ScriptInfo
+                            {
+                                Name = Path.GetFileNameWithoutExtension(file),
+                                FileName = Path.GetFileName(file),
+                                FilePath = file,
+                                Description = "Local Custom Script",
+                                Tags = new[] { "Local" },
+                                CreationDate = File.GetCreationTime(file),
+                                Size = (int)new FileInfo(file).Length,
+                                Sha256 = null
+                            };
+                            viewModels.Add(new ScriptInfoViewModel(info) { Downloaded = true });
+                        }
+                    }
+
+                    var scriptList = settings.Get<System.Collections.Specialized.StringCollection>("UserCustomScriptsList");
+                    if (scriptList != null)
+                    {
+                        foreach (var file in scriptList)
+                        {
+                            if (!File.Exists(file)) continue;
+                            if (FilterBy != "All" && FilterBy != "Local") continue;
+
+                            var info = new ScriptInfo
+                            {
+                                Name = Path.GetFileNameWithoutExtension(file),
+                                FileName = Path.GetFileName(file),
+                                FilePath = file,
+                                Description = "Local Single Script",
+                                Tags = new[] { "Local", "Single" },
+                                CreationDate = File.GetCreationTime(file),
+                                Size = (int)new FileInfo(file).Length,
+                                Sha256 = null
+                            };
+                            
+                            // Prevent duplicates if it's already in the custom folder
+                            if (!viewModels.Any(v => v.Info.FilePath == file))
+                            {
+                                viewModels.Add(new ScriptInfoViewModel(info) { Downloaded = true });
+                            }
+                        }
+                    }
+                }
+                catch { }
+
                 if (SortBy == "Date Created")
                     return SortDescending ? viewModels.OrderByDescending(x => x.Info.CreationDate ?? DateTime.MinValue).ToList() : viewModels.OrderBy(x => x.Info.CreationDate ?? DateTime.MinValue).ToList();
                 else
@@ -219,6 +322,53 @@ public partial class ScriptRepoViewModel : BotControlViewModelBase
         IsBusy = true;
         if (_selectedItem is null)
             return;
+
+        if (_selectedItem.Info.Tags.Contains("Local"))
+        {
+            var dialogService = CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<IDialogService>();
+            
+            if (_selectedItem.Info.Tags.Contains("Single"))
+            {
+                var result = dialogService.ShowMessageBox($"Do you want to permanently delete {_selectedItem.FileName} from your computer, or just remove it from the Custom Scripts list?", "Remove Custom Script", "Cancel", "Remove from List", "Delete File");
+                if (result == null || result.Text == "Cancel" || result.Text == "")
+                {
+                    IsBusy = false;
+                    return;
+                }
+
+                if (result.Text == "Delete File")
+                {
+                    await _getScriptsService.DeleteScriptAsync(_selectedItem.Info);
+                }
+
+                var settings = CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<ISettingsService>();
+                var list = settings.Get<System.Collections.Specialized.StringCollection>("UserCustomScriptsList");
+                if (list != null && list.Contains(_selectedItem.Info.FilePath))
+                {
+                    list.Remove(_selectedItem.Info.FilePath);
+                    settings.Set("UserCustomScriptsList", list);
+                }
+            }
+            else
+            {
+                var result = dialogService.ShowMessageBox($"This script is inside your Custom Scripts Folder.\r\nDo you want to permanently delete {_selectedItem.FileName} from your computer?", "Delete Local Script", "No", "Yes");
+                if (result != null && result.Text == "Yes")
+                {
+                    await _getScriptsService.DeleteScriptAsync(_selectedItem.Info);
+                }
+                else
+                {
+                    IsBusy = false;
+                    return;
+                }
+            }
+
+            _selectedItem.Downloaded = false;
+            await RefreshScriptsList();
+            IsBusy = false;
+            return;
+        }
+
         ProgressReportMessage = $"Deleting {_selectedItem.FileName}.";
         await _getScriptsService.DeleteScriptAsync(_selectedItem.Info);
         ProgressReportMessage = $"Deleted {_selectedItem.FileName}.";

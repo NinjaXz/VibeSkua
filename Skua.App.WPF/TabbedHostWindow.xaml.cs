@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.Linq;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace Skua.App.WPF
 {
@@ -157,6 +158,10 @@ namespace Skua.App.WPF
             Activated += (s, e) => ScheduleReposition();
             Closing += OnWindowClosing;
 
+            StrongReferenceMessenger.Default.Register<TabbedHostWindow, Skua.Core.Messaging.LoadScriptMessage, int>(this, (int)Skua.Core.Messaging.MessageChannels.ScriptStatus, (r, m) => r.BroadcastScriptAction(m.Path, WM_SKUA_LOAD_SCRIPT));
+            StrongReferenceMessenger.Default.Register<TabbedHostWindow, Skua.Core.ViewModels.ScriptSchedulerViewModel.ArmySchedulerMessage>(this, (r, m) => r.OnArmySchedulerStart(m));
+            StrongReferenceMessenger.Default.Register<TabbedHostWindow, Skua.Core.ViewModels.ScriptSchedulerViewModel.ArmySchedulerStopMessage>(this, (r, m) => r.OnArmySchedulerStop(m));
+
             StartPipeServer();
         }
 
@@ -244,6 +249,77 @@ namespace Skua.App.WPF
         private const int WM_SKUA_JUMP_MAP = 0x0400 + 449;
         private const int WM_SKUA_SET_OPTION = 0x0400 + 450;
         private const int WM_SKUA_THROTTLE = 0x0400 + 452;
+        private const int WM_SKUA_LOAD_SCRIPT = 0x0400 + 453;
+        private const int WM_SKUA_ARMY_SCHEDULER = 0x0400 + 454;
+        private const int WM_SKUA_ARMY_SCHEDULER_STOP = 0x0400 + 455;
+        private const int WM_SKUA_CHECK_LOGIN = 0x0400 + 456;
+
+        private void OnArmySchedulerStart(Skua.Core.ViewModels.ScriptSchedulerViewModel.ArmySchedulerMessage m)
+        {
+            m.Handled = true;
+            try
+            {
+                var dialogService = CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<Skua.Core.Interfaces.IDialogService>();
+
+                int notLoggedInCount = 0;
+                foreach (var info in _tabs.Values)
+                {
+                    if (info.ChildHwnd != IntPtr.Zero)
+                    {
+                        IntPtr res = SendMessage(info.ChildHwnd, (uint)WM_SKUA_CHECK_LOGIN, IntPtr.Zero, IntPtr.Zero);
+                        if (res.ToInt32() == 0)
+                            notLoggedInCount++;
+                    }
+                }
+
+                if (notLoggedInCount > 0)
+                {
+                    dialogService.ShowMessageBox($"Cannot start Army Scheduler! {notLoggedInCount} account(s) are not logged in. Please log them in first.", "Army Scheduler Error");
+                    return;
+                }
+
+                string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "skua_global_playlist.json");
+                var data = m.Queue.Select(x => new Skua.Core.ViewModels.ScriptSchedulerViewModel.SavedScriptItem { Path = x.Path, Id = x.Id, Name = x.Name }).ToList();
+                System.IO.File.WriteAllText(tempFile, System.Text.Json.JsonSerializer.Serialize(data));
+                
+                foreach (var info in _tabs.Values)
+                    if (info.ChildHwnd != IntPtr.Zero)
+                        PostMessage(info.ChildHwnd, WM_SKUA_ARMY_SCHEDULER, IntPtr.Zero, IntPtr.Zero);
+                        
+                dialogService.ShowMessageBox("Army Scheduler payload has been broadcasted. All active accounts will now seamlessly rebuild their queues and begin executing the playlist.", "Army Scheduler Started");
+            }
+            catch { }
+        }
+
+        private void OnArmySchedulerStop(Skua.Core.ViewModels.ScriptSchedulerViewModel.ArmySchedulerStopMessage m)
+        {
+            m.Handled = true;
+            try
+            {
+                foreach (var info in _tabs.Values)
+                    if (info.ChildHwnd != IntPtr.Zero)
+                        PostMessage(info.ChildHwnd, WM_SKUA_ARMY_SCHEDULER_STOP, IntPtr.Zero, IntPtr.Zero);
+                        
+                var dialogService = CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<Skua.Core.Interfaces.IDialogService>();
+                dialogService.ShowMessageBox("Stop signal has been successfully broadcasted. All accounts are now halting their schedulers.", "Army Scheduler Stopped");
+            }
+            catch { }
+        }
+
+        private void MenuItem_ArmyScheduler_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var windowService = CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<Skua.Core.Interfaces.IWindowService>();
+                windowService.RegisterManagedWindow("Scheduler", CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<Skua.Core.ViewModels.ScriptSchedulerViewModel>());
+                windowService.RegisterManagedWindow("Script Repo", CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<Skua.Core.ViewModels.ScriptRepoViewModel>());
+                windowService.ShowManagedWindow("Scheduler");
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(ex.ToString(), "Error Opening Scheduler");
+            }
+        }
 
         private void GridViewBorder_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
@@ -366,15 +442,55 @@ namespace Skua.App.WPF
             if (MenuStopScripts != null) MenuStopScripts.IsEnabled = true;
         }
 
+        private void BroadcastScriptAction(string scriptPath, int msg)
+        {
+            try
+            {
+                string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "skua_global_script.txt");
+                System.IO.File.WriteAllText(tempFile, scriptPath);
+
+                foreach (var info in _tabs.Values)
+                {
+                    if (info.ChildHwnd != IntPtr.Zero)
+                    {
+                        PostMessage(info.ChildHwnd, (uint)msg, IntPtr.Zero, IntPtr.Zero);
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private void MenuItem_LoadScriptAll_Click(object sender, RoutedEventArgs e)
+        {
+            var windowService = CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<Skua.Core.Interfaces.IWindowService>();
+            windowService.RegisterManagedWindow("Script Repo", CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<Skua.Core.ViewModels.ScriptRepoViewModel>());
+            windowService.ShowManagedWindow("Script Repo");
+        }
+
         private async void MenuItem_LoginAll_Click(object sender, RoutedEventArgs e)
         {
+            var menuItem = sender as MenuItem;
+            string originalHeader = menuItem?.Header?.ToString() ?? "Login All Clients";
+            if (menuItem != null) menuItem.IsEnabled = false;
+
+            int count = 1;
+            int total = _tabs.Values.Count(i => i.ChildHwnd != IntPtr.Zero);
+
             foreach (var info in _tabs.Values)
             {
                 if (info.ChildHwnd != IntPtr.Zero)
                 {
+                    if (menuItem != null) menuItem.Header = $"Logging in... ({count}/{total})";
                     PostMessage(info.ChildHwnd, WM_SKUA_LOGIN, IntPtr.Zero, IntPtr.Zero);
                     await Task.Delay(2000);
+                    count++;
                 }
+            }
+
+            if (menuItem != null)
+            {
+                menuItem.Header = originalHeader;
+                menuItem.IsEnabled = true;
             }
         }
 

@@ -59,7 +59,7 @@ public class FlashUtil : IFlashUtil
 
             _messenger.Send<FlashChangedMessage<AxShockwaveFlash>>(new(flash));
             flash.EndInit();
-            flash.WMode = "direct"; // Enable hardware acceleration for faster rendering
+            flash.WMode = "window"; // Standard HWND composition (Fixes Discord OBS and DWM capture)
             flash.ScaleMode = 0;
             flash.CtlScale = "ShowAll";
             Flash = flash;

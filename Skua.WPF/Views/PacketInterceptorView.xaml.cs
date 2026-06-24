@@ -28,6 +28,16 @@ public partial class PacketInterceptorView : UserControl
 
         foreach (PacketLogFilterViewModel filter in _vm.PacketFilters)
             filter.PropertyChanged += Filter_PropertyChanged;
+
+        this.Unloaded += PacketInterceptorView_Unloaded;
+    }
+
+    private void PacketInterceptorView_Unloaded(object sender, System.Windows.RoutedEventArgs e)
+    {
+        foreach (PacketLogFilterViewModel filter in _vm.PacketFilters)
+            filter.PropertyChanged -= Filter_PropertyChanged;
+            
+        this.Unloaded -= PacketInterceptorView_Unloaded;
     }
 
     private void Filter_PropertyChanged(object? sender, PropertyChangedEventArgs e)

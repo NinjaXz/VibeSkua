@@ -17,6 +17,11 @@ namespace Skua.Core.Interfaces;
 public interface IScriptOption : INotifyPropertyChanged
 {
     /// <summary>
+    /// Gets or sets a value indicating whether the option change is being triggered by an IPC message.
+    /// </summary>
+    bool IsIpcMessageProcessing { get; set; }
+
+    /// <summary>
     /// Gets an immutable dictionary that maps option names to factory functions for their values.
     /// </summary>
     /// <remarks>

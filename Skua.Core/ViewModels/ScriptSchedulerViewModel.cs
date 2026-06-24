@@ -22,6 +22,7 @@ public partial class ScriptSchedulerViewModel : BotControlViewModelBase
     private readonly IWindowService _windowService;
     private readonly IDialogService _dialogService;
     private Stopwatch _scriptStopwatch = new();
+    private System.Threading.CancellationTokenSource? _queueCts;
     
     public ScriptSchedulerViewModel(IScriptManager manager, IFileDialogService fileDialog, IDiscordWebhookService discord, ISettingsService settingsService, IWindowService windowService, IDialogService dialogService) : base("Scheduler")
     {
@@ -38,6 +39,12 @@ public partial class ScriptSchedulerViewModel : BotControlViewModelBase
 
     private void OnQueueScript(QueueScriptMessage message)
     {
+        if (IsRunningQueue)
+        {
+            _dialogService.ShowMessageBox("Cannot add scripts while the playlist is running.", "Scheduler Running");
+            return;
+        }
+
         if (!string.IsNullOrEmpty(message.Path))
         {
             var item = new ScriptItemViewModel(message.Path);
@@ -67,6 +74,12 @@ public partial class ScriptSchedulerViewModel : BotControlViewModelBase
     [RelayCommand]
     private void RemoveScript(ScriptItemViewModel item)
     {
+        if (IsRunningQueue)
+        {
+            _dialogService.ShowMessageBox("Cannot remove scripts while the playlist is running.", "Scheduler Running");
+            return;
+        }
+
         if (ScriptQueue.Contains(item))
             ScriptQueue.Remove(item);
     }
@@ -98,12 +111,29 @@ public partial class ScriptSchedulerViewModel : BotControlViewModelBase
         }
     }
 
+    public class ArmySchedulerMessage
+    {
+        public System.Collections.Generic.IEnumerable<ScriptItemViewModel> Queue { get; }
+        public bool Handled { get; set; } = false;
+        public ArmySchedulerMessage(System.Collections.Generic.IEnumerable<ScriptItemViewModel> queue) { Queue = queue; }
+    }
+
+    public class ArmySchedulerStopMessage
+    {
+        public bool Handled { get; set; } = false;
+    }
+
     [RelayCommand]
     private void StartQueue()
     {
         if (ScriptQueue.Count == 0 || IsRunningQueue) return;
         
+        var msg = new ArmySchedulerMessage(ScriptQueue);
+        StrongReferenceMessenger.Default.Send(msg);
+        if (msg.Handled) return;
+
         IsRunningQueue = true;
+        _queueCts = new System.Threading.CancellationTokenSource();
         _discord.SuppressDefaultNotifications = true;
         CurrentIndex = 0;
         
@@ -116,7 +146,12 @@ public partial class ScriptSchedulerViewModel : BotControlViewModelBase
     [RelayCommand]
     private async Task StopQueue()
     {
+        var msg = new ArmySchedulerStopMessage();
+        StrongReferenceMessenger.Default.Send(msg);
+        if (msg.Handled) return;
+
         IsRunningQueue = false;
+        _queueCts?.Cancel();
         _discord.SuppressDefaultNotifications = false;
         if (CurrentIndex < ScriptQueue.Count)
         {
@@ -127,6 +162,68 @@ public partial class ScriptSchedulerViewModel : BotControlViewModelBase
         _ = _discord.SendMessageAsync($"⏹️ **Scheduler Stopped** - Playlist execution manually halted.");
     }
 
+    public class SavedScriptItem
+    {
+        public string Path { get; set; } = string.Empty;
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+    }
+
+    [RelayCommand]
+    private void SavePlaylist()
+    {
+        if (ScriptQueue.Count == 0)
+        {
+            _dialogService.ShowMessageBox("The playlist is empty.", "Save Playlist");
+            return;
+        }
+
+        string? path = _fileDialog.Save("JSON Files (*.json)|*.json|All files (*.*)|*.*");
+        if (path != null)
+        {
+            var data = ScriptQueue.Select(x => new SavedScriptItem { Path = x.Path, Id = x.Id, Name = x.Name }).ToList();
+            File.WriteAllText(path, System.Text.Json.JsonSerializer.Serialize(data, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+            _dialogService.ShowMessageBox("Playlist saved successfully.", "Save Playlist");
+        }
+    }
+
+    [RelayCommand]
+    private void LoadPlaylist()
+    {
+        if (IsRunningQueue)
+        {
+            _dialogService.ShowMessageBox("Cannot load a playlist while the queue is running.", "Scheduler Running");
+            return;
+        }
+
+        string? path = _fileDialog.OpenFile("JSON Files (*.json)|*.json|All files (*.*)|*.*");
+        if (path != null && File.Exists(path))
+        {
+            try
+            {
+                var data = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.List<SavedScriptItem>>(File.ReadAllText(path));
+                if (data != null)
+                {
+                    ScriptQueue.Clear();
+                    foreach (var item in data)
+                    {
+                        if (File.Exists(item.Path))
+                        {
+                            var vm = new ScriptItemViewModel(item.Path) { Id = item.Id };
+                            if (!string.IsNullOrEmpty(item.Name))
+                                vm.Name = item.Name;
+                            ScriptQueue.Add(vm);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowMessageBox($"Failed to load playlist: {ex.Message}", "Load Error");
+            }
+        }
+    }
+
     private string GetFormattedDuration()
     {
         var ts = _scriptStopwatch.Elapsed;
@@ -135,13 +232,13 @@ public partial class ScriptSchedulerViewModel : BotControlViewModelBase
 
     private async void RunNextScript()
     {
-        if (!IsRunningQueue) return;
+        if (!IsRunningQueue || _queueCts?.IsCancellationRequested == true) return;
 
         if (CurrentIndex >= ScriptQueue.Count)
         {
             IsRunningQueue = false;
             _discord.SuppressDefaultNotifications = false;
-            _ = _discord.SendMessageAsync($"🎉 **Scheduler Finished** - All scripts in the playlist have completed!");
+            _ = _discord.SendMessageAsync($"?? **Scheduler Finished** - All scripts in the playlist have completed!");
             return;
         }
 
@@ -152,11 +249,35 @@ public partial class ScriptSchedulerViewModel : BotControlViewModelBase
             nextScript.Status = "Running";
             _scriptStopwatch.Restart();
             
-            _ = _discord.SendMessageAsync($"🔄 **Scheduler** [{CurrentIndex + 1}/{ScriptQueue.Count}] - Now running: {nextScript.Name}");
+            _ = _discord.SendMessageAsync($"?? **Scheduler** [{CurrentIndex + 1}/{ScriptQueue.Count}] - Now running: {nextScript.Name}");
             
-            _manager.OverrideStorage = nextScript.Storage;
-            _manager.SetLoadedScript(nextScript.Path);
-            await _manager.StartScript();
+            try
+            {
+                _manager.OverrideStorage = nextScript.Storage;
+                _manager.SetLoadedScript(nextScript.Path);
+                Exception? startEx = await _manager.StartScript();
+
+                if (startEx != null)
+                {
+                    _manager.OverrideStorage = null;
+                    nextScript.Status = "Failed";
+                    nextScript.Duration = GetFormattedDuration();
+                    System.Diagnostics.Trace.WriteLine($"Scheduler script failed to start: {startEx.Message}");
+                    _ = _discord.SendMessageAsync($"?? **Scheduler Error** - Script failed to start: {nextScript.Name}");
+                    CurrentIndex++;
+                    RunNextScript();
+                }
+            }
+            catch (Exception ex)
+            {
+                _manager.OverrideStorage = null;
+                nextScript.Status = "Crashed";
+                nextScript.Duration = GetFormattedDuration();
+                System.Diagnostics.Trace.WriteLine($"Scheduler script crash: {ex.Message}");
+                _ = _discord.SendMessageAsync($"?? **Scheduler Crash** - Script threw on start: {nextScript.Name}");
+                CurrentIndex++;
+                RunNextScript();
+            }
         }
         else
         {
@@ -170,7 +291,7 @@ public partial class ScriptSchedulerViewModel : BotControlViewModelBase
     {
         _manager.OverrideStorage = null;
 
-        if (!IsRunningQueue) return;
+        if (!IsRunningQueue || _queueCts?.IsCancellationRequested == true) return;
 
         if (CurrentIndex < ScriptQueue.Count)
         {
@@ -184,8 +305,12 @@ public partial class ScriptSchedulerViewModel : BotControlViewModelBase
         // Delay slightly to let the engine completely finish unloading the previous script
         Task.Run(async () => 
         {
-            await Task.Delay(2000);
-            RunNextScript();
+            try
+            {
+                await Task.Delay(2000, _queueCts!.Token);
+                RunNextScript();
+            }
+            catch (TaskCanceledException) { }
         });
     }
 }

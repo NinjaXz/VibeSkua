@@ -30,6 +30,7 @@ public static class Services
         services.AddSingleton<IGetScriptsService, GetScriptsService>();
         services.AddSingleton<IProcessService, ProcessStartService>();
         services.AddSingleton<IDiscordWebhookService, DiscordWebhookService>();
+        services.AddSingleton<ILoadoutService, LoadoutService>();
 
         return services;
     }
@@ -106,6 +107,8 @@ public static class Services
 
     public static IServiceCollection AddSkuaMainAppViewModels(this IServiceCollection services)
     {
+        services.AddTransient<LoadoutsViewModel>();
+        services.AddTransient<ChangeLogsViewModel>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton(MainMenu.CreateViewModel);
         services.AddTransient<BotWindowViewModel>();

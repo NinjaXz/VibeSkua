@@ -51,7 +51,7 @@ public partial class BotWindow : CustomWindow
         Closed -= BotWindow_Closed;
         if (DataContext is BotWindowViewModel vm)
         {
-            StrongReferenceMessenger.Default.Unregister<object>(vm);
+            StrongReferenceMessenger.Default.UnregisterAll(vm);
         }
         if (DataContext is IDisposable disposable)
         {

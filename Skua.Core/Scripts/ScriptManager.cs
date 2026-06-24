@@ -204,7 +204,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
                                 Trace.WriteLine("Script stopping message timed out.");
                             }
                         }
-                        catch { }
+                        catch (Exception ex) { System.Diagnostics.Trace.WriteLine($"Ignored Exception: {ex.Message}"); }
                     }
 
                     script = null;
@@ -353,7 +353,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
         }
 
         HashSet<string> references = GetReferences();
-        string final = ProcessSources(source, ref references);
+        string final = ProcessSources(source, LoadedScript, ref references);
 
         // Debug: Check if final source is empty or contains no classes (disabled for performance)
 #if DEBUG_VERBOSE
@@ -444,7 +444,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
         return references;
     }
 
-    private string ProcessSources(string source, ref HashSet<string> references)
+    private string ProcessSources(string source, string currentFile, ref HashSet<string> references)
     {
         int actualLineCount = source.AsSpan().Count('\n') + 1;
         Span<Range> lineRanges = actualLineCount <= 1024 ? stackalloc Range[actualLineCount] : new Range[actualLineCount];
@@ -470,19 +470,29 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
             switch (cmd)
             {
                 case "ref":
-                    string local = Path.Combine(ClientFileSources.SkuaScriptsDIR, parts[1].Replace("Scripts/", ""));
-                    if (File.Exists(local))
-                        references.Add(local);
-                    else if (File.Exists(parts[1]))
-                        references.Add(parts[1]);
+                    string refPath = parts[1];
+                    string refLocal = Path.Combine(ClientFileSources.SkuaScriptsDIR, refPath.Replace("Scripts/", ""));
+                    string currentDirRef = string.IsNullOrEmpty(currentFile) ? "" : Path.Combine(Path.GetDirectoryName(currentFile) ?? "", refPath);
+                    
+                    if (!string.IsNullOrEmpty(currentDirRef) && File.Exists(currentDirRef))
+                        references.Add(currentDirRef);
+                    else if (File.Exists(refLocal))
+                        references.Add(refLocal);
+                    else if (File.Exists(refPath))
+                        references.Add(refPath);
                     break;
 
                 case "include":
-                    string localSource = Path.Combine(ClientFileSources.SkuaScriptsDIR, parts[1].Replace("Scripts/", ""));
-                    if (File.Exists(localSource))
-                        filesToInclude.Add(localSource);
-                    else if (File.Exists(parts[1]))
-                        filesToInclude.Add(parts[1]);
+                    string includePath = parts[1];
+                    string includeLocal = Path.Combine(ClientFileSources.SkuaScriptsDIR, includePath.Replace("Scripts/", ""));
+                    string currentDirInclude = string.IsNullOrEmpty(currentFile) ? "" : Path.Combine(Path.GetDirectoryName(currentFile) ?? "", includePath);
+                    
+                    if (!string.IsNullOrEmpty(currentDirInclude) && File.Exists(currentDirInclude))
+                        filesToInclude.Add(currentDirInclude);
+                    else if (File.Exists(includeLocal))
+                        filesToInclude.Add(includeLocal);
+                    else if (File.Exists(includePath))
+                        filesToInclude.Add(includePath);
                     break;
             }
             linesToRemove.Add(lineStr);
@@ -559,7 +569,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
                 try
                 {
                     string fileContent = File.ReadAllText(currentFile);
-                    List<string> newIncludes = ExtractIncludeDirectivesFromSource(fileContent, references);
+                    List<string> newIncludes = ExtractIncludeDirectivesFromSource(fileContent, currentFile, references);
 
 
                     if (newIncludes.Count > 0)
@@ -607,7 +617,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
 
     }
 
-    private List<string> ExtractIncludeDirectivesFromSource(string source, HashSet<string> references)
+    private List<string> ExtractIncludeDirectivesFromSource(string source, string currentFile, HashSet<string> references)
     {
         List<string> includes = new();
         ReadOnlySpan<char> sourceSpan = source.AsSpan();
@@ -631,19 +641,29 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
                     switch (cmd)
                     {
                         case "ref":
-                            string refLocal = Path.Combine(ClientFileSources.SkuaScriptsDIR, parts[1].Replace("Scripts/", ""));
-                            if (File.Exists(refLocal))
+                            string refPath = parts[1];
+                            string refLocal = Path.Combine(ClientFileSources.SkuaScriptsDIR, refPath.Replace("Scripts/", ""));
+                            string currentDirRef = string.IsNullOrEmpty(currentFile) ? "" : Path.Combine(Path.GetDirectoryName(currentFile) ?? "", refPath);
+                            
+                            if (!string.IsNullOrEmpty(currentDirRef) && File.Exists(currentDirRef))
+                                references.Add(currentDirRef);
+                            else if (File.Exists(refLocal))
                                 references.Add(refLocal);
-                            else if (File.Exists(parts[1]))
-                                references.Add(parts[1]);
+                            else if (File.Exists(refPath))
+                                references.Add(refPath);
                             break;
 
                         case "include":
-                            string includeLocal = Path.Combine(ClientFileSources.SkuaScriptsDIR, parts[1].Replace("Scripts/", ""));
-                            if (File.Exists(includeLocal))
+                            string includePath = parts[1];
+                            string includeLocal = Path.Combine(ClientFileSources.SkuaScriptsDIR, includePath.Replace("Scripts/", ""));
+                            string currentDirInclude = string.IsNullOrEmpty(currentFile) ? "" : Path.Combine(Path.GetDirectoryName(currentFile) ?? "", includePath);
+                            
+                            if (!string.IsNullOrEmpty(currentDirInclude) && File.Exists(currentDirInclude))
+                                includes.Add(currentDirInclude);
+                            else if (File.Exists(includeLocal))
                                 includes.Add(includeLocal);
-                            else if (File.Exists(parts[1]))
-                                includes.Add(parts[1]);
+                            else if (File.Exists(includePath))
+                                includes.Add(includePath);
                             break;
                     }
                 }
@@ -797,7 +817,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
         {
             string includeSource = File.ReadAllText(includedFile);
             CheckScriptVersionRequirement(includeSource);
-            List<string> deps = ExtractIncludeDependencies(includeSource);
+            List<string> deps = ExtractIncludeDependencies(includeSource, includedFile);
             List<string> normalizedDeps = new();
             foreach (string dep in deps)
             {
@@ -1234,7 +1254,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
         }
     }
 
-    private List<string> ExtractIncludeDependencies(string source)
+    private List<string> ExtractIncludeDependencies(string source, string currentFile)
     {
         List<string> dependencies = new();
         ReadOnlySpan<char> sourceSpan = source.AsSpan();
@@ -1256,7 +1276,11 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
                 {
                     string includePath = parts[1];
                     string localPath = Path.Combine(ClientFileSources.SkuaScriptsDIR, includePath.Replace("Scripts/", ""));
-                    if (File.Exists(localPath))
+                    string currentDirInclude = string.IsNullOrEmpty(currentFile) ? "" : Path.Combine(Path.GetDirectoryName(currentFile) ?? "", includePath);
+                    
+                    if (!string.IsNullOrEmpty(currentDirInclude) && File.Exists(currentDirInclude))
+                        dependencies.Add(currentDirInclude);
+                    else if (File.Exists(localPath))
                         dependencies.Add(localPath);
                     else if (File.Exists(includePath))
                         dependencies.Add(includePath);

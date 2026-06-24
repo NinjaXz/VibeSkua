@@ -53,4 +53,9 @@ public class SettingsService : ISettingsService
     {
         _unifiedService.SetApplicationVersion();
     }
+
+    public void ReloadSettings()
+    {
+        _unifiedService.ReloadSettings();
+    }
 }

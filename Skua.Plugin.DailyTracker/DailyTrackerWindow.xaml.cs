@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Skua.Core.Interfaces;
@@ -10,12 +11,13 @@ namespace Skua.Plugin.DailyTracker;
 public partial class DailyTrackerWindow : Window
 {
     private readonly IScriptInterface _bot;
+    private CancellationTokenSource? _cts;
 
     private readonly int[] _trackedQuests = new[] 
     { 
         2091, 2098, 802, 803, 3075, 3076, 1239, 10047, 
         7156, 7165, 3759, 3827, 3965, 3596, 
-        8152, 8153, 8154, 8245, 8300, 8397, 8692, 8746, 9173, 10301 
+        8152, 8153, 8154, 8245, 8300, 8397, 8547, 8692, 8746, 9173, 10301 
     };
 
     public DailyTrackerWindow(IScriptInterface bot)
@@ -25,90 +27,107 @@ public partial class DailyTrackerWindow : Window
         
         Loaded += async (s, e) => 
         {
+            _cts = new CancellationTokenSource();
+            var token = _cts.Token;
+
             // ONLY execute the batch load and popup closer when the plugin window is first displayed!
             await Task.Run(() => 
             {
-                try { _bot.Quests.Load(_trackedQuests); } catch { }
-            });
+                try { _bot.Quests.Load(_trackedQuests); } 
+                catch (Exception ex) { System.Diagnostics.Trace.WriteLine($"Failed to load quests: {ex}"); }
+            }, token);
 
-            // Wait 3000ms for the UI to actually render, then forcefully close the popup
-            Task.Delay(3000).ContinueWith(_ => 
+            // Wait 3000ms for the UI to actually render, then forcefully close the popup safely on the UI thread
+            _ = Task.Delay(3000, token).ContinueWith(t => 
             {
-                try 
-                { 
-                    // The game might ignore toggleQuestLog without a MouseEvent, or the popup might be named differently.
-                    // Shotgun approach to forcefully hide/close the Quest UI without breaking NPC interactions!
-                    try { _bot.Flash.CallGameFunction("world.cancelQuest", 0); } catch { }
-                    try { _bot.Flash.CallGameFunction("world.toggleQuestLog"); } catch { }
-                    try { _bot.Flash.CallGameFunction("ui.mcPopup.onClose"); } catch { }
-                    try { _bot.Flash.CallGameFunction("ui.ModalStack.hide"); } catch { }
-                } 
-                catch { }
-            });
+                if (t.IsCanceled) return;
+                
+                Application.Current.Dispatcher.Invoke(() => 
+                {
+                    try 
+                    { 
+                        _bot.Flash.CallGameFunction("world.cancelQuest", 0); 
+                        _bot.Flash.CallGameFunction("world.toggleQuestLog"); 
+                        _bot.Flash.CallGameFunction("ui.mcPopup.onClose"); 
+                        _bot.Flash.CallGameFunction("ui.ModalStack.hide"); 
+                    } 
+                    catch (Exception ex) { System.Diagnostics.Trace.WriteLine($"Failed to close popups: {ex}"); }
+                });
+            }, token);
 
-            await LoadQuestsAsync();
+            try { await LoadQuestsAsync(); }
+            catch (Exception ex) { System.Diagnostics.Trace.WriteLine($"Failed to load quest UI: {ex}"); }
+        };
+
+        Closed += (s, e) =>
+        {
+            _cts?.Cancel();
+            _cts?.Dispose();
         };
     }
 
-    private void Refresh_Click(object sender, RoutedEventArgs e)
+    private async void Refresh_Click(object sender, RoutedEventArgs e)
     {
-        // Refresh purely checks the loaded statuses invisibly
-        _ = LoadQuestsAsync();
+        try
+        {
+            await LoadQuestsAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Trace.WriteLine($"Failed to refresh quests: {ex}");
+        }
     }
 
     private async Task LoadQuestsAsync()
     {
-        var categories = await Task.Run(() =>
+        var categories = await Task.Run(() => new List<QuestCategory>
         {
-            var cats = new List<QuestCategory>
+            new QuestCategory
             {
-                new QuestCategory
+                Name = "Resources & Miscellaneous",
+                Quests = new List<QuestItem>
                 {
-                    Name = "Resources & Miscellaneous",
-                    Quests = new List<QuestItem>
-                    {
-                        new(2091, "Mine Crafting", _bot),
-                        new(2098, "Hard Core Metals", _bot),
-                        new(802, "Elders' Blood", _bot),
-                        new(803, "Sparrow's Blood", _bot),
-                        new(3075, "Doom Member Free Spin", _bot),
-                        new(3076, "Doom Free Weekly Spin", _bot),
-                        new(1239, "Free Member Magic Keys", _bot),
-                        new(10047, "A Grain of Dirt", _bot)
-                    }
-                },
-                new QuestCategory
-                {
-                    Name = "Classes & Factions",
-                    Quests = new List<QuestItem>
-                    {
-                        new(7156, "Lord of Order (1)", _bot),
-                        new(7165, "Lord of Order (10)", _bot),
-                        new(3759, "BeastMaster Challenge", _bot),
-                        new(3827, "Shadow Shield (Daily)", _bot),
-                        new(3965, "Glacera Ice Token (Cryomancer)", _bot),
-                        new(3596, "Embrace Your Chaos", _bot)
-                    }
-                },
-                new QuestCategory
-                {
-                    Name = "Ultra Bosses (Weekly)",
-                    Quests = new List<QuestItem>
-                    {
-                        new(8152, "Ultra Ezrajal", _bot),
-                        new(8153, "Ultra Warden", _bot),
-                        new(8154, "Ultra Engineer", _bot),
-                        new(8245, "Ultra Tyndarius", _bot),
-                        new(8300, "Champion Drakath", _bot),
-                        new(8397, "Ultra Drago", _bot),
-                        new(8692, "Ultra Nulgath", _bot),
-                        new(8746, "Ultra Darkon", _bot),
-                        new(9173, "Ultra Speaker", _bot),
-                        new(10301, "Ultra Gramiel", _bot)
-                    }
+                    new(2091, "Mine Crafting", _bot),
+                    new(2098, "Hard Core Metals", _bot),
+                    new(802, "Elders' Blood", _bot),
+                    new(803, "Sparrow's Blood", _bot),
+                    new(3075, "Doom Member Free Spin", _bot),
+                    new(3076, "Doom Free Weekly Spin", _bot),
+                    new(1239, "Free Member Magic Keys", _bot),
+                    new(10047, "A Grain of Dirt", _bot)
                 }
-            };
-            return cats;
+            },
+            new QuestCategory
+            {
+                Name = "Classes & Factions",
+                Quests = new List<QuestItem>
+                {
+                    new(7156, "Lord of Order (1)", _bot),
+                    new(7165, "Lord of Order (10)", _bot),
+                    new(3759, "BeastMaster Challenge", _bot),
+                    new(3827, "Shadow Shield (Daily)", _bot),
+                    new(3965, "Glacera Ice Token (Cryomancer)", _bot),
+                    new(3596, "Embrace Your Chaos", _bot)
+                }
+            },
+            new QuestCategory
+            {
+                Name = "Ultra Bosses (Weekly)",
+                Quests = new List<QuestItem>
+                {
+                    new(8152, "Ultra Ezrajal", _bot),
+                    new(8153, "Ultra Warden", _bot),
+                    new(8154, "Ultra Engineer", _bot),
+                    new(8245, "Ultra Tyndarius", _bot),
+                    new(8300, "Champion Drakath", _bot),
+                    new(8397, "Ultra Drago", _bot),
+                    new(8547, "Ultra Dage", _bot),
+                    new(8692, "Ultra Nulgath", _bot),
+                    new(8746, "Ultra Darkon", _bot),
+                    new(9173, "Ultra Speaker", _bot),
+                    new(10301, "Ultra Gramiel", _bot)
+                }
+            }
         });
 
         CategoriesControl.ItemsSource = categories;
@@ -133,12 +152,11 @@ public class QuestItem
         Name = name;
         try
         {
-            // Now that all quests are batch-loaded into memory, IsDailyComplete will accurately 
-            // read from the cached data without popping up any new windows!
             IsDone = bot.Quests.IsDailyComplete(id);
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Trace.WriteLine($"Failed to check quest {id}: {ex}");
             IsDone = false;
         }
     }

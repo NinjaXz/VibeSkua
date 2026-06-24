@@ -1,0 +1,103 @@
+<UserControl x:Class="Skua.WPF.Views.LoadoutsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:vms="clr-namespace:Skua.Core.ViewModels;assembly=Skua.Core"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             d:DataContext="{d:DesignInstance vms:LoadoutsViewModel}"
+             mc:Ignorable="d" 
+             d:DesignHeight="500" d:DesignWidth="600">
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <TextBlock Grid.Row="0" Text="Loadouts Manager" FontSize="24" FontWeight="Bold" Margin="0,0,0,15" Foreground="{DynamicResource PrimaryHueLightBrush}"/>
+
+        <Grid Grid.Row="1" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" Content="Save" Command="{Binding SaveCurrentCommand}" Margin="0,0,10,0"/>
+            <Button Grid.Column="1" Content="Show Current" Command="{Binding ShowCurrentCommand}" Margin="0,0,10,0"/>
+            <Button Grid.Column="2" Command="{Binding RefreshCommand}" Style="{StaticResource MaterialDesignIconButton}" Margin="0,0,10,0" ToolTip="Refresh Loadouts" Width="32" Height="32">
+                <materialDesign:PackIcon Kind="Refresh" />
+            </Button>
+            <ComboBox Grid.Column="3" ItemsSource="{Binding Loadouts}" SelectedItem="{Binding SelectedLoadout}" DisplayMemberPath="Name" materialDesign:HintAssist.Hint="Select Loadout" Margin="0,0,10,0" VerticalAlignment="Center"/>
+            <Button Grid.Column="4" Content="Equip Selected" Command="{Binding EquipLoadoutCommand}" Margin="0,0,10,0"/>
+            <Button Grid.Column="5" Content="Delete" Command="{Binding DeleteLoadoutCommand}" Background="{DynamicResource MaterialDesignValidationErrorBrush}" BorderBrush="{DynamicResource MaterialDesignValidationErrorBrush}"/>
+        </Grid>
+
+        <Border Grid.Row="2" Background="{DynamicResource MaterialDesignPaper}" CornerRadius="5" Padding="15">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Name:" FontWeight="Bold" Margin="0,10,10,10" VerticalAlignment="Center"/>
+                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding SelectedLoadoutName, UpdateSourceTrigger=LostFocus}" Margin="0,10,0,10" VerticalAlignment="Center"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Class:" FontWeight="Bold" Margin="0,10,10,10" VerticalAlignment="Center"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" Margin="0,10,0,10" VerticalAlignment="Center">
+                    <Run Text="{Binding SelectedLoadout.Class}" />
+                    <Run Text=" [" Foreground="Gray" />
+                    <Run Text="{Binding SelectedLoadout.ClassEnhancement}" Foreground="Gray" />
+                    <Run Text="]" Foreground="Gray" />
+                </TextBlock>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Armor:" FontWeight="Bold" Margin="0,10,10,10" VerticalAlignment="Center"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedLoadout.Armor}" Margin="0,10,0,10" VerticalAlignment="Center"/>
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Weapon:" FontWeight="Bold" Margin="0,10,10,10" VerticalAlignment="Center"/>
+                <TextBlock Grid.Row="3" Grid.Column="1" Margin="0,10,0,10" VerticalAlignment="Center">
+                    <Run Text="{Binding SelectedLoadout.Weapon}" />
+                    <Run Text=" [" Foreground="Gray" />
+                    <Run Text="{Binding SelectedLoadout.WeaponEnhancement}" Foreground="Gray" />
+                    <Run Text="]" Foreground="Gray" />
+                </TextBlock>
+
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="Helm:" FontWeight="Bold" Margin="0,10,10,10" VerticalAlignment="Center"/>
+                <TextBlock Grid.Row="4" Grid.Column="1" Margin="0,10,0,10" VerticalAlignment="Center">
+                    <Run Text="{Binding SelectedLoadout.Helm}" />
+                    <Run Text=" [" Foreground="Gray" />
+                    <Run Text="{Binding SelectedLoadout.HelmEnhancement}" Foreground="Gray" />
+                    <Run Text="]" Foreground="Gray" />
+                </TextBlock>
+
+                <TextBlock Grid.Row="5" Grid.Column="0" Text="Cape:" FontWeight="Bold" Margin="0,10,10,10" VerticalAlignment="Center"/>
+                <TextBlock Grid.Row="5" Grid.Column="1" Margin="0,10,0,10" VerticalAlignment="Center">
+                    <Run Text="{Binding SelectedLoadout.Cape}" />
+                    <Run Text=" [" Foreground="Gray" />
+                    <Run Text="{Binding SelectedLoadout.CapeEnhancement}" Foreground="Gray" />
+                    <Run Text="]" Foreground="Gray" />
+                </TextBlock>
+
+                <TextBlock Grid.Row="6" Grid.Column="0" Text="Pet:" FontWeight="Bold" Margin="0,10,10,10" VerticalAlignment="Center"/>
+                <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding SelectedLoadout.Pet}" Margin="0,10,0,10" VerticalAlignment="Center"/>
+
+                <TextBlock Grid.Row="7" Grid.Column="0" Text="Amulet:" FontWeight="Bold" Margin="0,10,10,10" VerticalAlignment="Center"/>
+                <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding SelectedLoadout.Amulet}" Margin="0,10,0,10" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

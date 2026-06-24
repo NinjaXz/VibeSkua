@@ -33,7 +33,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Skua.App.WPF.Follower", "Sk
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Skua.App.WPF.Sync", "Skua.App.WPF.Sync\Skua.App.WPF.Sync.csproj", "{56BF55A9-3D09-4AF6-B095-FB5CBA37CD6E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Skua.SyncConsole", "Skua.SyncConsole\Skua.SyncConsole.csproj", "{81D3A71C-CB3C-4B12-9C49-D7A3BB06A899}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Skua.Plugin.DailyTracker", "Skua.Plugin.DailyTracker\Skua.Plugin.DailyTracker.csproj", "{1A76EDBB-7B68-4E6B-AADE-AD55EC35369A}"
 EndProject

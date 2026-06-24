@@ -64,9 +64,6 @@ public sealed partial class App : Application
 
     public App()
     {
-        VelopackApp.Build().Run();
-        
-
         try
         {
             System.Diagnostics.Process.GetCurrentProcess().PriorityClass = System.Diagnostics.ProcessPriorityClass.AboveNormal;

@@ -67,6 +67,30 @@ public class UnifiedSettingsService
         }
     }
 
+    public void ReloadSettings()
+    {
+        lock (_lock)
+        {
+            try
+            {
+                _fileMutex.WaitOne();
+                if (File.Exists(ClientFileSources.SkuaSettingsDIR))
+                {
+                    LoadSettings();
+                    EnsureRoleDefaults();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error reloading settings: {ex.Message}");
+            }
+            finally
+            {
+                _fileMutex.ReleaseMutex();
+            }
+        }
+    }
+
     public T? Get<T>(string key)
     {
         lock (_lock)

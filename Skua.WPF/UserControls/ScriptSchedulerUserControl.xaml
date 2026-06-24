@@ -66,6 +66,8 @@
         </ListBox>
 
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="10">
+            <Button Content="Load Playlist" Command="{Binding LoadPlaylistCommand}" Margin="0,0,10,0" Style="{StaticResource MaterialDesignFlatButton}"/>
+            <Button Content="Save Playlist" Command="{Binding SavePlaylistCommand}" Margin="0,0,10,0" Style="{StaticResource MaterialDesignFlatButton}"/>
             <Button Content="Search Scripts" Command="{Binding OpenScriptRepoCommand}" Margin="0,0,10,0"/>
             <Button Content="Start Queue" Command="{Binding StartQueueCommand}" Margin="0,0,10,0" Style="{StaticResource MaterialDesignRaisedLightButton}"/>
             <Button Content="Stop Queue" Command="{Binding StopQueueCommand}" Style="{StaticResource MaterialDesignRaisedSecondaryButton}"/>

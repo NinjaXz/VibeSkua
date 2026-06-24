@@ -51,9 +51,16 @@ public partial class App : Application
         {
             Task.Run(async () =>
             {
-                await Task.Delay(1500);
-                AppUpdaterViewModel updateVM = Ioc.Default.GetRequiredService<AppUpdaterViewModel>();
-                await updateVM.CheckForUpdateCommand.ExecuteAsync(null);
+                try
+                {
+                    await Task.Delay(1500);
+                    AppUpdaterViewModel updateVM = Ioc.Default.GetRequiredService<AppUpdaterViewModel>();
+                    await updateVM.CheckForUpdateCommand.ExecuteAsync(null);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Trace.WriteLine($"Client update check failed: {ex}");
+                }
             });
         }
 
@@ -61,12 +68,19 @@ public partial class App : Application
         {
             Task.Run(async () =>
             {
-                await Task.Delay(2000);
-                await getScripts.GetScriptsAsync(null, default);
-
-                if ((getScripts.Missing > 0 || getScripts.Outdated > 0) && settings.Get<bool>("AutoUpdateBotScripts"))
+                try
                 {
-                    int count = await getScripts.DownloadAllWhereAsync(s => !s.Downloaded || s.Outdated);
+                    await Task.Delay(2000);
+                    await getScripts.GetScriptsAsync(null, default);
+
+                    if ((getScripts.Missing > 0 || getScripts.Outdated > 0) && settings.Get<bool>("AutoUpdateBotScripts"))
+                    {
+                        int count = await getScripts.DownloadAllWhereAsync(s => !s.Downloaded || s.Outdated);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Trace.WriteLine($"Script update check failed: {ex}");
                 }
             });
         }
@@ -91,23 +105,28 @@ public partial class App : Application
             _eventWaitHandle = EventWaitHandle.OpenExisting(_uniqueEventName);
             _eventWaitHandle.Set();
             Shutdown();
+            return;
         }
         catch (WaitHandleCannotBeOpenedException)
         {
             _eventWaitHandle = new EventWaitHandle(false, EventResetMode.AutoReset, _uniqueEventName);
         }
-
-        new Task(() =>
+        catch (Exception ex)
         {
-            while (_eventWaitHandle.WaitOne())
+            System.Diagnostics.Trace.WriteLine($"SingleInstanceWatcher failed: {ex}");
+            return;
+        }
+
+        Task.Factory.StartNew(() =>
+        {
+            while (_eventWaitHandle?.WaitOne() == true)
             {
                 Current.Dispatcher.BeginInvoke(() =>
                 {
                     CommunityToolkit.Mvvm.Messaging.StrongReferenceMessenger.Default.Send(new Skua.Core.Messaging.ShowMainWindowMessage());
                 });
             }
-        })
-        .Start();
+        }, TaskCreationOptions.LongRunning);
     }
 
     private void Dispatcher_ShutdownStarted(object? sender, EventArgs e)

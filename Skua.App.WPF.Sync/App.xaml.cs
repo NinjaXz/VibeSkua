@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.DependencyInjection;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using Skua.App.WPF.Follower;
 using Skua.Core.AppStartup;
@@ -37,15 +37,21 @@ public partial class App : Application
             switch (args[i])
             {
                 case "--usr":
-                    username = args[++i];
+                    if (i + 1 < args.Length)
+                        username = args[++i];
                     break;
 
                 case "--psw":
-                    password = args[++i];
+                    if (i + 1 < args.Length)
+                        password = args[++i];
                     break;
 
                 case "--id":
-                    id = int.Parse(args[++i]);
+                    if (i + 1 < args.Length && int.TryParse(args[i + 1], out int parsedId))
+                    {
+                        id = parsedId;
+                        i++;
+                    }
                     break;
             }
         }

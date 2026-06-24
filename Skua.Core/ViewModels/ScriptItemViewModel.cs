@@ -24,7 +24,7 @@ public partial class ScriptItemViewModel : ObservableObject
     [ObservableProperty]
     private string _duration = "00:00";
 
-    public System.Guid Id { get; } = System.Guid.NewGuid();
+    public System.Guid Id { get; set; } = System.Guid.NewGuid();
 
     public string Storage => $"Queue_{System.IO.Path.GetFileNameWithoutExtension(Path)}_{Id}";
 }
