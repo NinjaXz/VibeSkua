@@ -11,7 +11,7 @@ echo Packaging Velopack Release...
 echo =========================================
 
 dotnet tool update -g vpk
-vpk pack -u VibeSkua -v 1.8.0 -p Build\AnyCPU -e Skua.exe -o Releases
+vpk pack -u VibeSkua -v 1.8.1 -p Build\AnyCPU -e Skua.exe -o Releases
 del /Q Releases\*Portable.zip
 
 echo =========================================

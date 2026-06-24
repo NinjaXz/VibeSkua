@@ -11,6 +11,9 @@
     <DataTemplate DataType="{x:Type managerVms:AppUpdaterViewModel}">
         <views:AppUpdaterView />
     </DataTemplate>
+    <DataTemplate DataType="{x:Type managerVms:ScriptUpdaterViewModel}">
+        <views:ScriptUpdaterView />
+    </DataTemplate>
     <DataTemplate DataType="{x:Type vms:LoaderViewModel}">
         <views:LoaderView />
     </DataTemplate>

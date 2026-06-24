@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Skua.Core.Interfaces;
@@ -15,7 +15,7 @@ public partial class ClientUpdatesViewModel : BotControlViewModelBase
         : base("Client Updates")
     {
         StrongReferenceMessenger.Default.Register<ClientUpdatesViewModel, DownloadClientUpdateMessage>(this, DownloadUpdate);
-        StrongReferenceMessenger.Default.Register<ClientUpdatesViewModel, UpdateScriptsMessage>(this, ReceiveUpdateScriptsMessage);
+// Legacy Scripts Updater message registration removed. Delegated to ScriptUpdaterViewModel.
         StrongReferenceMessenger.Default.Register<ClientUpdatesViewModel, CheckClientUpdateMessage>(this, CheckUpdate);
 
         _updateService = updateService;

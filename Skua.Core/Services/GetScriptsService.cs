@@ -190,7 +190,23 @@ public partial class GetScriptsService : ObservableObject, IGetScriptsService
     public async Task<int> DownloadAllWhereAsync(Func<ScriptInfo, bool> pred)
     {
         List<ScriptInfo> toUpdate = _scripts.Where(pred).ToList();
-        await Task.WhenAll(toUpdate.Select(s => DownloadScriptAsync(s)));
+        
+        // Defensive: Throttle concurrent downloads to prevent HttpClient timeouts and GitHub rate-limiting
+        using SemaphoreSlim semaphore = new SemaphoreSlim(15);
+        var tasks = toUpdate.Select(async s =>
+        {
+            await semaphore.WaitAsync();
+            try
+            {
+                await DownloadScriptAsync(s);
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+        });
+        
+        await Task.WhenAll(tasks);
         return toUpdate.Count;
     }
 

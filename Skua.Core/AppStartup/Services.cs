@@ -213,6 +213,7 @@ public static class Services
         services.AddSingleton<AccountManagerViewModel>();
         services.AddSingleton<LauncherViewModel>();
         services.AddSingleton<AppUpdaterViewModel>();
+        services.AddSingleton<ScriptUpdaterViewModel>();
         services.AddSingleton<IClientUpdateService, ClientUpdateService>();
         services.AddSingleton<IClientFilesService, ClientFilesService>();
         services.AddSingleton<ClientUpdatesViewModel>();
