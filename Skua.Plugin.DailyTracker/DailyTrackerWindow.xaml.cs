@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Skua.Core.Interfaces;
+using Skua.Core.Models;
 
 namespace Skua.Plugin.DailyTracker;
 
@@ -12,155 +13,255 @@ public partial class DailyTrackerWindow : Window
 {
     private readonly IScriptInterface _bot;
     private CancellationTokenSource? _cts;
+    private Timer? _refreshTimer;
+    private static readonly TimeSpan _refreshInterval = TimeSpan.FromMinutes(5);
+    private static readonly SemaphoreSlim _joinLock = new(1, 1);
 
-    private readonly int[] _trackedQuests = new[] 
-    { 
-        2091, 2098, 802, 803, 3075, 3076, 1239, 10047, 
-        7156, 7165, 3759, 3827, 3965, 3596, 
-        8152, 8153, 8154, 8245, 8300, 8397, 8547, 8692, 8746, 9173, 10301 
+    private static readonly int[] _trackedQuests =
+    [
+        2091, 2098, 802, 803, 3075, 3076, 1239, 10047,
+        3759, 3827, 3965, 3596,
+        7156, 7157, 7158, 7159, 7160, 7161, 7162, 7163, 7164, 7165,
+        8152, 8153, 8154, 8245, 8300, 8397, 8547, 8692, 8746, 9173, 10301
+    ];
+
+    private static readonly string[] _questNames =
+    [
+        "Mine Crafting", "Hard Core Metals", "Elders' Blood", "Sparrow's Blood",
+        "Doom Member Free Spin", "Doom Free Weekly Spin", "Free Member Magic Keys", "A Grain of Dirt",
+        "BeastMaster Challenge", "Shadow Shield (Daily)",
+        "Glacera Ice Token (Cryomancer)", "Embrace Your Chaos",
+        "Heart of Servitude", "Spirit of Justice", "Purification of Chaos", "Steadfast Will",
+        "Strike of Order", "Harmony", "Ordinance", "Axiom", "Blessing of Order", "The Final Challenge",
+        "Ultra Ezrajal", "Ultra Warden", "Ultra Engineer", "Ultra Tyndarius",
+        "Champion Drakath", "Ultra Drago", "Ultra Dage", "Ultra Nulgath",
+        "Ultra Darkon", "Ultra Speaker", "Ultra Gramiel"
+    ];
+
+    private static readonly Dictionary<int, string> _questScriptNames = new()
+    {
+        { 2091, "Dailies\\MineCrafting.cs" },
+        { 2098, "Dailies\\HardCoreMetals[Mem].cs" },
+        { 802,  "Dailies\\EldersBlood.cs" },
+        { 803,  "Dailies\\SparrowsBlood.cs" },
+        { 3075, "Dailies\\WheelofDoom.cs" },
+        { 3076, "Dailies\\WheelofDoom.cs" },
+        { 1239, "Dailies\\FreeDailyBoost[Mem].cs" },
+        { 10047, "Dailies\\PearlOfNulgath.cs" },
+        { 3759, "Dailies\\BeastMasterChallenge[Mem].cs" },
+        { 3827, "Dailies\\ShadowShroud.cs" },
+        { 3965, "Dailies\\Cryomancer.cs" },
+        { 7156, "Dailies\\LordOfOrder.cs" },
+        { 7157, "Dailies\\LordOfOrder.cs" },
+        { 7158, "Dailies\\LordOfOrder.cs" },
+        { 7159, "Dailies\\LordOfOrder.cs" },
+        { 7160, "Dailies\\LordOfOrder.cs" },
+        { 7161, "Dailies\\LordOfOrder.cs" },
+        { 7162, "Dailies\\LordOfOrder.cs" },
+        { 7163, "Dailies\\LordOfOrder.cs" },
+        { 7164, "Dailies\\LordOfOrder.cs" },
+        { 7165, "Dailies\\LordOfOrder.cs" },
+        { 3596, "Dailies\\DagesScrollFragment.cs" },
+        { 8152, "Ultras\\UltraEzrajal.cs" },
+        { 8153, "Ultras\\UltraWarden.cs" },
+        { 8154, "Ultras\\UltraEngineer.cs" },
+        { 8245, "Ultras\\UltraAvatarTyndarius.cs" },
+        { 8300, "Ultras\\ChampionDrakath.cs" },
+        { 8397, "Ultras\\UltraDrago.cs" },
+        { 8547, "Ultras\\UltraDage.cs" },
+        { 8692, "Ultras\\UltraNulgath.cs" },
+        { 8746, "Ultras\\UltraDarkon.cs" },
+        { 9173, "Ultras\\UltraSpeaker.cs" },
+        { 10301, "Ultras\\UltraGramiel.cs" }
     };
 
     public DailyTrackerWindow(IScriptInterface bot)
     {
         InitializeComponent();
         _bot = bot;
-        
-        Loaded += async (s, e) => 
-        {
-            _cts = new CancellationTokenSource();
-            var token = _cts.Token;
-
-            // ONLY execute the batch load and popup closer when the plugin window is first displayed!
-            await Task.Run(() => 
-            {
-                try { _bot.Quests.Load(_trackedQuests); } 
-                catch (Exception ex) { System.Diagnostics.Trace.WriteLine($"Failed to load quests: {ex}"); }
-            }, token);
-
-            // Wait 3000ms for the UI to actually render, then forcefully close the popup safely on the UI thread
-            _ = Task.Delay(3000, token).ContinueWith(t => 
-            {
-                if (t.IsCanceled) return;
-                
-                Application.Current.Dispatcher.Invoke(() => 
-                {
-                    try 
-                    { 
-                        _bot.Flash.CallGameFunction("world.cancelQuest", 0); 
-                        _bot.Flash.CallGameFunction("world.toggleQuestLog"); 
-                        _bot.Flash.CallGameFunction("ui.mcPopup.onClose"); 
-                        _bot.Flash.CallGameFunction("ui.ModalStack.hide"); 
-                    } 
-                    catch (Exception ex) { System.Diagnostics.Trace.WriteLine($"Failed to close popups: {ex}"); }
-                });
-            }, token);
-
-            try { await LoadQuestsAsync(); }
-            catch (Exception ex) { System.Diagnostics.Trace.WriteLine($"Failed to load quest UI: {ex}"); }
-        };
-
-        Closed += (s, e) =>
-        {
-            _cts?.Cancel();
-            _cts?.Dispose();
-        };
+        Loaded += OnLoaded;
+        Closed += OnClosed;
     }
 
-    private async void Refresh_Click(object sender, RoutedEventArgs e)
+    private async void OnLoaded(object sender, RoutedEventArgs e) => await InitializeAsync();
+
+    private async Task InitializeAsync()
     {
+        _cts = new CancellationTokenSource();
         try
         {
             await LoadQuestsAsync();
+            StartLiveUpdates();
         }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Trace.WriteLine($"Failed to refresh quests: {ex}");
-        }
+        catch (TaskCanceledException) { }
+        catch (Exception ex) { System.Diagnostics.Trace.WriteLine($"InitializeAsync failed: {ex}"); }
     }
+
+    private List<QuestCategory> _categories = [];
 
     private async Task LoadQuestsAsync()
     {
-        var categories = await Task.Run(() => new List<QuestCategory>
+        bool[] doneStates = await Task.Run(() =>
         {
-            new QuestCategory
+            bool[] results = new bool[_trackedQuests.Length];
+            for (int i = 0; i < _trackedQuests.Length; i++)
             {
-                Name = "Resources & Miscellaneous",
-                Quests = new List<QuestItem>
-                {
-                    new(2091, "Mine Crafting", _bot),
-                    new(2098, "Hard Core Metals", _bot),
-                    new(802, "Elders' Blood", _bot),
-                    new(803, "Sparrow's Blood", _bot),
-                    new(3075, "Doom Member Free Spin", _bot),
-                    new(3076, "Doom Free Weekly Spin", _bot),
-                    new(1239, "Free Member Magic Keys", _bot),
-                    new(10047, "A Grain of Dirt", _bot)
-                }
-            },
-            new QuestCategory
+                try { results[i] = _bot.Quests.IsDailyComplete(_trackedQuests[i]); }
+                catch { results[i] = false; }
+            }
+            return results;
+        });
+
+        List<QuestItem> questItems = [];
+        for (int i = 0; i < _trackedQuests.Length; i++)
+        {
+            QuestItem item = new(_trackedQuests[i], _questNames[i], doneStates[i]);
+            if (_questScriptNames.TryGetValue(_trackedQuests[i], out string? script))
+                item.ScriptName = script;
+            questItems.Add(item);
+        }
+
+        _categories =
+        [
+            new() { Name = "Resources & Miscellaneous", Quests = [.. questItems.Take(8)] },
+            new() { Name = "Classes & Factions", Quests = [.. questItems.Skip(8).Take(4)] },
+            new() { Name = "Lord of Order", Quests = [.. questItems.Skip(12).Take(10)] },
+            new() { Name = "Ultra Bosses (Weekly)", Quests = [.. questItems.Skip(22)] }
+        ];
+
+        CategoriesControl.ItemsSource = _categories;
+    }
+
+    private void StartLiveUpdates()
+    {
+        _refreshTimer = new Timer(async _ =>
+        {
+            try
             {
-                Name = "Classes & Factions",
-                Quests = new List<QuestItem>
-                {
-                    new(7156, "Lord of Order (1)", _bot),
-                    new(7165, "Lord of Order (10)", _bot),
-                    new(3759, "BeastMaster Challenge", _bot),
-                    new(3827, "Shadow Shield (Daily)", _bot),
-                    new(3965, "Glacera Ice Token (Cryomancer)", _bot),
-                    new(3596, "Embrace Your Chaos", _bot)
-                }
-            },
-            new QuestCategory
+                if (_cts?.IsCancellationRequested != true)
+                    await RefreshQuestStatesAsync();
+            }
+            catch (Exception ex) { System.Diagnostics.Trace.WriteLine($"Live update failed: {ex}"); }
+        }, null, _refreshInterval, _refreshInterval);
+    }
+
+    private Task RefreshQuestStatesAsync()
+    {
+        return Task.Run(() =>
+        {
+            foreach (QuestCategory category in _categories)
             {
-                Name = "Ultra Bosses (Weekly)",
-                Quests = new List<QuestItem>
+                foreach (QuestItem quest in category.Quests)
                 {
-                    new(8152, "Ultra Ezrajal", _bot),
-                    new(8153, "Ultra Warden", _bot),
-                    new(8154, "Ultra Engineer", _bot),
-                    new(8245, "Ultra Tyndarius", _bot),
-                    new(8300, "Champion Drakath", _bot),
-                    new(8397, "Ultra Drago", _bot),
-                    new(8547, "Ultra Dage", _bot),
-                    new(8692, "Ultra Nulgath", _bot),
-                    new(8746, "Ultra Darkon", _bot),
-                    new(9173, "Ultra Speaker", _bot),
-                    new(10301, "Ultra Gramiel", _bot)
+                    bool newState;
+                    try { newState = _bot.Quests.IsDailyComplete(quest.ID); }
+                    catch (Exception ex) { System.Diagnostics.Trace.WriteLine($"Quest refresh failed {quest.ID}: {ex}"); continue; }
+                    if (quest.IsDone != newState)
+                        Application.Current.Dispatcher.Invoke(() => quest.IsDone = newState);
                 }
             }
         });
+    }
 
-        CategoriesControl.ItemsSource = categories;
+    private void StartScript_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.Button btn) return;
+        if (btn.Tag is not string scriptName || string.IsNullOrWhiteSpace(scriptName)) return;
+        StartScript(scriptName);
+    }
+
+    private void StartCategory_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.Button btn) return;
+        string? categoryName = btn.Tag as string;
+        if (categoryName == "Lord of Order")
+            StartScript("Dailies\\LordOfOrder.cs");
+    }
+
+    private void StartScript(string scriptName)
+    {
+        string path = System.IO.Path.Combine(ClientFileSources.SkuaScriptsDIR, scriptName);
+        if (!System.IO.File.Exists(path))
+        {
+            System.Diagnostics.Trace.WriteLine($"Script not found: {path}");
+            return;
+        }
+        Task.Run(async () =>
+        {
+            try
+            {
+                _bot.Manager.SetLoadedScript(path);
+                await _bot.Manager.StartScript();
+            }
+            catch (Exception ex) { System.Diagnostics.Trace.WriteLine($"Failed to start script {scriptName}: {ex}"); }
+        });
+    }
+
+    private void Refresh_Click(object sender, RoutedEventArgs e) => _ = LoadQuestsAsync();
+
+    private void OnClosed(object sender, EventArgs e)
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
+        _refreshTimer?.Dispose();
+        _refreshTimer = null;
     }
 }
 
-public class QuestCategory
+public class QuestCategory : System.ComponentModel.INotifyPropertyChanged
 {
-    public string Name { get; set; } = string.Empty;
-    public List<QuestItem> Quests { get; set; } = new();
+    private string _name = string.Empty;
+
+    public string Name
+    {
+        get => _name;
+        set { _name = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasCategoryScript)); }
+    }
+
+    public List<QuestItem> Quests { get; set; } = [];
+    public bool HasCategoryScript => Name == "Lord of Order";
+
+    public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+
+    protected void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string? name = null)
+        => PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(name));
 }
 
-public class QuestItem
+public class QuestItem : System.ComponentModel.INotifyPropertyChanged
 {
     public int ID { get; set; }
     public string Name { get; set; } = string.Empty;
-    public bool IsDone { get; set; }
 
-    public QuestItem(int id, string name, IScriptInterface bot)
+    private bool _isDone;
+
+    public bool IsDone
+    {
+        get => _isDone;
+        set { _isDone = value; OnPropertyChanged(); OnPropertyChanged(nameof(ShowScriptVisibility)); }
+    }
+
+    private string _scriptName = string.Empty;
+
+    public string ScriptName
+    { get => _scriptName; set { _scriptName = value; OnPropertyChanged(); OnPropertyChanged(nameof(ShowScriptVisibility)); } }
+
+    public bool HasScript => !string.IsNullOrEmpty(ScriptName);
+
+    public Visibility ShowScriptVisibility => HasScript && !IsDone && (ID < 7156 || ID > 7165) ? Visibility.Visible : Visibility.Collapsed;
+    public bool IsLordOfOrder => ID >= 7156 && ID <= 7165;
+    public string StatusColor => IsDone ? "#4CAF50" : "#F44336";
+    public string StatusText => IsDone ? "Completed" : "Incomplete";
+
+    public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+
+    protected void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string? name = null)
+        => PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(name));
+
+    public QuestItem(int id, string name, bool isDone)
     {
         ID = id;
         Name = name;
-        try
-        {
-            IsDone = bot.Quests.IsDailyComplete(id);
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Trace.WriteLine($"Failed to check quest {id}: {ex}");
-            IsDone = false;
-        }
+        IsDone = isDone;
     }
-
-    public string StatusColor => IsDone ? "#4CAF50" : "#F44336"; 
-    public string StatusText => IsDone ? "Completed" : "Incomplete";
 }
