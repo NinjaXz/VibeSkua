@@ -24,6 +24,7 @@ public partial class AppUpdaterViewModel : ObservableObject
     private int _progressValue;
 
     private UpdateInfo? _updateInfo;
+    private UpdateManager? _updateManager;
 
     [RelayCommand]
     private async Task CheckForUpdate()
@@ -34,8 +35,8 @@ public partial class AppUpdaterViewModel : ObservableObject
         try
         {
             var locator = VelopackLocator.CreateDefaultForPlatform(null, null);
-            var mgr = new UpdateManager(new GithubSource("https://github.com/NinjaXz/VibeSkua", null, false), null, locator);
-            _updateInfo = await mgr.CheckForUpdatesAsync();
+            _updateManager = new UpdateManager(new GithubSource("https://github.com/NinjaXz/VibeSkua", null, false), null, locator);
+            _updateInfo = await _updateManager.CheckForUpdatesAsync();
 
             if (_updateInfo == null)
             {
@@ -68,19 +69,22 @@ public partial class AppUpdaterViewModel : ObservableObject
         UpdateStatus = "Downloading update...";
         try
         {
-            var locator = VelopackLocator.CreateDefaultForPlatform(null, null);
-            var mgr = new UpdateManager(new GithubSource("https://github.com/NinjaXz/VibeSkua", null, false), null, locator);
-            
+            if (_updateManager == null)
+            {
+                var locator = VelopackLocator.CreateDefaultForPlatform(null, null);
+                _updateManager = new UpdateManager(new GithubSource("https://github.com/NinjaXz/VibeSkua", null, false), null, locator);
+            }
+
             Action<int> progressObj = (progress) => 
             {
                 ProgressValue = progress;
                 UpdateStatus = $"Downloading... {progress}%";
             };
 
-            await mgr.DownloadUpdatesAsync(_updateInfo, progressObj);
+            await _updateManager.DownloadUpdatesAsync(_updateInfo, progressObj);
 
             UpdateStatus = "Installing update and restarting...";
-            mgr.ApplyUpdatesAndRestart(_updateInfo);
+            await Task.Run(() => _updateManager.ApplyUpdatesAndRestart(_updateInfo));
         }
         catch (Exception ex)
         {
