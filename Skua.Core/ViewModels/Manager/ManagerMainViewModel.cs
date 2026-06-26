@@ -16,7 +16,7 @@ public partial class ManagerMainViewModel : ObservableRecipient
         _selectedTab = Tabs[0];
         _dialogService = dialogService;
         _settingsService = settingsService;
-        _title = "VibeSkua V1.8.1";
+        _title = "VibeSkua V1.8.2";
     }
 
     [ObservableProperty]
