@@ -6,8 +6,9 @@
     <UseWPF>true</UseWPF>
       <UseWindowsForms>true</UseWindowsForms>
       <Platforms>AnyCPU;x64;x86</Platforms>
-      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
+    <NoWarn>$(NoWarn);FodyPackageReference</NoWarn>
     
     <!-- Performance optimizations -->
     <TieredCompilation>true</TieredCompilation>

@@ -21,6 +21,7 @@
     <ServerGarbageCollection>false</ServerGarbageCollection>
     <BaseOutputPath>bin\</BaseOutputPath>
     <BaseIntermediateOutputPath>obj\</BaseIntermediateOutputPath>
+    <NoWarn>$(NoWarn);FodyPackageReference;VLP0001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
