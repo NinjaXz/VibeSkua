@@ -49,6 +49,7 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
 
     public string LastIP { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
+    public string? CachedUsername => _loginInfoSetted && !string.IsNullOrWhiteSpace(_username) ? _username : (!string.IsNullOrWhiteSpace(Player.Username) && Player.Username != "loginInfo.strUsername" ? Player.Username : null);
 
     // Flash Objects Binding
 
@@ -76,21 +77,21 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
     [MethodCallBinding("connectTo", RunMethodPost = true, GameFunction = true)]
     private bool _connectIP(string ip)
     {
-        Wait.ForTrue(() => !Manager.ShouldExit && Player.Playing && Flash.IsWorldLoaded, 30);
+        Wait.ForTrue(() => !Manager.ShouldExit && Player.Playing && Flash.IsWorldLoaded, Options.LoginTimeout / 100);
         return Player.Playing;
     }
 
     [MethodCallBinding("connectTo", RunMethodPost = true, GameFunction = true)]
     private bool _connectIP(string ip, int port)
     {
-        Wait.ForTrue(() => !Manager.ShouldExit && Player.Playing && Flash.IsWorldLoaded, 30);
+        Wait.ForTrue(() => !Manager.ShouldExit && Player.Playing && Flash.IsWorldLoaded, Options.LoginTimeout / 100);
         return Player.Playing;
     }
 
     [MethodCallBinding("connectToServer", RunMethodPost = true)]
     private bool _connectToServer(string server)
     {
-        Wait.ForTrue(() => !Manager.ShouldExit && Player.Playing && Flash.IsWorldLoaded, 30);
+        Wait.ForTrue(() => !Manager.ShouldExit && Player.Playing && Flash.IsWorldLoaded, Options.LoginTimeout / 100);
         return Player.Playing;
     }
 
@@ -356,10 +357,18 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         else
             Login(Player.Username, Player.Password);
 
-        Thread.Sleep(2000);
+        ReloginLog($"Waiting for server list screen before connecting to IP {ip}...");
+        if (!WaitForServerListReady(CancellationToken.None).GetAwaiter().GetResult())
+        {
+            ReloginLog($"Authentication timed out or froze while connecting to IP {ip}.");
+            Options.AutoRelogin = autoRelogSwitch;
+            return false;
+        }
+
+        Thread.Sleep(1000);
         ConnectIP(ip);
 
-        Wait.ForTrue(() => Player.Playing && Flash.IsWorldLoaded, 30);
+        Wait.ForTrue(() => Player.Playing && Flash.IsWorldLoaded, Options.LoginTimeout / 100);
         Options.AutoRelogin = autoRelogSwitch;
         bool connected = Player.Playing;
         ReloginLog(connected ? "Relogin by IP successful." : "Relogin by IP failed.");
@@ -395,9 +404,19 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
             Login(_username, _password);
         else
             Login(Player.Username, Player.Password);
+
+        ReloginLog($"Waiting for server list screen before connecting to {server.Name}...");
+        if (!WaitForServerListReady(CancellationToken.None).GetAwaiter().GetResult())
+        {
+            ReloginLog($"Authentication timed out or froze while connecting to {server.Name}.");
+            Options.AutoRelogin = autoRelogSwitch;
+            return false;
+        }
+
+        Thread.Sleep(1000);
         ConnectToServer(JsonConvert.SerializeObject(server));
 
-        Wait.ForTrue(() => Player.Playing && Flash.IsWorldLoaded, 30);
+        Wait.ForTrue(() => Player.Playing && Flash.IsWorldLoaded, Options.LoginTimeout / 100);
         Options.AutoRelogin = autoRelogSwitch;
         bool connected = Player.Playing;
         ReloginLog(connected ? $"Relogin successful on {server.Name}." : $"Relogin failed on {server.Name}.");
@@ -455,7 +474,8 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
 
         try
         {
-            await Task.Delay(Options.ReloginTryDelay, token);
+            int jitter = Random.Shared.Next(400, 1000);
+            await Task.Delay(Options.ReloginTryDelay + jitter, token);
         }
         catch { }
     }
@@ -480,7 +500,17 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         bool finalLoginVisible = Flash.GetGameObject<bool>("mcLogin.visible", false);
         bool finalServerListExists = !Flash.IsNull("mcLogin.sl.iList");
         int finalServerEntries = Flash.GetGameObject<int>("mcLogin.sl.iList.numChildren", 0);
-        return finalLoginVisible && finalServerListExists && finalServerEntries > 0 && ServerList.Exists(IsValidReloginServerData);
+        bool success = finalLoginVisible && finalServerListExists && finalServerEntries > 0 && ServerList.Exists(IsValidReloginServerData);
+        if (!success)
+        {
+            ReloginLog("Server list screen failed to load (authentication timeout or freeze). Resetting login UI.");
+            try
+            {
+                Flash.CallGameFunction("gotoAndPlay", "Login");
+            }
+            catch { }
+        }
+        return success;
     }
 
     private async Task<bool> EnsureLogin(Server server, CancellationToken token)
@@ -514,7 +544,10 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
                     await Task.Delay(2000, token);
                 }
 
-                Login();
+                if (_loginInfoSetted)
+                    Login(_username, _password);
+                else
+                    Login();
                 ReloginLog($"Attempt {tries}/{Options.ReloginTries}: waiting for server list screen.");
                 if (!await WaitForServerListReady(token))
                 {
@@ -538,7 +571,7 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
                 try
                 {
                     while ((!Player.Playing || !Flash.IsWorldLoaded) && !waitLogin.IsCancellationRequested && !token.IsCancellationRequested)
-                        await Task.Delay(750, token);
+                        await Task.Delay(250, token);
                 }
                 catch { }
 

@@ -27,6 +27,29 @@ public class AdvancedSkillCommand
 
         int skill = Skills[_index];
         int index = _index;
+
+        try
+        {
+            if (_flash != null)
+            {
+                // Check if the skill is off individual class cooldown (isOK == true)
+                bool isOk = _flash.GetGameObject<bool>($"world.actions.active[{skill}].isOK");
+                bool canUse = _flash.Call<bool>("canUseSkill", skill);
+
+                // If the skill is off individual cooldown (isOK == true) but cannot be cast immediately
+                // due to Global Cooldown (GCD) from Auto-Attack or mid-animation lock, pause _index.
+                // This ensures we do not race past Class Skills (1..4) and wrap back to Auto-Attack (0) during GCD.
+                if (isOk && !canUse)
+                {
+                    return (index, skill);
+                }
+            }
+        }
+        catch
+        {
+            // Fallback to standard increment if flash call is temporarily unavailable
+        }
+
         ++_index;
         if (_index >= Skills.Count)
             _index = 0;

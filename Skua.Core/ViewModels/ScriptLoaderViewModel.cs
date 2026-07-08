@@ -31,6 +31,13 @@ public partial class ScriptLoaderViewModel : BotControlViewModelBase
         _scriptPath = ClientFileSources.SkuaScriptsDIR;
         ScriptLogs = logs.ToArray()[1];
         ScriptManager = scriptManager;
+        ScriptManager.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(IScriptManager.LoadedScript))
+            {
+                LoadedScript = Path.GetFileName(ScriptManager.LoadedScript) ?? string.Empty;
+            }
+        };
         _windowService = windowService;
         _processService = processService;
         _dialogService = dialogService;
@@ -261,10 +268,19 @@ public partial class ScriptLoaderViewModel : BotControlViewModelBase
     {
         recipient.ToggleScriptEnabled = true;
         recipient.ScriptStatus = "[Stopped]";
+        if (!string.IsNullOrEmpty(recipient.ScriptManager.LoadedScript))
+        {
+            recipient.LoadedScript = Path.GetFileName(recipient.ScriptManager.LoadedScript) ?? string.Empty;
+        }
     }
 
     private void ScriptStarted(ScriptLoaderViewModel recipient, ScriptStartedMessage message)
     {
         recipient.ToggleScriptEnabled = true;
+        recipient.ScriptStatus = "[Running]";
+        if (!string.IsNullOrEmpty(recipient.ScriptManager.LoadedScript))
+        {
+            recipient.LoadedScript = Path.GetFileName(recipient.ScriptManager.LoadedScript) ?? string.Empty;
+        }
     }
 }

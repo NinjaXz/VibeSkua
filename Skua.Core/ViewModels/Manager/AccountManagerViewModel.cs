@@ -181,7 +181,7 @@ public sealed partial class AccountManagerViewModel : BotControlViewModelBase
             if (acc.UseCheck)
             {
                 _LaunchAcc(acc.Username, acc.Password, acc.DisplayName);
-                await Task.Delay(1000);
+                await Task.Delay(Random.Shared.Next(500, 900));
             }
         }
     }
@@ -193,7 +193,7 @@ public sealed partial class AccountManagerViewModel : BotControlViewModelBase
         foreach (AccountItemViewModel acc in Accounts)
         {
             _LaunchAcc(acc.Username, acc.Password, acc.DisplayName);
-            await Task.Delay(1000);
+            await Task.Delay(Random.Shared.Next(500, 900));
         }
     }
 
@@ -220,6 +220,44 @@ public sealed partial class AccountManagerViewModel : BotControlViewModelBase
         {
             account.UseCheck = false;
         }
+    }
+
+    [RelayCommand]
+    private void MoveSelectedUp()
+    {
+        if (SelectedAccountQuant != 1)
+            return;
+
+        AccountItemViewModel? selectedAccount = Accounts.FirstOrDefault(account => account.UseCheck);
+        if (selectedAccount is null)
+            return;
+
+        int index = Accounts.IndexOf(selectedAccount);
+        if (index <= 0)
+            return;
+
+        Accounts.Move(index, index - 1);
+        _SaveAccounts();
+        ApplyTagFilter();
+    }
+
+    [RelayCommand]
+    private void MoveSelectedDown()
+    {
+        if (SelectedAccountQuant != 1)
+            return;
+
+        AccountItemViewModel? selectedAccount = Accounts.FirstOrDefault(account => account.UseCheck);
+        if (selectedAccount is null)
+            return;
+
+        int index = Accounts.IndexOf(selectedAccount);
+        if (index < 0 || index >= Accounts.Count - 1)
+            return;
+
+        Accounts.Move(index, index + 1);
+        _SaveAccounts();
+        ApplyTagFilter();
     }
 
     private void _RemoveAccount(AccountItemViewModel account)
@@ -277,7 +315,7 @@ public sealed partial class AccountManagerViewModel : BotControlViewModelBase
         foreach (AccountItemViewModel account in group.Accounts)
         {
             _LaunchAcc(account.Username, account.Password, account.DisplayName, withScript);
-            await Task.Delay(1000);
+            await Task.Delay(Random.Shared.Next(500, 900));
         }
     }
 
@@ -621,7 +659,7 @@ public sealed partial class AccountManagerViewModel : BotControlViewModelBase
         try
         {
             string response = await ValidatedHttpExtensions.GetStringAsync(HttpClients.GetGHClient()
-, $"http://content.aq.com/game/api/data/servers");
+, $"https://content.aq.com/game/api/data/servers");
 
             List<Server>? servers = JsonConvert.DeserializeObject<List<Server>>(response);
             if (servers == null || servers.Count == 0)

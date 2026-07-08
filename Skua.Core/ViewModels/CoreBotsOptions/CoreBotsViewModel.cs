@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Skua.Core.Interfaces;
 using Skua.Core.Models;
@@ -19,6 +19,11 @@ public partial class CoreBotsViewModel : BotControlViewModelBase
 
     protected override void OnActivated()
     {
+        if (!string.IsNullOrWhiteSpace(_player?.Username))
+        {
+            Title = $"CoreBots Options - {_player.Username}";
+            OnPropertyChanged(nameof(Title));
+        }
         Load();
     }
 

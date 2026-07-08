@@ -87,9 +87,12 @@ public class DiscordWebhookService : IDiscordWebhookService, IDisposable
     private string GetBotName()
     {
         var bot = _serviceProvider.GetService<IScriptInterface>();
-        if (bot != null && bot.Player != null && bot.Player.Playing && !string.IsNullOrWhiteSpace(bot.Player.Username))
+        if (bot != null && bot.Player != null)
         {
-            return bot.Player.Username;
+            if (!string.IsNullOrWhiteSpace(bot.Player.Username) && bot.Player.Username != "loginInfo.strUsername")
+                return bot.Player.Username;
+            if (bot.Servers != null && !string.IsNullOrWhiteSpace(bot.Servers.CachedUsername))
+                return bot.Servers.CachedUsername!;
         }
         return "VibeSkua Bot";
     }
@@ -173,9 +176,13 @@ public class DiscordWebhookService : IDiscordWebhookService, IDisposable
         var settings = _settingsService.GetClient();
         if (settings != null && settings.WebhookNotifyCrashed)
         {
+            var actualEx = msg.Exception is System.Reflection.TargetInvocationException && msg.Exception.InnerException != null
+                ? msg.Exception.InnerException
+                : msg.Exception;
+
             var fields = new List<object>
             {
-                new { name = "Exception", value = $"```{msg.Exception.Message}```", inline = false }
+                new { name = "Exception", value = $"```{actualEx.Message}```", inline = false }
             };
             EnqueueAction(async () => await SendEmbedAsync("Script Error", $"**{GetBotName()}** crashed unexpectedly.", 0xFF0000, fields)); // Red
         }
@@ -240,7 +247,6 @@ public class DiscordWebhookService : IDiscordWebhookService, IDisposable
                 if (string.IsNullOrWhiteSpace(url)) return;
 
                 byte[] screenshotBytes = await _screenshotService.TakeScreenshotAsync();
-                using var formData = new MultipartFormDataContent();
                 
                 var embed = new
                 {
@@ -248,24 +254,40 @@ public class DiscordWebhookService : IDiscordWebhookService, IDisposable
                     color = 0xFFD700, // Gold
                     image = new { url = "attachment://screenshot.png" }
                 };
-                
-                var payloadJson = JsonSerializer.Serialize(new { embeds = new[] { embed } });
-                formData.Add(new StringContent(payloadJson), "payload_json");
 
-                if (screenshotBytes != null && screenshotBytes.Length > 0)
+                for (int attempt = 0; attempt < 3; attempt++)
                 {
-                    var imageContent = new ByteArrayContent(screenshotBytes);
-                    imageContent.Headers.ContentType = new MediaTypeHeaderValue("image/png");
-                    formData.Add(imageContent, "file", "screenshot.png");
-                }
+                    using var formData = new MultipartFormDataContent();
+                    var payloadJson = JsonSerializer.Serialize(new { embeds = new[] { embed } });
+                    formData.Add(new StringContent(payloadJson), "payload_json");
 
-                await _httpClient.PostAsync(url, formData);
+                    if (screenshotBytes != null && screenshotBytes.Length > 0)
+                    {
+                        var imageContent = new ByteArrayContent(screenshotBytes);
+                        imageContent.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+                        formData.Add(imageContent, "file", "screenshot.png");
+                    }
+
+                    var response = await _httpClient.PostAsync(url, formData);
+                    if (response.IsSuccessStatusCode)
+                        break;
+
+                    if ((int)response.StatusCode == 429)
+                    {
+                        await Task.Delay(1500 * (attempt + 1));
+                        continue;
+                    }
+                    break;
+                }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.WriteLine($"Discord SendScreenshotAsync failed: {ex.Message}");
+            }
         });
     }
 
-    private async Task SendEmbedAsync(string title, string description, int color, List<object>? fields = null)
+    public async Task SendEmbedAsync(string title, string description, int color, List<object>? fields = null)
     {
         var embed = new
         {
@@ -287,10 +309,25 @@ public class DiscordWebhookService : IDiscordWebhookService, IDisposable
             if (string.IsNullOrWhiteSpace(url)) return;
 
             var json = JsonSerializer.Serialize(payload);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-            await _httpClient.PostAsync(url, content);
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var response = await _httpClient.PostAsync(url, content);
+                if (response.IsSuccessStatusCode)
+                    break;
+
+                if ((int)response.StatusCode == 429)
+                {
+                    await Task.Delay(1500 * (attempt + 1));
+                    continue;
+                }
+                break;
+            }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Trace.WriteLine($"Discord PostWebhookAsync failed: {ex.Message}");
+        }
     }
 
     private void OnItemDropped(ItemDroppedMessage msg)

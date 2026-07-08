@@ -13,6 +13,7 @@
     xmlns:wf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
     xmlns:wpf="clr-namespace:Skua.WPF;assembly=Skua.WPF"
     Title="{Binding Title}"
+    Icon="pack://application:,,,/SkuaIcon.ico"
     Width="948"
     Height="600"
     d:DataContext="{d:DesignInstance vms:MainViewModel}"
@@ -26,9 +27,9 @@
         <tb:TaskbarIcon
             x:Name="NotifyIcon"
             DoubleClickCommand="{Binding ShowMainWindowCommand}"
-            IconSource="SkuaIcon.ico"
+            IconSource="pack://application:,,,/SkuaIcon.ico"
             MenuActivation="RightClick"
-            ToolTipText="Skua"
+            ToolTipText="{Binding Title}"
             Visibility="Visible">
         <tb:TaskbarIcon.ContextMenu>
                 <ContextMenu>

@@ -11,6 +11,7 @@
     xmlns:vms="clr-namespace:Skua.Core.ViewModels.Manager;assembly=Skua.Core"
     xmlns:wpf="clr-namespace:Skua.WPF;assembly=Skua.WPF"
     Title="{Binding Title}"
+    Icon="pack://application:,,,/SkuaIcon.ico"
     Width="700"
     Height="500"
     d:DataContext="{d:DesignInstance vms:ManagerMainViewModel}"
@@ -48,7 +49,7 @@
         <ContentPresenter Grid.Row="1" Content="{Binding SelectedTab.Content}" />
         <tb:TaskbarIcon
             DoubleClickCommand="{Binding ShowManagerCommand}"
-            IconSource="SkuaIcon.ico"
+            IconSource="pack://application:,,,/SkuaIcon.ico"
             MenuActivation="LeftOrRightClick"
             PopupActivation="DoubleClick"
             ToolTipText="VibeSkua Manager"

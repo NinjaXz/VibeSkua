@@ -16,6 +16,7 @@ public class ManagedWindows
         windowService.RegisterManagedWindow("Scheduler", s.GetRequiredService<ScriptSchedulerViewModel>());
         windowService.RegisterManagedWindow("Script Repo", s.GetRequiredService<ScriptRepoViewModel>());
         windowService.RegisterManagedWindow("Loadouts", s.GetRequiredService<LoadoutsViewModel>());
+        windowService.RegisterManagedWindow("Loadouts Manager", s.GetRequiredService<LoadoutsViewModel>());
 
         windowService.RegisterManagedWindow("Game", s.GetRequiredService<GameOptionsViewModel>());
         windowService.RegisterManagedWindow("Application", s.GetRequiredService<ApplicationOptionsViewModel>());

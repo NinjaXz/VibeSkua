@@ -61,6 +61,15 @@ public partial class CustomWindow : Window
 
     public CustomWindow() : base()
     {
+        if (Icon == null)
+        {
+            try
+            {
+                Icon = new System.Windows.Media.Imaging.BitmapImage(new Uri("pack://application:,,,/SkuaIcon.ico", UriKind.RelativeOrAbsolute));
+            }
+            catch { }
+        }
+
         ApplyTemplate();
 
         SourceInitialized += CustomWindow_SourceInitialized;
@@ -86,6 +95,15 @@ public partial class CustomWindow : Window
         _handle.AddHook(_hook);
 
         ApplyRoundedCorners(_handle.Handle);
+
+        if (Icon == null)
+        {
+            try
+            {
+                Icon = new System.Windows.Media.Imaging.BitmapImage(new Uri("pack://application:,,,/SkuaIcon.ico", UriKind.RelativeOrAbsolute));
+            }
+            catch { }
+        }
 
         SourceInitialized -= CustomWindow_SourceInitialized;
     }

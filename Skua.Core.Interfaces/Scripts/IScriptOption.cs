@@ -133,6 +133,11 @@ public interface IScriptOption : INotifyPropertyChanged
     bool HidePlayers { get; set; }
 
     /// <summary>
+    /// When enabled, optimizes visible player avatars (strips filters, caches bitmaps, freezes idle vector animations).
+    /// </summary>
+    bool OptimizePlayers { get; set; }
+
+    /// <summary>
     /// How many kills hunt should wait for before picking up drops.
     /// </summary>
     int HuntBuffer { get; set; }

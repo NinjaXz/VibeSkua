@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using Skua.Core.Interfaces;
 
 namespace Skua.Core.ViewModels;
@@ -20,9 +21,47 @@ public partial class OptionContainerViewModel : ObservableObject
                     Options.Add(new(container, option));
             }
         }
+
+        Title = GetTitle();
     }
 
-    public string Title { get; } = "Options";
+    private static string GetTitle()
+    {
+        string title = "Options";
+        try
+        {
+            string? username = null;
+            var player = Ioc.Default.GetService<IScriptPlayer>();
+            if (player != null)
+            {
+                username = player.Username;
+            }
+            if (string.IsNullOrWhiteSpace(username) || username == "null" || username == "undefined")
+            {
+                var flashUtil = Ioc.Default.GetService<IFlashUtil>();
+                if (flashUtil != null)
+                {
+                    username = flashUtil.Call<string>("getGameObjectS", "loginInfo.strUsername");
+                    if (string.IsNullOrWhiteSpace(username) || username == "null" || username == "undefined")
+                    {
+                        username = flashUtil.Call<string>("getGameObject", "world.myAvatar.objData.strUsername");
+                    }
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(username) && username != "null" && username != "undefined")
+            {
+                title = $"Options - {username}";
+            }
+        }
+        catch { }
+
+        return title;
+    }
+
+    [ObservableProperty]
+    private string _title = "Options";
+
     public IOptionContainer Container { get; set; }
 
     public List<OptionContainerItemViewModel> Options { get; }

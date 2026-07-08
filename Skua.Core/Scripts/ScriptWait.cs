@@ -70,12 +70,12 @@ public class ScriptWait : IScriptWait
     private readonly AutoResetEvent _bankLoadEvent = new(false);
 
     public bool OverrideTimeout { get; set; } = false;
-    public int PlayerActionTimeout { get; set; } = 15;
-    public int MonsterActionTimeout { get; set; } = 15;
-    public int MapActionTimeout { get; set; } = 25;
-    public int DropActionTimeout { get; set; } = 10;
-    public int ItemActionTimeout { get; set; } = 14;
-    public int QuestActionTimeout { get; set; } = 14;
+    public int PlayerActionTimeout { get; set; } = 30;
+    public int MonsterActionTimeout { get; set; } = 30;
+    public int MapActionTimeout { get; set; } = 60;
+    public int DropActionTimeout { get; set; } = 20;
+    public int ItemActionTimeout { get; set; } = 25;
+    public int QuestActionTimeout { get; set; } = 25;
     public int GameActionTimeout { get; set; } = 40;
 
     public bool ForPlayerPosition(int x, int y, int timeout = 10)
@@ -112,7 +112,7 @@ public class ScriptWait : IScriptWait
         return ForTrue(() => !Player.Playing || (Player.Health >= Player.MaxHealth && Player.Mana >= Player.MaxMana), timeout);
     }
 
-    public bool ForMapLoad(string name, int timeout = 20)
+    public bool ForMapLoad(string name, int timeout = 60)
     {
         int dashIndex = name.IndexOf('-');
         string cleanName = (dashIndex >= 0 ? name.Substring(0, dashIndex) : name).ToLower();
@@ -122,7 +122,7 @@ public class ScriptWait : IScriptWait
 
     public bool ForCellChange(string name)
     {
-        return ForTrue(() => !Player.Playing || Player.Cell == name, OverrideTimeout ? MapActionTimeout : WAIT_SLEEP / 4);
+        return ForTrue(() => !Player.Playing || Player.Cell == name, OverrideTimeout ? MapActionTimeout : 40);
     }
 
     public bool ForPickup(string name, int timeout = 10)

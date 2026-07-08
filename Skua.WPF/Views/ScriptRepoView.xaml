@@ -162,7 +162,7 @@
                 EnableRowVirtualization="True"
                 VirtualizingPanel.IsVirtualizing="True"
                 VirtualizingPanel.VirtualizationMode="Recycling"
-                VirtualizingPanel.ScrollUnit="Item"
+                VirtualizingPanel.ScrollUnit="Pixel"
                 VirtualizingPanel.CacheLengthUnit="Item"
                 VirtualizingPanel.CacheLength="2,2"
                 HorizontalScrollBarVisibility="Disabled"

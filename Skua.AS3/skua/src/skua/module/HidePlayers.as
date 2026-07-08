@@ -1,5 +1,7 @@
 package skua.module {
 public class HidePlayers extends Module {
+    private var frameTick:int = 0;
+
     public function HidePlayers() {
         super("HidePlayers");
     }
@@ -20,7 +22,11 @@ public class HidePlayers extends Module {
     }
 
     override public function onFrame(game:*):void {
-        onToggle(game);
+        frameTick++;
+        if (frameTick >= 15) {
+            frameTick = 0;
+            onToggle(game);
+        }
     }
 }
 }

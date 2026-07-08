@@ -75,6 +75,9 @@ namespace Skua.App.WPF
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
 
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder lpString, int nMaxCount);
+
         private static readonly IntPtr HWND_TOP = IntPtr.Zero;
         private static readonly IntPtr HWND_BOTTOM = new IntPtr(1);
         private const uint WM_CLOSE = 0x0010;
@@ -163,6 +166,45 @@ namespace Skua.App.WPF
             StrongReferenceMessenger.Default.Register<TabbedHostWindow, Skua.Core.ViewModels.ScriptSchedulerViewModel.ArmySchedulerStopMessage>(this, (r, m) => r.OnArmySchedulerStop(m));
 
             StartPipeServer();
+
+            var titleSyncTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            titleSyncTimer.Tick += (s, e) => SyncTabTitles();
+            titleSyncTimer.Start();
+        }
+
+        private void SyncTabTitles()
+        {
+            if (_isClosing || _tabs.Count == 0) return;
+
+            string dir = Path.Combine(Path.GetTempPath(), "SkuaTabs");
+            if (!Directory.Exists(dir)) return;
+
+            foreach (var kvp in _tabs)
+            {
+                TabItem tab = kvp.Key;
+                TabInfo info = kvp.Value;
+                if (info == null || info.Process == null) continue;
+
+                try
+                {
+                    string file = Path.Combine(dir, $"{info.Process.Id}.txt");
+                    if (File.Exists(file))
+                    {
+                        string username = File.ReadAllText(file).Trim();
+                        if (!string.IsNullOrWhiteSpace(username) && tab.Header is StackPanel headerPanel)
+                        {
+                            var titleBlock = headerPanel.Children.OfType<TextBlock>().FirstOrDefault(tb => tb.Text != "✕");
+                            var editBox = headerPanel.Children.OfType<TextBox>().FirstOrDefault();
+                            if (titleBlock != null && (titleBlock.Text.StartsWith("Skua ") || titleBlock.Text != username))
+                            {
+                                titleBlock.Text = username;
+                                if (editBox != null) editBox.Text = username;
+                            }
+                        }
+                    }
+                }
+                catch { }
+            }
         }
 
         #region Lifecycle
@@ -176,43 +218,38 @@ namespace Skua.App.WPF
         private void OnWindowClosing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             _isClosing = true;
-            foreach (var info in _tabs.Values)
-            {
-                try
-                {
-                    if (info.ChildHwnd != IntPtr.Zero)
-                    {
-                        ShowWindow(info.ChildHwnd, SW_HIDE);
-                        PostMessage(info.ChildHwnd, WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
-                    }
-                    if (!info.Process.HasExited)
-                    {
-                        info.Process.CloseMainWindow();
-                        info.Process.Kill();
-                    }
-                }
-                catch { }
-            }
+            var tabsToClose = _tabs.Values.ToList();
+            var prewarmed = _prewarmedTabInfo;
             _tabs.Clear();
+            _prewarmedTabInfo = null;
 
-            if (_prewarmedTabInfo != null)
+            Task.Run(() =>
             {
-                try
+                Parallel.ForEach(tabsToClose, info =>
                 {
-                    if (_prewarmedTabInfo.ChildHwnd != IntPtr.Zero)
+                    try
                     {
-                        ShowWindow(_prewarmedTabInfo.ChildHwnd, SW_HIDE);
-                        PostMessage(_prewarmedTabInfo.ChildHwnd, WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+                        if (info.ChildHwnd != IntPtr.Zero)
+                            ShowWindow(info.ChildHwnd, SW_HIDE);
+                        if (!info.Process.HasExited)
+                            info.Process.Kill();
+                        try { File.Delete(Path.Combine(Path.GetTempPath(), "SkuaTabs", $"{info.Process.Id}.txt")); } catch { }
                     }
-                    if (!_prewarmedTabInfo.Process.HasExited)
+                    catch { }
+                });
+
+                if (prewarmed != null)
+                {
+                    try
                     {
-                        _prewarmedTabInfo.Process.CloseMainWindow();
-                        _prewarmedTabInfo.Process.Kill();
+                        if (prewarmed.ChildHwnd != IntPtr.Zero)
+                            ShowWindow(prewarmed.ChildHwnd, SW_HIDE);
+                        if (!prewarmed.Process.HasExited)
+                            prewarmed.Process.Kill();
                     }
+                    catch { }
                 }
-                catch { }
-                _prewarmedTabInfo = null;
-            }
+            });
         }
         #endregion
 
@@ -253,6 +290,7 @@ namespace Skua.App.WPF
         private const int WM_SKUA_ARMY_SCHEDULER = 0x0400 + 454;
         private const int WM_SKUA_ARMY_SCHEDULER_STOP = 0x0400 + 455;
         private const int WM_SKUA_CHECK_LOGIN = 0x0400 + 456;
+        private const int WM_SKUA_JUMP_PLAYER = 0x0400 + 457;
 
         private void OnArmySchedulerStart(Skua.Core.ViewModels.ScriptSchedulerViewModel.ArmySchedulerMessage m)
         {
@@ -502,24 +540,50 @@ namespace Skua.App.WPF
         }
 
         private string _lastJumpMap = "";
+        private string _lastJumpCell = "";
+        private string _lastJumpPlayer = "";
 
         private void MenuItem_JumpMap_Click(object sender, RoutedEventArgs e)
         {
-            var vm = new Skua.Core.ViewModels.InputDialogViewModel("Jump Army to Map", "Enter map name and room number:", "e.g., yulgar-829472", false);
+            var vm = new Skua.Core.ViewModels.InputDialogViewModel("Jump Army to Map / Cell", "Enter target location:", "Map (e.g., yulgar-829472)", "Cell (e.g., Enter)", false);
             vm.DialogTextInput = _lastJumpMap;
+            vm.SecondTextInput = _lastJumpCell;
             
             if (CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<Skua.Core.Interfaces.IDialogService>().ShowDialog(vm) == true)
             {
-                string targetMap = vm.DialogTextInput;
-                if (!string.IsNullOrWhiteSpace(targetMap))
+                string targetMap = vm.DialogTextInput?.Trim() ?? "";
+                string targetCell = vm.SecondTextInput?.Trim() ?? "";
+                if (!string.IsNullOrWhiteSpace(targetMap) || !string.IsNullOrWhiteSpace(targetCell))
                 {
                     _lastJumpMap = targetMap;
+                    _lastJumpCell = targetCell;
                     string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "skua_global_jump.txt");
-                    System.IO.File.WriteAllText(tempFile, targetMap);
+                    System.IO.File.WriteAllLines(tempFile, new[] { targetMap, targetCell });
                     
                     foreach (var info in _tabs.Values)
                         if (info.ChildHwnd != IntPtr.Zero)
                             PostMessage(info.ChildHwnd, WM_SKUA_JUMP_MAP, IntPtr.Zero, IntPtr.Zero);
+                }
+            }
+        }
+
+        private void MenuItem_JumpPlayer_Click(object sender, RoutedEventArgs e)
+        {
+            var vm = new Skua.Core.ViewModels.InputDialogViewModel("Jump Army to Player", "Enter target player username:", "e.g., Artix", false);
+            vm.DialogTextInput = _lastJumpPlayer;
+            
+            if (CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<Skua.Core.Interfaces.IDialogService>().ShowDialog(vm) == true)
+            {
+                string targetPlayer = vm.DialogTextInput?.Trim() ?? "";
+                if (!string.IsNullOrWhiteSpace(targetPlayer))
+                {
+                    _lastJumpPlayer = targetPlayer;
+                    string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "skua_global_jump_player.txt");
+                    System.IO.File.WriteAllText(tempFile, targetPlayer);
+                    
+                    foreach (var info in _tabs.Values)
+                        if (info.ChildHwnd != IntPtr.Zero)
+                            PostMessage(info.ChildHwnd, WM_SKUA_JUMP_PLAYER, IntPtr.Zero, IntPtr.Zero);
                 }
             }
         }
@@ -711,21 +775,19 @@ namespace Skua.App.WPF
         {
             if (_tabs.TryGetValue(tab, out TabInfo info))
             {
-                try
-                {
-                    if (info.ChildHwnd != IntPtr.Zero)
-                    {
-                        ShowWindow(info.ChildHwnd, SW_HIDE);
-                        PostMessage(info.ChildHwnd, WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
-                    }
-                    if (!info.Process.HasExited)
-                    {
-                        info.Process.CloseMainWindow();
-                        info.Process.Kill();
-                    }
-                }
-                catch { }
                 _tabs.Remove(tab);
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        if (info.ChildHwnd != IntPtr.Zero)
+                            ShowWindow(info.ChildHwnd, SW_HIDE);
+                        if (!info.Process.HasExited)
+                            info.Process.Kill();
+                        try { File.Delete(Path.Combine(Path.GetTempPath(), "SkuaTabs", $"{info.Process.Id}.txt")); } catch { }
+                    }
+                    catch { }
+                });
             }
             InstancesTabControl.Items.Remove(tab);
 

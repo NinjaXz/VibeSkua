@@ -53,6 +53,12 @@ public class ClientFilesService : IClientFilesService
                 File.Create(ClientFileSources.SkuaQuestsFile);
         }
 
+        string scriptsQuestFile = Path.Combine(ClientFileSources.SkuaScriptsDIR, "QuestData.json");
+        if (!File.Exists(scriptsQuestFile) && File.Exists(ClientFileSources.SkuaQuestsFile))
+        {
+            try { File.Copy(ClientFileSources.SkuaQuestsFile, scriptsQuestFile, true); } catch { }
+        }
+
         if (!File.Exists(ClientFileSources.SkuaJunkItemsFile))
         {
             try

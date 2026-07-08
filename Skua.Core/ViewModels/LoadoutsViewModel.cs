@@ -20,7 +20,7 @@ public partial class LoadoutsViewModel : BotControlViewModelBase
     private LoadoutProfile? _selectedLoadout;
 
     public LoadoutsViewModel(ILoadoutService loadoutService, IDialogService dialogService, IDispatcherService dispatcherService)
-        : base("Loadouts", 600, 500)
+        : base("Loadouts Manager", 600, 500)
     {
         _loadoutService = loadoutService;
         _dialogService = dialogService;

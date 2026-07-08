@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Skua.Core.Interfaces;
@@ -30,6 +30,9 @@ public partial class AdvancedSkillEditorViewModel : ObservableRecipient
 
     [ObservableProperty]
     private bool _useWaitModeBool;
+
+    [ObservableProperty]
+    private bool _resetComboOnTargetChange;
 
     [ObservableProperty]
     private RangedObservableCollection<SkillItemViewModel> _currentSkillsList = new();
@@ -68,7 +71,7 @@ public partial class AdvancedSkillEditorViewModel : ObservableRecipient
             skillStrings.Add(skill.Convert());
         string skills = string.Join(" | ", skillStrings);
         string modeString = SelectedClassUseMode >= 0 && SelectedClassUseMode < ClassUseModes.Length ? ClassUseModes[SelectedClassUseMode] : "Base";
-        AdvancedSkill advSkill = new(CurrentClassName, skills, CurrentSkillTimeout, modeString, UseWaitModeBool ? SkillUseMode.WaitForCooldown : SkillUseMode.UseIfAvailable);
+        AdvancedSkill advSkill = new(CurrentClassName, skills, CurrentSkillTimeout, modeString, UseWaitModeBool ? SkillUseMode.WaitForCooldown : SkillUseMode.UseIfAvailable, ResetComboOnTargetChange);
         OnPropertyChanged(nameof(CurrentSkillsList));
         Messenger.Send<SaveAdvancedSkillMessage>(new(advSkill));
     }
@@ -155,6 +158,7 @@ public partial class AdvancedSkillEditorViewModel : ObservableRecipient
         recipient.CurrentSkillsList.Clear();
         recipient.CurrentSkillTimeout = message.AdvSkill.SkillTimeout;
         recipient.UseWaitModeBool = message.AdvSkill.SkillUseMode != SkillUseMode.UseIfAvailable;
+        recipient.ResetComboOnTargetChange = message.AdvSkill.ResetComboOnTargetChange;
         recipient.CurrentClassName = message.AdvSkill.ClassName;
         recipient.SelectedClassUseMode = (int)message.AdvSkill.ClassUseMode;
         recipient.CurrentSkillsList.AddRange(message.AdvSkill.Skills.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries).Select(s => new SkillItemViewModel(s.Trim())));

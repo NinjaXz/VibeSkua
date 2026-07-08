@@ -290,6 +290,7 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
                 }
 
                 _limit.LimitedRun("connDetail", 100, () => (lastConnChange, lastConnDetail) = CheckStuckonLoading(lastConnChange, lastConnDetail));
+                _limit.LimitedRun("loginStuck", 500, CheckStuckOnLogin);
 
                 if (Manager.ScriptRunning)
                     RunScriptHandlers();
@@ -371,6 +372,80 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
         if (connDetail == lastConnDetail)
             return (lastConnChange, connDetail);
         return (Environment.TickCount, connDetail);
+    }
+
+    private int _loginStuckTime;
+
+    /// <summary>
+    /// Checks if the player is stuck on the initial login / authentication screen.
+    /// </summary>
+    private void CheckStuckOnLogin()
+    {
+        if (Player.Playing || Flash.IsWorldLoaded || _waitForLogin)
+        {
+            _loginStuckTime = 0;
+            return;
+        }
+
+        bool loginVisible = Flash.GetGameObject<bool>("mcLogin.visible", false);
+        if (!loginVisible)
+        {
+            _loginStuckTime = 0;
+            return;
+        }
+
+        bool serverListExists = !Flash.IsNull("mcLogin.sl.iList");
+        int serverEntries = Flash.GetGameObject<int>("mcLogin.sl.iList.numChildren", 0);
+        if (serverListExists && serverEntries > 0)
+        {
+            _loginStuckTime = 0;
+            return;
+        }
+
+        string strStatus = Flash.GetGameObject<string>("mcLogin.strStatus.text", "") ?? "";
+        string txtStatus = Flash.GetGameObject<string>("mcLogin.txtStatus.text", "") ?? "";
+        string txtDetail = Flash.GetGameObject<string>("mcLogin.txtDetail.text", "") ?? "";
+        string combinedStatus = $"{strStatus} {txtStatus} {txtDetail}".ToLowerInvariant();
+
+        bool isAuthenticatingOrError = combinedStatus.Contains("authenticating") ||
+                                       combinedStatus.Contains("loading") ||
+                                       combinedStatus.Contains("connecting") ||
+                                       combinedStatus.Contains("account info") ||
+                                       combinedStatus.Contains("error") ||
+                                       combinedStatus.Contains("failed") ||
+                                       combinedStatus.Contains("timeout") ||
+                                       combinedStatus.Contains("lost") ||
+                                       combinedStatus.Contains("offline");
+
+        if (!isAuthenticatingOrError)
+        {
+            _loginStuckTime = 0;
+            return;
+        }
+
+        if (_loginStuckTime == 0)
+        {
+            _loginStuckTime = Environment.TickCount;
+            return;
+        }
+
+        if (Environment.TickCount - _loginStuckTime >= Options.LoginTimeout)
+        {
+            Log($"Login stuck on authentication ({combinedStatus.Trim()}) for over {Options.LoginTimeout}ms. Resetting login UI.");
+            _loginStuckTime = 0;
+            try
+            {
+                Flash.CallGameFunction("gotoAndPlay", "Login");
+            }
+            catch { }
+
+            bool canRelog = Options.AutoRelogin || (!string.IsNullOrEmpty(Player.Username) && !string.IsNullOrEmpty(Player.Password));
+            if (canRelog && !_waitForLogin)
+            {
+                Log("Triggering auto re-login from stuck authentication state.");
+                _ = OnLogout();
+            }
+        }
     }
 
     /// <summary>
@@ -659,7 +734,8 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
         _waitForLogin = true;
         Messenger.Send<ReloginTriggeredMessage, int>(new(kicked), (int)MessageChannels.GameEvents);
 
-        Relogin((!Options.SafeRelogin && !kicked) ? Options.ReloginTryDelay : 70000, wasRunning);
+        int delay = (Options.SafeRelogin && kicked) ? 70000 : Options.ReloginTryDelay;
+        Relogin(delay, wasRunning);
     }
 
     private void Relogin(int delay, bool startScript)

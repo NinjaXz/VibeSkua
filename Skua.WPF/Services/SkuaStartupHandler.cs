@@ -41,7 +41,7 @@ public sealed class SkuaStartupHandler : IDisposable
             _bot.Flash.FlashCall -= Login;
             Task.Factory.StartNew(() =>
             {
-                _bot.Servers.Relogin(_result.Value.Server);
+                _bot.Servers.EnsureRelogin(_result.Value.Server);
 
                 if (!string.IsNullOrEmpty(_result.Value.Script))
                     StrongReferenceMessenger.Default.Send<StartScriptMessage, int>(new(_result.Value.Script), (int)MessageChannels.ScriptStatus);

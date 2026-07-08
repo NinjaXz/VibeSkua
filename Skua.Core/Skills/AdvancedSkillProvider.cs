@@ -1,4 +1,5 @@
 using Skua.Core.Interfaces;
+using Skua.Core.Models.Monsters;
 
 namespace Skua.Core.Skills;
 
@@ -22,6 +23,7 @@ public class AdvancedSkillProvider : ISkillProvider
     }
 
     private readonly UseRule[] _none = new[] { new UseRule(SkillRule.None) };
+    private string? _lastTargetKey;
 
     public bool ResetOnTarget { get; set; } = false;
     public int SkillCount => _currentCommand.SkillCount;
@@ -337,10 +339,48 @@ public class AdvancedSkillProvider : ISkillProvider
     {
     }
 
-    public void OnTargetReset()
+    public bool OnTargetReset()
     {
-        if (ResetOnTarget && !_player.HasTarget)
+        if (!ResetOnTarget)
+            return false;
+
+        string? currentTargetKey = _player.HasTarget ? GetCurrentTargetKey() : null;
+
+        if (currentTargetKey == null)
+        {
+            if (_lastTargetKey != null)
+            {
+                _lastTargetKey = null;
+                _currentCommand.Reset();
+                return true;
+            }
+
+            return false;
+        }
+
+        if (_lastTargetKey == null)
+        {
+            _lastTargetKey = currentTargetKey;
+            return false;
+        }
+
+        if (!string.Equals(_lastTargetKey, currentTargetKey, StringComparison.Ordinal))
+        {
+            _lastTargetKey = currentTargetKey;
             _currentCommand.Reset();
+            return true;
+        }
+
+        return false;
+    }
+
+    private string? GetCurrentTargetKey()
+    {
+        Monster? target = _player.Target;
+        if (target == null)
+            return null;
+
+        return $"{target.MapID}:{target.ID}:{target.Cell}:{target.Name}";
     }
 
     public bool? ShouldUseSkill(int skillIndex, bool canUse)
@@ -352,11 +392,13 @@ public class AdvancedSkillProvider : ISkillProvider
     {
         _combat.CancelAutoAttack();
         _combat.CancelTarget();
+        _lastTargetKey = null;
         _currentCommand.Reset();
     }
 
     public void OnPlayerDeath()
     {
+        _lastTargetKey = null;
         _currentCommand.Reset();
     }
 }

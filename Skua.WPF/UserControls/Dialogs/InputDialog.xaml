@@ -1,4 +1,4 @@
-﻿<UserControl
+<UserControl
     x:Class="Skua.WPF.UserControls.InputDialog"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -35,6 +35,12 @@
             Style="{StaticResource MaterialDesignFloatingHintTextBox}"
             Text="{Binding DialogTextInput}"
             Visibility="{Binding NumberOnly, Converter={StaticResource InverseBoolToVisConverter}}" />
+        <TextBox
+            Margin="6"
+            materialDesign:HintAssist.Hint="{Binding SecondTextBoxHint}"
+            Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+            Text="{Binding SecondTextInput}"
+            Visibility="{Binding ShowSecondInput, Converter={StaticResource BooleanToVisibilityConverter}}" />
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition />

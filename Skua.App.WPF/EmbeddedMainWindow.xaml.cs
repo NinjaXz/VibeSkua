@@ -20,6 +20,7 @@ namespace Skua.App.WPF
         private const int WM_SKUA_ARMY_SCHEDULER = 0x0400 + 454;
         private const int WM_SKUA_ARMY_SCHEDULER_STOP = 0x0400 + 455;
         private const int WM_SKUA_CHECK_LOGIN = 0x0400 + 456;
+        private const int WM_SKUA_JUMP_PLAYER = 0x0400 + 457;
         private const int WM_COPYDATA = 0x004A;
 
         [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -30,13 +31,33 @@ namespace Skua.App.WPF
             public IntPtr lpData;
         }
 
+        [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
+        private static extern bool SetWindowText(IntPtr hWnd, string lpString);
+
         public EmbeddedMainWindow()
         {
             InitializeComponent();
-            DataContext = Ioc.Default.GetRequiredService<MainViewModel>();
+            var vm = Ioc.Default.GetRequiredService<MainViewModel>();
+            DataContext = vm;
+            vm.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(MainViewModel.Title))
+                {
+                    IntPtr handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+                    if (handle != IntPtr.Zero)
+                    {
+                        SetWindowText(handle, vm.Title);
+                    }
+                }
+            };
             Loaded += (s, e) =>
             {
-                System.Windows.Interop.HwndSource source = System.Windows.Interop.HwndSource.FromHwnd(new System.Windows.Interop.WindowInteropHelper(this).Handle);
+                IntPtr handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+                if (handle != IntPtr.Zero && vm != null)
+                {
+                    SetWindowText(handle, vm.Title);
+                }
+                System.Windows.Interop.HwndSource source = System.Windows.Interop.HwndSource.FromHwnd(handle);
                 source?.AddHook(WndProc);
             };
         }
@@ -87,9 +108,46 @@ namespace Skua.App.WPF
                         string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "skua_global_jump.txt");
                         if (System.IO.File.Exists(tempFile))
                         {
-                            string targetMap = System.IO.File.ReadAllText(tempFile);
-                            if (!string.IsNullOrWhiteSpace(targetMap))
-                                Ioc.Default.GetRequiredService<IScriptMap>().Join(targetMap, "Enter", "Spawn", true);
+                            string[] lines = System.IO.File.ReadAllLines(tempFile);
+                            string map = lines.Length > 0 ? lines[0].Trim() : "";
+                            string cell = lines.Length > 1 && !string.IsNullOrWhiteSpace(lines[1]) ? lines[1].Trim() : "Enter";
+                            string pad = "Spawn";
+                            
+                            if (cell.Contains(','))
+                            {
+                                var cellParts = cell.Split(',');
+                                cell = cellParts[0].Trim();
+                                if (cellParts.Length > 1)
+                                    pad = cellParts[1].Trim();
+                            }
+                            
+                            var mapService = Ioc.Default.GetRequiredService<IScriptMap>();
+                            if (string.IsNullOrWhiteSpace(map) || mapService.Name.Equals(map.Split('-')[0], StringComparison.OrdinalIgnoreCase))
+                            {
+                                mapService.Jump(cell, pad, false);
+                            }
+                            else
+                            {
+                                mapService.Join(map, cell, pad, true, false);
+                            }
+                        }
+                    } 
+                    catch { }
+                });
+                handled = true;
+            }
+            else if (msg == WM_SKUA_JUMP_PLAYER)
+            {
+                Task.Run(() => 
+                {
+                    try 
+                    {
+                        string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "skua_global_jump_player.txt");
+                        if (System.IO.File.Exists(tempFile))
+                        {
+                            string targetPlayer = System.IO.File.ReadAllText(tempFile)?.Trim() ?? "";
+                            if (!string.IsNullOrWhiteSpace(targetPlayer))
+                                Ioc.Default.GetRequiredService<IScriptPlayer>().Goto(targetPlayer);
                         }
                     } 
                     catch { }

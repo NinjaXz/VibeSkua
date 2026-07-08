@@ -2,6 +2,7 @@ package skua.module {
 import flash.events.Event;
 
 import skua.Main;
+import skua.api.Skills;
 
 public class Modules {
     private static var _modules:* = new Object();
@@ -37,6 +38,9 @@ public class Modules {
     }
 
     public static function handleFrame(e:Event):void {
+        try {
+            Skills.scavengeSpinners();
+        } catch (err:*) {}
         for (var name:String in _modules) {
             var module:Module = _modules[name];
             if (module.enabled) {
@@ -51,6 +55,7 @@ public class Modules {
         registerModule(new DisableCollisions());
         registerModule(new DisableFX());
         registerModule(new QuestRequirementWiki());
+        registerModule(new OptimizePlayers());
     }
 }
 }

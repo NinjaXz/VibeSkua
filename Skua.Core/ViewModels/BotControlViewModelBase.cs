@@ -1,11 +1,11 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Skua.Core.Interfaces;
 
 namespace Skua.Core.ViewModels;
 
 public class BotControlViewModelBase : ObservableRecipient, IManagedWindow
 {
-    public string Title { get; }
+    public virtual string Title { get; protected set; }
     public int Width { get; }
     public int Height { get; }
     public bool CanResize { get; }

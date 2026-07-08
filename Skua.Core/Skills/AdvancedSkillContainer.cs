@@ -149,7 +149,8 @@ public class AdvancedSkillContainer : ObservableRecipient, IAdvancedSkillContain
                         skillsStr,
                         skillMode.SkillTimeout,
                         classUseMode,
-                        skillMode.SkillUseMode == "UseIfAvailable" ? SkillUseMode.UseIfAvailable : SkillUseMode.WaitForCooldown
+                        skillMode.SkillUseMode == "UseIfAvailable" ? SkillUseMode.UseIfAvailable : SkillUseMode.WaitForCooldown,
+                        skillMode.ResetComboOnTargetChange
                     ));
                 }
             }
@@ -326,6 +327,7 @@ public class AdvancedSkillContainer : ObservableRecipient, IAdvancedSkillContain
             {
                 SkillUseMode = skill.SkillUseMode == SkillUseMode.UseIfAvailable ? "UseIfAvailable" : "WaitForCooldown",
                 SkillTimeout = skill.SkillTimeout,
+                ResetComboOnTargetChange = skill.ResetComboOnTargetChange,
                 Skills = AdvancedSkillsParser.ParseSkillString(skill.Skills)
             };
 

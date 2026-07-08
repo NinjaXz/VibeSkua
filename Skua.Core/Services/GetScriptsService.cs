@@ -263,6 +263,10 @@ public partial class GetScriptsService : ObservableObject, IGetScriptsService
         try
         {
             string content = await ValidatedHttpExtensions.GetStringAsync(HttpClients.GitHubRaw, _questDataRawUrl);
+            string scriptsQuestFile = Path.Combine(ClientFileSources.SkuaScriptsDIR, "QuestData.json");
+            if (!Directory.Exists(ClientFileSources.SkuaScriptsDIR))
+                Directory.CreateDirectory(ClientFileSources.SkuaScriptsDIR);
+
             if (File.Exists(ClientFileSources.SkuaQuestsFile))
             {
                 string localContent = await File.ReadAllTextAsync(ClientFileSources.SkuaQuestsFile);
@@ -272,11 +276,14 @@ public partial class GetScriptsService : ObservableObject, IGetScriptsService
                 HashSet<int> remoteIds = remoteQuests.Select(q => q.ID).ToHashSet();
                 remoteQuests.AddRange(localQuests.Where(q => !remoteIds.Contains(q.ID)));
                 
-                await File.WriteAllTextAsync(ClientFileSources.SkuaQuestsFile, JsonConvert.SerializeObject(remoteQuests.OrderBy(q => q.ID), Formatting.Indented));
+                string serialized = JsonConvert.SerializeObject(remoteQuests.OrderBy(q => q.ID), Formatting.Indented);
+                await File.WriteAllTextAsync(ClientFileSources.SkuaQuestsFile, serialized);
+                try { await File.WriteAllTextAsync(scriptsQuestFile, serialized); } catch { }
             }
             else
             {
                 await File.WriteAllTextAsync(ClientFileSources.SkuaQuestsFile, content);
+                try { await File.WriteAllTextAsync(scriptsQuestFile, content); } catch { }
             }
             return true;
         }

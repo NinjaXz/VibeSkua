@@ -27,30 +27,30 @@ internal class MainMenu
                 new("Application Themes"),
                 new("HotKeys")
             }),
-            new("Helpers", new List<MainMenuItemViewModel>()
+            new("Tools & Helpers", new List<MainMenuItemViewModel>()
             {
-                new("Runtime"),
+                new("Loadouts Manager"),
                 new("Fast Travel"),
-                new("Current Drops"),
-                new("Loadouts")
-            }),
-            new("Tools", new List<MainMenuItemViewModel>()
-            {
                 new("Loader"),
                 new("Grabber"),
-                new("Junk Items"),
-                new("Stats"),
-                new("Console")
+                new("Current Drops"),
+                new("Junk Items")
             }),
-            new("Skills"),
-            new("Packets", new List<MainMenuItemViewModel>()
+            new("Combat", new List<MainMenuItemViewModel>()
             {
+                new("Skills"),
+                new("Stats"),
+                new("Runtime")
+            }),
+            new("Bank", new RelayCommand(Ioc.Default.GetRequiredService<IScriptBank>().Open)),
+            new("Diagnostics", new List<MainMenuItemViewModel>()
+            {
+                new("Logs"),
+                new("Console"),
                 new("Spammer"),
                 new("Logger"),
                 new("Interceptor")
-            }),
-            new("Bank", new RelayCommand(Ioc.Default.GetRequiredService<IScriptBank>().Open)),
-            new("Logs")
+            })
         };
 
         return new(menuItems, s.GetRequiredService<AutoViewModel>(), s.GetRequiredService<JumpViewModel>(), s.GetRequiredService<IWindowService>());

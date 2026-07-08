@@ -99,10 +99,27 @@ public partial class DailyTrackerWindow : Window
 
     private List<QuestCategory> _categories = [];
 
+    private void EnsureAllQuestsLoaded()
+    {
+        try
+        {
+            if (_trackedQuests.All(id => _bot.Quests.Tree.Any(q => q.ID == id)))
+                return;
+
+            _bot.Quests.Load(_trackedQuests);
+            _bot.Wait.ForTrue(() => _trackedQuests.All(id => _bot.Quests.Tree.Any(q => q.ID == id)), null, 15, 200);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Trace.WriteLine($"Batch quest loading failed: {ex}");
+        }
+    }
+
     private async Task LoadQuestsAsync()
     {
         bool[] doneStates = await Task.Run(() =>
         {
+            EnsureAllQuestsLoaded();
             bool[] results = new bool[_trackedQuests.Length];
             for (int i = 0; i < _trackedQuests.Length; i++)
             {
@@ -126,7 +143,8 @@ public partial class DailyTrackerWindow : Window
             new() { Name = "Resources & Miscellaneous", Quests = [.. questItems.Take(8)] },
             new() { Name = "Classes & Factions", Quests = [.. questItems.Skip(8).Take(4)] },
             new() { Name = "Lord of Order", Quests = [.. questItems.Skip(12).Take(10)] },
-            new() { Name = "Ultra Bosses (Weekly)", Quests = [.. questItems.Skip(22)] }
+            new() { Name = "Ultra Bosses (Daily)", Quests = [.. questItems.Skip(22).Take(4)] },
+            new() { Name = "Ultra Bosses (Weekly)", Quests = [.. questItems.Skip(26)] }
         ];
 
         CategoriesControl.ItemsSource = _categories;
@@ -149,6 +167,7 @@ public partial class DailyTrackerWindow : Window
     {
         return Task.Run(() =>
         {
+            EnsureAllQuestsLoaded();
             foreach (QuestCategory category in _categories)
             {
                 foreach (QuestItem quest in category.Quests)

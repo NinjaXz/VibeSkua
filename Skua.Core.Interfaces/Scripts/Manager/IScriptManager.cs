@@ -51,6 +51,11 @@ public interface IScriptManager : IScriptStatus, INotifyPropertyChanged
     string? OverrideStorage { get; set; }
 
     /// <summary>
+    /// Gets or sets whether script option configuration dialogs should be suppressed (used by automated schedulers).
+    /// </summary>
+    bool SilentConfig { get; set; }
+
+    /// <summary>
     /// Sets the path of the currently loaded script.
     /// </summary>
     /// <param name="path">The file system path to the script to be marked as loaded. Cannot be null or empty.</param>

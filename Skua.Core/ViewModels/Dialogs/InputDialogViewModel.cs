@@ -1,4 +1,4 @@
-﻿namespace Skua.Core.ViewModels;
+namespace Skua.Core.ViewModels;
 
 public class InputDialogViewModel : DialogViewModelBase
 {
@@ -46,6 +46,15 @@ public class InputDialogViewModel : DialogViewModelBase
         TextBoxHint = textBoxHint;
     }
 
+    public InputDialogViewModel(string title, string dialogHint, string textBoxHint, string secondTextBoxHint, bool numericInputOnly = false)
+        : base(title)
+    {
+        NumberOnly = numericInputOnly;
+        DialogHint = dialogHint;
+        TextBoxHint = textBoxHint;
+        SecondTextBoxHint = secondTextBoxHint;
+    }
+
     public bool NumberOnly { get; }
     private string _dialogTextInput = string.Empty;
 
@@ -54,6 +63,15 @@ public class InputDialogViewModel : DialogViewModelBase
         get => _dialogTextInput; set => SetProperty(ref _dialogTextInput, value);
     }
 
+    private string _secondTextInput = string.Empty;
+
+    public string SecondTextInput
+    {
+        get => _secondTextInput; set => SetProperty(ref _secondTextInput, value);
+    }
+
     public string DialogHint { get; } = string.Empty;
     public string TextBoxHint { get; } = string.Empty;
+    public string SecondTextBoxHint { get; } = string.Empty;
+    public bool ShowSecondInput => !string.IsNullOrEmpty(SecondTextBoxHint);
 }

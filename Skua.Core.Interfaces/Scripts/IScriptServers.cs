@@ -1,4 +1,4 @@
-﻿using Skua.Core.Models.Servers;
+using Skua.Core.Models.Servers;
 using System.ComponentModel;
 
 namespace Skua.Core.Interfaces;
@@ -31,6 +31,11 @@ public interface IScriptServers : INotifyPropertyChanged
     /// The name of the last server the player was connected to.
     /// </summary>
     string LastName { get; set; }
+
+    /// <summary>
+    /// Gets the cached username of the player across disconnects and re-logins.
+    /// </summary>
+    string? CachedUsername { get; }
 
     /// <summary>
     /// The list of available game servers.

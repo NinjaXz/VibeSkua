@@ -23,6 +23,7 @@ public partial class App : Application
 {
     private const string _uniqueEventName = "Skua.Manager";
     private EventWaitHandle? _eventWaitHandle = null;
+    private bool _isPrimaryInstance = false;
 
     public App()
     {
@@ -32,7 +33,9 @@ public partial class App : Application
         FlashTrustManager.EnsureTrustFile();
 
         InitializeComponent();
-        SingleInstanceWatcher();
+        _isPrimaryInstance = SingleInstanceWatcher();
+        if (!_isPrimaryInstance)
+            return;
 
         string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         string targetPath = Path.Combine(appData, "Skua");
@@ -55,7 +58,7 @@ public partial class App : Application
                 {
                     await Task.Delay(1500);
                     AppUpdaterViewModel updateVM = Ioc.Default.GetRequiredService<AppUpdaterViewModel>();
-                    await updateVM.CheckForUpdateCommand.ExecuteAsync(null);
+                    await updateVM.CheckForUpdateAsync();
                 }
                 catch (Exception ex)
                 {
@@ -90,6 +93,9 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        if (!_isPrimaryInstance)
+            return;
+
         bool isChangeLogActivated = Services.GetRequiredService<ISettingsService>().Get<bool>("ChangeLogActivated");
         if (!isChangeLogActivated)
         {
@@ -98,14 +104,14 @@ public partial class App : Application
         }
     }
 
-    private void SingleInstanceWatcher()
+    private bool SingleInstanceWatcher()
     {
         try
         {
             _eventWaitHandle = EventWaitHandle.OpenExisting(_uniqueEventName);
             _eventWaitHandle.Set();
             Shutdown();
-            return;
+            return false;
         }
         catch (WaitHandleCannotBeOpenedException)
         {
@@ -114,7 +120,7 @@ public partial class App : Application
         catch (Exception ex)
         {
             System.Diagnostics.Trace.WriteLine($"SingleInstanceWatcher failed: {ex}");
-            return;
+            return true;
         }
 
         Task.Factory.StartNew(() =>
@@ -127,6 +133,8 @@ public partial class App : Application
                 });
             }
         }, TaskCreationOptions.LongRunning);
+
+        return true;
     }
 
     private void Dispatcher_ShutdownStarted(object? sender, EventArgs e)

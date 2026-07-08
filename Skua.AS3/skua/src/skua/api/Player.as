@@ -5,7 +5,7 @@ import flash.utils.getQualifiedClassName;
 import skua.Main;
 
 public class Player {
-    private static const DROP_PARSE_REGEX:RegExp = /(.*)\s+x\s*(\d*)/g;
+    private static const DROP_PARSE_REGEX:RegExp = /(.*)\s+x\s*(\d*)/;
 
     public function Player() {
         super();
@@ -105,7 +105,7 @@ public class Player {
         var pickup:Array = whitelist.split(',');
         if (Main.instance.game.litePreference.data.bCustomDrops) {
             var source:* = Main.instance.game.cDropsUI.mcDraggable ? Main.instance.game.cDropsUI.mcDraggable.menu : Main.instance.game.cDropsUI;
-            for (var i:int = 0; i < source.numChildren; i++) {
+            for (var i:int = source.numChildren - 1; i >= 0; i--) {
                 var child:* = source.getChildAt(i);
                 if (child.itemObj) {
                     var itemName:String = child.itemObj.sName.toLowerCase();
@@ -116,7 +116,7 @@ public class Player {
             }
         } else {
             var children:int = Main.instance.game.ui.dropStack.numChildren;
-            for (i = 0; i < children; i++) {
+            for (i = children - 1; i >= 0; i--) {
                 child = Main.instance.game.ui.dropStack.getChildAt(i);
                 var type:String = getQualifiedClassName(child);
                 if (type.indexOf('DFrame2MC') != -1) {

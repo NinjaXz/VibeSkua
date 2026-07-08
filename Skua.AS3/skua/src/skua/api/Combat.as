@@ -18,8 +18,11 @@ public class Combat {
 
     public static function infiniteRange():void {
         var active:Array = Main.instance.game.world.actions.active;
-        for (var i:int = 0; i < 6; i++) {
-            active[i].range = 20000;
+        if (active == null) return;
+        for (var i:int = 0; i < active.length && i < 6; i++) {
+            if (active[i] != null && ("range" in active[i] || active[i].hasOwnProperty("range"))) {
+                active[i].range = 20000;
+            }
         }
     }
 }

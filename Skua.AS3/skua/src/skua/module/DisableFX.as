@@ -3,6 +3,7 @@ import flash.display.MovieClip;
 import flash.utils.getQualifiedClassName;
 
 public class DisableFX extends Module {
+    private var frameTick:int = 0;
 
     public function DisableFX() {
         super("DisableFX");
@@ -37,7 +38,11 @@ public class DisableFX extends Module {
     }
 
     override public function onFrame(game:*):void {
-        onToggle(game);
+        frameTick++;
+        if (frameTick >= 15) {
+            frameTick = 0;
+            onToggle(game);
+        }
     }
 
     private function toggleAnims(root:MovieClip, enabled:Boolean):void {

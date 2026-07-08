@@ -149,6 +149,7 @@ public class FlashUtil : IFlashUtil
         }
     }
 
+    private static readonly object _flashLock = new();
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, (DateTime time, string value)> _callCache = new();
 
     public object Call(string function, Type type, params object[] args)
@@ -179,6 +180,8 @@ public class FlashUtil : IFlashUtil
                 result = Flash?.CallFunction(reqString)!;
                 if (canCache)
                 {
+                    if (_callCache.Count > 500)
+                        _callCache.Clear();
                     _callCache[reqString] = (DateTime.Now, result);
                 }
             }

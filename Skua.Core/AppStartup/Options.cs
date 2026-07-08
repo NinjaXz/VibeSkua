@@ -25,7 +25,7 @@ internal class Options
 
         foreach (PropertyInfo pi in scriptOpt.GetType().GetProperties())
         {
-            if (pi.Name is nameof(IScriptOption.OptionDictionary) or nameof(ObservableRecipient.IsActive) or nameof(IScriptOption.GuildColor) or nameof(IScriptOption.NameColor))
+            if (pi.Name is nameof(IScriptOption.OptionDictionary) or nameof(ObservableRecipient.IsActive) or nameof(IScriptOption.GuildColor) or nameof(IScriptOption.NameColor) or nameof(IScriptOption.IsIpcMessageProcessing))
                 continue;
             if (pi.PropertyType == typeof(bool))
                 options.Add(CreateOptionItem<bool>(s, pi.Name, "1", new RelayCommand<bool>(b => pi.SetValue(scriptOpt, b))));
@@ -62,6 +62,7 @@ internal class Options
     {
         List<DisplayOptionItemViewModelBase> appOptions = new()
         {
+            CreateSettingOptionItem<bool>("Show Username in Title", "Whether to display logged-in character name in window title", "ShowUsernameInTitle"),
             CreateSettingOptionItem<bool>("Auto Update Scripts", "Whether to auto update scripts when launching the Manager, needs \"Check for Scripts Updates\" to be true", "AutoUpdateBotScripts"),
             CreateSettingOptionItem<bool>("Check for Script Updates", "Whether to check for scripts updates when launching the Manager", "CheckBotScriptsUpdates"),
             CreateSettingOptionItem<bool>("Auto Update AdvanceSkill Sets", "Whether to auto update advance skill sets when launching the Manager, needs \"Check for AdvanceSkill Sets updates\" to be true", "AutoUpdateAdvanceSkillSetsUpdates"),

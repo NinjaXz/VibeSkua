@@ -78,7 +78,16 @@ public partial class ScriptSkill : IScriptSkill
     public int SkillTimeout { get; set; } = -1;
 
     public SkillUseMode SkillUseMode { get; set; } = SkillUseMode.UseIfAvailable;
+    public bool ResetComboOnTargetChange { get; set; } = false;
     private ManualResetEvent _pauseEvent = new(true);
+
+    private AdvancedSkillProvider CreateAdvancedSkillProvider()
+    {
+        return new AdvancedSkillProvider(Player, Self, Target, Combat, Flash)
+        {
+            ResetOnTarget = ResetComboOnTargetChange
+        };
+    }
 
     public void Start()
     {
@@ -88,6 +97,7 @@ public partial class ScriptSkill : IScriptSkill
             {
                 var masterProvider = new MasterSkillProvider();
                 masterProvider.Init(Player, Self, Target, Combat, Flash);
+                masterProvider.ResetOnTarget = ResetComboOnTargetChange;
                 OverrideProvider = masterProvider;
             }
             catch { }
@@ -95,11 +105,12 @@ public partial class ScriptSkill : IScriptSkill
 
         if (BaseProvider is null)
         {
-            BaseProvider = new AdvancedSkillProvider(Player, Self, Target, Combat, Flash);
+            BaseProvider = CreateAdvancedSkillProvider();
             BaseProvider.Load(genericSkills);
             _provider = BaseProvider;
         }
         _provider = OverrideProvider ?? BaseProvider;
+        _provider.ResetOnTarget = ResetComboOnTargetChange;
 
         if (TimerRunning)
             return;
@@ -164,14 +175,22 @@ public partial class ScriptSkill : IScriptSkill
     public void LoadAdvanced(string className, bool autoEquip, ClassUseMode useMode = ClassUseMode.Base)
     {
         if (Options.UseFunctionBasedSkills)
+        {
+            if (autoEquip && !string.IsNullOrEmpty(className) && className != "generic")
+            {
+                Inventory.EquipItem(className);
+                Wait.ForItemEquip(className);
+            }
             return;
+        }
 
-        OverrideProvider = new AdvancedSkillProvider(Player, Self, Target, Combat, Flash);
+        OverrideProvider = CreateAdvancedSkillProvider();
 
         if (className == "generic")
         {
             OverrideProvider.Load(genericSkills);
             SkillUseMode = SkillUseMode.UseIfAvailable;
+            ResetComboOnTargetChange = false;
             return;
         }
 
@@ -191,12 +210,15 @@ public partial class ScriptSkill : IScriptSkill
         {
             OverrideProvider.Load(genericSkills);
             SkillUseMode = SkillUseMode.UseIfAvailable;
+            ResetComboOnTargetChange = false;
             return;
         }
         AdvancedSkill skill = skills.Find(s => s.ClassUseMode == useMode) ?? skills.FirstOrDefault()!;
         OverrideProvider.Load(skill.Skills);
         SkillTimeout = skill.SkillTimeout;
         SkillUseMode = skill.SkillUseMode;
+        ResetComboOnTargetChange = skill.ResetComboOnTargetChange;
+        OverrideProvider.ResetOnTarget = ResetComboOnTargetChange;
     }
 
     public void LoadAdvanced(string skills, int skillTimeout = -1, SkillUseMode skillMode = SkillUseMode.UseIfAvailable)
@@ -204,7 +226,7 @@ public partial class ScriptSkill : IScriptSkill
         if (Options.UseFunctionBasedSkills)
             return;
 
-        OverrideProvider = new AdvancedSkillProvider(Player, Self, Target, Combat, Flash);
+        OverrideProvider = CreateAdvancedSkillProvider();
         SkillTimeout = skillTimeout;
         SkillUseMode = skillMode;
         OverrideProvider.Load(skills);
@@ -213,7 +235,14 @@ public partial class ScriptSkill : IScriptSkill
     public void LoadAdvanced(string className, string mode, bool autoEquip = true)
     {
         if (Options.UseFunctionBasedSkills)
+        {
+            if (autoEquip && !string.IsNullOrEmpty(className) && className != "generic")
+            {
+                Inventory.EquipItem(className);
+                Wait.ForItemEquip(className);
+            }
             return;
+        }
 
         if (Enum.TryParse<ClassUseMode>(mode, ignoreCase: true, out ClassUseMode classMode))
         {
@@ -229,16 +258,19 @@ public partial class ScriptSkill : IScriptSkill
                     Inventory.EquipItem(className);
                     Wait.ForItemEquip(className);
                 }
-                OverrideProvider = new AdvancedSkillProvider(Player, Self, Target, Combat, Flash);
+                OverrideProvider = CreateAdvancedSkillProvider();
                 OverrideProvider.Load(skill.Skills);
                 SkillTimeout = skill.SkillTimeout;
                 SkillUseMode = skill.SkillUseMode;
+                ResetComboOnTargetChange = skill.ResetComboOnTargetChange;
+                OverrideProvider.ResetOnTarget = ResetComboOnTargetChange;
             }
             else
             {
-                OverrideProvider = new AdvancedSkillProvider(Player, Self, Target, Combat, Flash);
+                OverrideProvider = CreateAdvancedSkillProvider();
                 OverrideProvider.Load(genericSkills);
                 SkillUseMode = SkillUseMode.UseIfAvailable;
+                ResetComboOnTargetChange = false;
             }
         }
     }
@@ -302,7 +334,13 @@ public partial class ScriptSkill : IScriptSkill
             if (!Player.Alive)
             {
                 _provider?.OnPlayerDeath();
+                if (!token.IsCancellationRequested)
+                    await Task.Delay(500, token);
+                continue;
             }
+
+            if (_provider?.OnTargetReset() == true)
+                continue;
 
             // if the player has target or bot attack without target option is on
             // then activate the skills
@@ -310,9 +348,6 @@ public partial class ScriptSkill : IScriptSkill
             {
                 _Poll(token);
             }
-
-            // target reset if player has no target
-            _provider?.OnTargetReset();
 
             // wait for skill interval
             if (!token.IsCancellationRequested)
@@ -396,8 +431,34 @@ public partial class ScriptSkill : IScriptSkill
 
                 // if SkillUseMode is WaitForCooldown then use skills with waiting for cooldown
                 case SkillUseMode.WaitForCooldown:
-                    if (Options.AttackWithoutTarget || (skill != -1 && Wait.ForTrue(() => CanUseSkill(skill), null, SkillTimeout, SkillInterval) && !Combat.StopAttacking))
+                    if (Options.AttackWithoutTarget)
+                    {
                         this.UseSkill(skill);
+                        break;
+                    }
+
+                    if (skill == -1)
+                        break;
+
+                    bool targetReset = false;
+
+                    bool canUseAfterWait = Wait.ForTrue(() =>
+                    {
+                        if (_provider?.OnTargetReset() == true)
+                        {
+                            targetReset = true;
+                            return true;
+                        }
+
+                        return CanUseSkill(skill);
+                    }, null, SkillTimeout <= 0 ? 35 : SkillTimeout, SkillInterval);
+
+                    if (targetReset)
+                        return;
+
+                    if (canUseAfterWait && !Combat.StopAttacking)
+                        this.UseSkill(skill);
+
                     break;
             }
         }

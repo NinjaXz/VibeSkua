@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using Skua.Core.Interfaces;
 using Skua.Core.Messaging;
 using Skua.Core.Models.Monsters;
@@ -95,9 +95,16 @@ public class ScriptKill : IScriptKill
 
     private void _Kill(string name, CancellationToken? token)
     {
-        Wait.ForMonsterSpawn(name);
+        if (token?.IsCancellationRequested == true) return;
+        if (token is not null)
+            Wait.ForTrue(() => !_player.Playing || Monsters.Exists(name), null, -1, token.Value);
+        else
+            Wait.ForMonsterSpawn(name);
+
+        if (token?.IsCancellationRequested == true) return;
         if (Combat.Attack(name))
         {
+            if (token?.IsCancellationRequested == true) return;
             Thread.Sleep(Options.ActionDelay);
             if (token is null)
             {
@@ -110,9 +117,16 @@ public class ScriptKill : IScriptKill
 
     private void _Kill(int id, CancellationToken? token)
     {
-        Wait.ForMonsterSpawn(id);
+        if (token?.IsCancellationRequested == true) return;
+        if (token is not null)
+            Wait.ForTrue(() => !_player.Playing || Monsters.Exists(id), null, -1, token.Value);
+        else
+            Wait.ForMonsterSpawn(id);
+
+        if (token?.IsCancellationRequested == true) return;
         if (Combat.Attack(id))
         {
+            if (token?.IsCancellationRequested == true) return;
             Thread.Sleep(Options.ActionDelay);
             if (token is null)
             {

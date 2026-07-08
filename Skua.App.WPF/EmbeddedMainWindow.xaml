@@ -5,7 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vms="clr-namespace:Skua.Core.ViewModels;assembly=Skua.Core"
-    Title="Skua Embedded"
+    Title="{Binding Title}" Icon="pack://application:,,,/SkuaIcon.ico"
     d:DataContext="{d:DesignInstance vms:MainViewModel}"
     WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="False" Background="#1E1E1E"
     ShowActivated="False" Left="-32000" Top="-32000"

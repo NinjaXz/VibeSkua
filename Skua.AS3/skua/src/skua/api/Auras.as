@@ -206,7 +206,8 @@ public class Auras {
             for each (var monster:* in Main.instance.game.world.monsters)
             {
                 if (monster && monster.objData.strMonName.toLowerCase() == lowerMonsterName) {
-                    monID = monster.objData.MonMapID
+                    monID = monster.objData.MonMapID;
+                    break;
                 }
             }
             var monObj:* = Main.instance.game.world.monTree[monID];

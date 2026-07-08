@@ -169,6 +169,9 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
     [ModuleBinding("HidePlayers")]
     private bool _hidePlayers;
 
+    [ModuleBinding("OptimizePlayers")]
+    private bool _optimizePlayers = true;
+
     private string? _reloginServer = "Twilly";
 
     public string? ReloginServer
@@ -338,7 +341,7 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
     private int _reloginTryDelay = 800;
 
     [ObservableProperty]
-    private int _loginTimeout = 30000;
+    private int _loginTimeout = 5000;
 
     [ObservableProperty]
     private HuntPriorities _HuntPriority = HuntPriorities.None;
@@ -362,7 +365,7 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
         StringCollection saveOptions = new();
         foreach (PropertyInfo pi in GetType().GetProperties())
         {
-            if (pi.Name == nameof(OptionDictionary))
+            if (pi.Name is nameof(OptionDictionary) or nameof(IsIpcMessageProcessing))
                 continue;
             string key = pi.Name;
             object? value = pi.GetValue(this);
@@ -381,7 +384,7 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
 
         foreach (PropertyInfo pi in GetType().GetProperties())
         {
-            if (pi.Name == nameof(OptionDictionary))
+            if (pi.Name is nameof(OptionDictionary) or nameof(IsIpcMessageProcessing))
                 continue;
             if (_userOptions.ContainsKey(pi.Name))
             {
@@ -393,6 +396,9 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
                 pi.SetValue(this, Convert.ChangeType(_userOptions[pi.Name], pi.PropertyType));
             }
         }
+
+        if (LoginTimeout >= 30000)
+            LoginTimeout = 5000;
     }
 
     public void ResetToDefault()
@@ -400,7 +406,7 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
         ScriptOption defaults = new(_lazyFlash);
         foreach (PropertyInfo pi in GetType().GetProperties())
         {
-            if (pi.Name == nameof(OptionDictionary))
+            if (pi.Name is nameof(OptionDictionary) or nameof(IsIpcMessageProcessing))
                 continue;
 
             pi.SetValue(this, pi.GetValue(defaults), null);
@@ -428,7 +434,7 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
         Dictionary<string, Func<object>> dict = new();
         foreach (PropertyInfo pi in GetType().GetProperties())
         {
-            if (pi.Name == nameof(OptionDictionary))
+            if (pi.Name is nameof(OptionDictionary) or nameof(IsIpcMessageProcessing))
                 continue;
             MethodCallExpression methodCall = Expression.Call(Expression.Constant(this), pi.GetGetMethod()!, null);
             UnaryExpression convertedExpression = Expression.Convert(methodCall, typeof(object));

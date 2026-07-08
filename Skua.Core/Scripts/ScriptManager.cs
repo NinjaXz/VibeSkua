@@ -93,6 +93,8 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
 
     public string? OverrideStorage { get; set; }
 
+    public bool SilentConfig { get; set; }
+
     public CancellationTokenSource? ScriptCts { get; private set; }
 
     public bool ShouldExit => ScriptCts?.IsCancellationRequested ?? false;
@@ -157,10 +159,10 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
 
                     if ((actualException is not OperationCanceledException || !stoppedByScript) && (e is not TargetInvocationException || !stoppedByScript))
                     {
-                        exception = e;
-                        Trace.WriteLine($"Error while running script:\r\nMessage: {(e.InnerException is not null ? e.InnerException.Message : e.Message)}\r\nStackTrace: {(e.InnerException is not null ? e.InnerException.StackTrace : e.StackTrace)}");
+                        exception = actualException;
+                        Trace.WriteLine($"Error while running script:\r\nMessage: {actualException.Message}\r\nStackTrace: {actualException.StackTrace}");
 
-                        StrongReferenceMessenger.Default.Send<ScriptErrorMessage, int>(new(e), (int)MessageChannels.ScriptStatus);
+                        StrongReferenceMessenger.Default.Send<ScriptErrorMessage, int>(new(actualException), (int)MessageChannels.ScriptStatus);
 
                         lock (_stateLock)
                         {
@@ -234,15 +236,27 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
 
             if (needsConfig)
             {
-                _ = Task.Run(() =>
+                if (SilentConfig)
                 {
-                    scriptReady.Wait();
-                    Config!.Configure();
                     lock (_configuredLock)
                     {
-                        _configured[Config!.Storage] = true;
+                        if (Config != null)
+                            _configured[Config.Storage] = true;
                     }
-                });
+                    Config?.Save();
+                }
+                else
+                {
+                    _ = Task.Run(() =>
+                    {
+                        scriptReady.Wait();
+                        Config!.Configure();
+                        lock (_configuredLock)
+                        {
+                            _configured[Config!.Storage] = true;
+                        }
+                    });
+                }
             }
 
             return null;
@@ -253,7 +267,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
             {
                 ScriptRunning = false;
             }
-            return e;
+            return e is System.Reflection.TargetInvocationException && e.InnerException != null ? e.InnerException : e;
         }
     }
 
@@ -452,6 +466,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
 
         List<string> linesToRemove = new();
         List<string> filesToInclude = new();
+        List<string> foundRefs = new();
         ReadOnlySpan<char> sourceSpan = source.AsSpan();
 
         for (int i = 0; i < lineCount; i++)
@@ -475,11 +490,20 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
                     string currentDirRef = string.IsNullOrEmpty(currentFile) ? "" : Path.Combine(Path.GetDirectoryName(currentFile) ?? "", refPath);
                     
                     if (!string.IsNullOrEmpty(currentDirRef) && File.Exists(currentDirRef))
+                    {
                         references.Add(currentDirRef);
+                        foundRefs.Add(currentDirRef);
+                    }
                     else if (File.Exists(refLocal))
+                    {
                         references.Add(refLocal);
+                        foundRefs.Add(refLocal);
+                    }
                     else if (File.Exists(refPath))
+                    {
                         references.Add(refPath);
+                        foundRefs.Add(refPath);
+                    }
                     break;
 
                 case "include":
@@ -511,23 +535,29 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
             }
         }
 
+        string resultStr;
         if (linesToRemove.Count == 0)
-            return source.Trim();
-
-        HashSet<string> linesToRemoveSet = new(linesToRemove);
-        string[] sourceLines = source.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-        List<string> filteredLines = new();
-
-        foreach (string sourceLine in sourceLines)
         {
-            string trimmedLine = sourceLine.Trim();
-            if (!linesToRemoveSet.Contains(trimmedLine))
+            resultStr = source.Trim();
+        }
+        else
+        {
+            HashSet<string> linesToRemoveSet = new(linesToRemove);
+            string[] sourceLines = source.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+            List<string> filteredLines = new();
+
+            foreach (string sourceLine in sourceLines)
             {
-                filteredLines.Add(sourceLine);
+                string trimmedLine = sourceLine.Trim();
+                if (!linesToRemoveSet.Contains(trimmedLine))
+                {
+                    filteredLines.Add(sourceLine);
+                }
             }
+            resultStr = string.Join(Environment.NewLine, filteredLines).Trim();
         }
 
-        return string.Join(Environment.NewLine, filteredLines).Trim();
+        return resultStr;
     }
 
     private void DiscoverAllIncludes(HashSet<string> references)

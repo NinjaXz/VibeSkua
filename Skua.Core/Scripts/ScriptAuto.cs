@@ -84,7 +84,9 @@ public partial class ScriptAuto : ObservableObject, IScriptAuto
         }
 
         _ctsAuto?.Cancel();
-        // Removed blocking Wait() calls to prevent UI thread deadlock
+        Combat.CancelAutoAttack();
+        Combat.CancelTarget();
+        IsRunning = false;
     }
 
     public async ValueTask StopAsync()
@@ -96,7 +98,9 @@ public partial class ScriptAuto : ObservableObject, IScriptAuto
         }
 
         _ctsAuto?.Cancel();
-        await Wait.ForTrueAsync(() => _ctsAuto is null && (_autoTask?.IsCompleted ?? true), 40);
+        Combat.CancelAutoAttack();
+        Combat.CancelTarget();
+        await Wait.ForTrueAsync(() => _ctsAuto is null && (_autoTask?.IsCompleted ?? true), 20);
         IsRunning = false;
     }
 
@@ -130,6 +134,8 @@ public partial class ScriptAuto : ObservableObject, IScriptAuto
                 Drops.Stop();
                 Skills.Stop();
                 Boosts.Stop();
+                Combat.CancelAutoAttack();
+                Combat.CancelTarget();
                 Options.InfiniteRange = false;
                 _ctsAuto?.Dispose();
                 _ctsAuto = null;
@@ -143,10 +149,20 @@ public partial class ScriptAuto : ObservableObject, IScriptAuto
     private int _targetMapID = -1;
     private int[]? _priorityMapIDs = null;
 
+    private async Task WaitIfDead(CancellationToken token)
+    {
+        while (!Player.Alive && !token.IsCancellationRequested)
+        {
+            await Task.Delay(500, token);
+        }
+    }
+
     private async Task _Attack(CancellationToken token, int[]? manualMapIDs = null)
     {
         Trace.WriteLine("Auto attack started.");
-        Player.SetSpawnPoint();
+        string attackCell = Player.Cell;
+        string attackPad = Player.Pad;
+        Player.SetSpawnPoint(attackCell, attackPad);
 
         _priorityMapIDs = manualMapIDs;
 
@@ -174,6 +190,27 @@ public partial class ScriptAuto : ObservableObject, IScriptAuto
 
         while (!token.IsCancellationRequested)
         {
+            if (!Player.Alive)
+            {
+                await WaitIfDead(token);
+                if (token.IsCancellationRequested) break;
+                await Task.Delay(600, token);
+                if (!string.IsNullOrEmpty(attackCell) && Player.Cell != attackCell)
+                {
+                    Player.SetSpawnPoint(attackCell, attackPad);
+                    Map.Jump(attackCell, attackPad);
+                    await Task.Delay(400, token);
+                }
+                continue;
+            }
+
+            if (!string.IsNullOrEmpty(Player.Cell) && Player.Cell != attackCell && Player.Cell != "Enter" && Player.Cell != "Wait")
+            {
+                attackCell = Player.Cell;
+                attackPad = Player.Pad;
+                Player.SetSpawnPoint(attackCell, attackPad);
+            }
+
             if (_priorityMapIDs?.Length > 0)
             {
                 // Sequential priority targeting - always prefer earlier indices if alive
@@ -286,6 +323,13 @@ public partial class ScriptAuto : ObservableObject, IScriptAuto
             // Hunt with priority MapIDs
             while (!token.IsCancellationRequested)
             {
+                if (!Player.Alive)
+                {
+                    await WaitIfDead(token);
+                    if (token.IsCancellationRequested) break;
+                    continue;
+                }
+
                 // Sequential priority targeting - always prefer earlier indices if alive
                 int? currentTarget = null;
 
@@ -339,6 +383,13 @@ public partial class ScriptAuto : ObservableObject, IScriptAuto
         {
             while (!token.IsCancellationRequested)
             {
+                if (!Player.Alive)
+                {
+                    await WaitIfDead(token);
+                    if (token.IsCancellationRequested) break;
+                    continue;
+                }
+
                 List<string> cells = Monsters.GetLivingMonsterDataLeafCells(_targetMapID);
 
                 if (cells.Count == 0)
@@ -379,6 +430,13 @@ public partial class ScriptAuto : ObservableObject, IScriptAuto
         {
             while (!token.IsCancellationRequested)
             {
+                if (!Player.Alive)
+                {
+                    await WaitIfDead(token);
+                    if (token.IsCancellationRequested) break;
+                    continue;
+                }
+
                 List<string> cells = Monsters.GetLivingMonsterDataLeafCells(_target);
 
                 if (cells.Count == 0)
@@ -421,6 +479,13 @@ public partial class ScriptAuto : ObservableObject, IScriptAuto
 
             while (!token.IsCancellationRequested)
             {
+                if (!Player.Alive)
+                {
+                    await WaitIfDead(token);
+                    if (token.IsCancellationRequested) break;
+                    continue;
+                }
+
                 for (int i = cells.Count - 1; i >= 0; i--)
                 {
                     if (Player.Cell != cells[i] && !token.IsCancellationRequested)

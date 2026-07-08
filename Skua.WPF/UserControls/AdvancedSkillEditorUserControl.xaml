@@ -1,4 +1,4 @@
-﻿<UserControl
+<UserControl
     x:Class="Skua.WPF.UserControls.AdvancedSkillEditorUserControl"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -57,12 +57,13 @@
             Header="Use Mode">
             <Grid HorizontalAlignment="Stretch">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition />
-                    <ColumnDefinition />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <CheckBox
                     Grid.Column="0"
-                    Margin="3"
+                    Margin="3,3,12,3"
                     HorizontalAlignment="Stretch"
                     materialDesign:CheckBoxAssist.CheckBoxSize="25"
                     Content="Wait for Cooldown"
@@ -75,12 +76,20 @@
                 </CheckBox>
                 <CheckBox
                     Grid.Column="1"
-                    Margin="3"
+                    Margin="3,3,12,3"
                     HorizontalAlignment="Stretch"
                     materialDesign:CheckBoxAssist.CheckBoxSize="25"
                     Content="Use if Available"
                     IsChecked="{Binding UseWaitModeBool, Converter={StaticResource InvertBooleanConverter}}"
                     ToolTip="Whenever a skill is available it will be used, if it is not then it will be skipped" />
+                <CheckBox
+                    Grid.Column="2"
+                    Margin="3"
+                    HorizontalAlignment="Stretch"
+                    materialDesign:CheckBoxAssist.CheckBoxSize="25"
+                    Content="Reset on Target Change"
+                    IsChecked="{Binding ResetComboOnTargetChange}"
+                    ToolTip="Reset skill combo sequence when the target changes or is lost" />
             </Grid>
         </GroupBox>
         <!--#endregion-->

@@ -49,9 +49,12 @@ public class LinkedObject {
         return this._children[path] = RemoteRegistry.createLinked(parent, name);
     }
 
-    public function call(name:String, ...args):LinkedObject {
+    public function call(name:String, ...args):* {
         var func:Function = this._parent[this._name][name] as Function;
         var result:* = func.apply(null, args);
+        if (result is String || result is Number || result is Boolean || result == null) {
+            return result;
+        }
         var parent:ObjectParent = new ObjectParent(result);
         return RemoteRegistry.createLinked(parent, "_obj");
     }

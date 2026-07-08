@@ -89,7 +89,7 @@ public class Server {
 
     private static function killLoginModals():void {
         var modalStack:MovieClip = Main.instance.game.mcLogin.ModalStack;
-        for (var i:int = 0; i < modalStack.numChildren; i++) {
+        for (var i:int = modalStack.numChildren - 1; i >= 0; i--) {
             var modal:MovieClip = modalStack.getChildAt(i) as MovieClip;
             if (modal && "fClose" in modal) {
                 modal.fClose();

@@ -159,7 +159,7 @@ public partial class ScriptSchedulerViewModel : BotControlViewModelBase
             ScriptQueue[CurrentIndex].Duration = GetFormattedDuration();
         }
         await _manager.StopScript();
-        _ = _discord.SendMessageAsync($"⏹️ **Scheduler Stopped** - Playlist execution manually halted.");
+        _ = _discord.SendEmbedAsync("Scheduler Stopped", "**Scheduler** playlist execution manually halted.", 0xFF0000);
     }
 
     public class SavedScriptItem
@@ -234,11 +234,27 @@ public partial class ScriptSchedulerViewModel : BotControlViewModelBase
     {
         if (!IsRunningQueue || _queueCts?.IsCancellationRequested == true) return;
 
+        IScriptPlayer? player = CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetService<IScriptPlayer>();
+        string botName = GetBotUsername(player);
+
+        if (player != null && !player.LoggedIn)
+        {
+            _ = _discord.SendEmbedAsync("Scheduler Paused", "**Scheduler** is waiting for account to reconnect before running next script...", 0xFFD700);
+            while (!player.LoggedIn && IsRunningQueue && _queueCts?.IsCancellationRequested != true)
+            {
+                await Task.Delay(1500);
+            }
+            if (!IsRunningQueue || _queueCts?.IsCancellationRequested == true)
+                return;
+            await Task.Delay(3000);
+            botName = GetBotUsername(player);
+        }
+
         if (CurrentIndex >= ScriptQueue.Count)
         {
             IsRunningQueue = false;
             _discord.SuppressDefaultNotifications = false;
-            _ = _discord.SendMessageAsync($"?? **Scheduler Finished** - All scripts in the playlist have completed!");
+            _ = _discord.SendEmbedAsync("Scheduler Finished", "All scripts in the **Scheduler** playlist have completed!", 0x00FF00);
             return;
         }
 
@@ -246,25 +262,65 @@ public partial class ScriptSchedulerViewModel : BotControlViewModelBase
         
         if (File.Exists(nextScript.Path))
         {
+            if (_manager.ScriptRunning)
+            {
+                string currentLoaded = _manager.LoadedScript ?? string.Empty;
+                bool isSameScript = false;
+                try
+                {
+                    if (!string.IsNullOrEmpty(currentLoaded))
+                    {
+                        string fullLoaded = Path.GetFullPath(currentLoaded);
+                        string fullNext = Path.GetFullPath(nextScript.Path);
+                        isSameScript = string.Equals(fullLoaded, fullNext, StringComparison.OrdinalIgnoreCase);
+                    }
+                }
+                catch
+                {
+                    isSameScript = string.Equals(currentLoaded, nextScript.Path, StringComparison.OrdinalIgnoreCase);
+                }
+
+                if (isSameScript)
+                {
+                    nextScript.Status = "Running";
+                    _scriptStopwatch.Restart();
+                    _ = _discord.SendEmbedAsync($"Script Resumed [{CurrentIndex + 1}/{ScriptQueue.Count}]", $"**{botName}** has resumed execution of **{nextScript.Name}** after reconnection.", 0x00FF00);
+                    return;
+                }
+                else
+                {
+                    System.Diagnostics.Trace.WriteLine($"Stopping lingering script ({currentLoaded}) before launching scheduled script ({nextScript.Name})...");
+                    try { await _manager.StopScript(); } catch { }
+                    await Task.Delay(1500);
+                }
+            }
+
             nextScript.Status = "Running";
             _scriptStopwatch.Restart();
             
-            _ = _discord.SendMessageAsync($"?? **Scheduler** [{CurrentIndex + 1}/{ScriptQueue.Count}] - Now running: {nextScript.Name}");
+            _ = _discord.SendEmbedAsync($"Script Started [{CurrentIndex + 1}/{ScriptQueue.Count}]", $"**{botName}** has begun execution of **{nextScript.Name}**.", 0x00FF00);
             
             try
             {
                 _manager.OverrideStorage = nextScript.Storage;
                 _manager.SetLoadedScript(nextScript.Path);
-                Exception? startEx = await _manager.StartScript();
+                _manager.SilentConfig = true;
+                Exception? startEx;
+                try { startEx = await _manager.StartScript(); }
+                finally { _manager.SilentConfig = false; }
 
                 if (startEx != null)
                 {
                     _manager.OverrideStorage = null;
                     nextScript.Status = "Failed";
                     nextScript.Duration = GetFormattedDuration();
-                    System.Diagnostics.Trace.WriteLine($"Scheduler script failed to start: {startEx.Message}");
-                    _ = _discord.SendMessageAsync($"?? **Scheduler Error** - Script failed to start: {nextScript.Name}");
+                    var actualStartEx = startEx is System.Reflection.TargetInvocationException && startEx.InnerException != null ? startEx.InnerException : startEx;
+                    System.Diagnostics.Trace.WriteLine($"Scheduler script failed to start: {actualStartEx.Message}");
+                    var fields = new List<object> { new { name = "Error", value = $"```{actualStartEx.Message}```", inline = false } };
+                    _ = _discord.SendEmbedAsync($"Script Error [{CurrentIndex + 1}/{ScriptQueue.Count}]", $"**{botName}** failed to start **{nextScript.Name}**.", 0xFF0000, fields);
                     CurrentIndex++;
+                    if (!IsRunningQueue || _queueCts?.IsCancellationRequested == true) return;
+                    await Task.Delay(3000);
                     RunNextScript();
                 }
             }
@@ -273,9 +329,13 @@ public partial class ScriptSchedulerViewModel : BotControlViewModelBase
                 _manager.OverrideStorage = null;
                 nextScript.Status = "Crashed";
                 nextScript.Duration = GetFormattedDuration();
-                System.Diagnostics.Trace.WriteLine($"Scheduler script crash: {ex.Message}");
-                _ = _discord.SendMessageAsync($"?? **Scheduler Crash** - Script threw on start: {nextScript.Name}");
+                var actualEx = ex is System.Reflection.TargetInvocationException && ex.InnerException != null ? ex.InnerException : ex;
+                System.Diagnostics.Trace.WriteLine($"Scheduler script crash: {actualEx.Message}");
+                var fields = new List<object> { new { name = "Error", value = $"```{actualEx.Message}```", inline = false } };
+                _ = _discord.SendEmbedAsync($"Script Error [{CurrentIndex + 1}/{ScriptQueue.Count}]", $"**{botName}** crashed while starting **{nextScript.Name}**.", 0xFF0000, fields);
                 CurrentIndex++;
+                if (!IsRunningQueue || _queueCts?.IsCancellationRequested == true) return;
+                await Task.Delay(3000);
                 RunNextScript();
             }
         }
@@ -283,6 +343,8 @@ public partial class ScriptSchedulerViewModel : BotControlViewModelBase
         {
             nextScript.Status = "File Not Found";
             CurrentIndex++;
+            if (!IsRunningQueue || _queueCts?.IsCancellationRequested == true) return;
+            await Task.Delay(1500);
             RunNextScript();
         }
     }
@@ -296,13 +358,28 @@ public partial class ScriptSchedulerViewModel : BotControlViewModelBase
         if (CurrentIndex < ScriptQueue.Count)
         {
             _scriptStopwatch.Stop();
-            ScriptQueue[CurrentIndex].Status = "Completed";
-            ScriptQueue[CurrentIndex].Duration = GetFormattedDuration();
+            IScriptPlayer? player = CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetService<IScriptPlayer>();
+            string botName = GetBotUsername(player);
+
+            if (player != null && !player.LoggedIn)
+            {
+                ScriptQueue[CurrentIndex].Status = "Disconnected";
+            }
+            else
+            {
+                ScriptQueue[CurrentIndex].Status = "Completed";
+                ScriptQueue[CurrentIndex].Duration = GetFormattedDuration();
+                
+                var fields = new List<object>
+                {
+                    new { name = "Duration", value = ScriptQueue[CurrentIndex].Duration, inline = true }
+                };
+                _ = _discord.SendEmbedAsync($"Farming Session Concluded [{CurrentIndex + 1}/{ScriptQueue.Count}]", $"**{botName}** has finished execution of **{ScriptQueue[CurrentIndex].Name}**.", 0xFF0000, fields);
+
+                CurrentIndex++;
+            }
         }
 
-        CurrentIndex++;
-
-        // Delay slightly to let the engine completely finish unloading the previous script
         Task.Run(async () => 
         {
             try
@@ -312,5 +389,19 @@ public partial class ScriptSchedulerViewModel : BotControlViewModelBase
             }
             catch (TaskCanceledException) { }
         });
+    }
+
+    private string GetBotUsername(IScriptPlayer? player)
+    {
+        if (player != null && !string.IsNullOrWhiteSpace(player.Username) && player.Username != "loginInfo.strUsername")
+            return player.Username;
+        try
+        {
+            var servers = CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetService<IScriptServers>();
+            if (servers != null && !string.IsNullOrWhiteSpace(servers.CachedUsername))
+                return servers.CachedUsername!;
+        }
+        catch { }
+        return "VibeSkua Bot";
     }
 }

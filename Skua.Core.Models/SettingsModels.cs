@@ -207,6 +207,9 @@ public class ClientSettings
     [JsonPropertyName("AnimationFrameRate")]
     public int AnimationFrameRate { get; set; } = 60;
 
+    [JsonPropertyName("ShowUsernameInTitle")]
+    public bool ShowUsernameInTitle { get; set; } = true;
+
     [JsonPropertyName("DiscordWebhookUrl")]
     public string DiscordWebhookUrl { get; set; } = string.Empty;
 

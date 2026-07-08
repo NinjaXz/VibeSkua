@@ -106,9 +106,8 @@ public partial class ScriptMap : IScriptMap
                 map = $"{mapName}{(Options.PrivateNumber != -1 ? Options.PrivateNumber : "-100000")}";
             Wait.ForActionCooldown(GameActions.Transfer);
             JoinPacket(map, cell, pad);
-            if (!Wait.ForMapLoad(map, 20) && !Manager.ShouldExit)
-                Jump(Player.Cell, Player.Pad, autoCorrect);
-            else
+            Wait.ForMapLoad(map);
+            if (!Manager.ShouldExit)
                 Jump(cell, pad, autoCorrect);
             Thread.Sleep(Options.ActionDelay);
         }
