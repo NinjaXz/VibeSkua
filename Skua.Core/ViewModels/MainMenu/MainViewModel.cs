@@ -10,7 +10,7 @@ namespace Skua.Core.ViewModels;
 public sealed partial class MainViewModel : ObservableObject
 {
     [ObservableProperty]
-    private string _title = "VibeSkua V1.8.3";
+    private string _title = "VibeSkua V1.8.4";
 
     private System.Timers.Timer? _titleUpdateTimer;
     private IScriptPlayer? _player;
@@ -32,7 +32,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     public MainViewModel(IEnumerable<TabItemViewModel> tabs, IDialogService dialogService)
     {
-        _title = "VibeSkua V1.8.3";
+        _title = "VibeSkua V1.8.4";
         Ioc.Default.GetRequiredService<IDiscordWebhookService>().Initialize();
 
         try
@@ -122,7 +122,7 @@ public sealed partial class MainViewModel : ObservableObject
 
         _lastUsername = username;
 
-        string title = "VibeSkua V1.8.3";
+        string title = "VibeSkua V1.8.4";
 
         if (_showUsernameInTitle && !string.IsNullOrWhiteSpace(username))
             title += $" : {username}";
