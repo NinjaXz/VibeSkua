@@ -20,12 +20,9 @@ public class World {
         if (!autoCorrect) {
             world.moveToCell(cell, pad, clientOnly);
         } else {
-            var users:Vector.<String> = world.areaUsers.concat();
-
-            var myIndex:int = users.indexOf(Main.instance.game.sfc.myUserName);
-            if (myIndex != -1)
-                users.splice(myIndex, 1);
-
+            var users:Array = world.areaUsers;
+            users.splice(users.indexOf(Main.instance.game.sfc.myUserName), 1);
+            users.sort();
             if (users.length <= 1) {
                 world.moveToCell(cell, pad, clientOnly);
             } else {
@@ -34,8 +31,6 @@ public class World {
                 var usersPad:String = "Left";
                 for (var i:int = 0; i < users.length; i++) {
                     var userObj:* = uoTree[users[i]];
-                    if (userObj == null)
-                        continue;
                     usersCell = userObj.strFrame;
                     usersPad = userObj.strPad;
                     if (cell == usersCell && pad != usersPad)
