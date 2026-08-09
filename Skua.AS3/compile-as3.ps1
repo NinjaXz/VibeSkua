@@ -40,6 +40,43 @@ if (Test-Path $localMxmlc) {
     }
 } else {
     $mxmlcPath = Get-Command mxmlc -ErrorAction SilentlyContinue
+
+    if (-not $mxmlcPath) {
+        $compilerPath = $null
+
+        # Try the standard FLEX_HOME environment variable.
+        if (![string]::IsNullOrWhiteSpace($env:FLEX_HOME)) {
+            $candidate = Join-Path $env:FLEX_HOME "bin\mxmlc.bat"
+            if (Test-Path -LiteralPath $candidate) {
+                $compilerPath = $candidate
+            }
+        }
+
+        # Then look for a Moonshine-installed Flex SDK.
+        if (-not $compilerPath) {
+            $moonshineRoot = "C:\MoonshineSDKs\Flex_SDK"
+            if (Test-Path -LiteralPath $moonshineRoot) {
+                $moonshineSdk = Get-ChildItem -LiteralPath $moonshineRoot -Directory |
+                    Sort-Object Name -Descending |
+                    Where-Object {
+                        Test-Path -LiteralPath (Join-Path $_.FullName "bin\mxmlc.bat")
+                    } |
+                    Select-Object -First 1
+
+                if ($moonshineSdk) {
+                    $env:FLEX_HOME = $moonshineSdk.FullName
+                    $compilerPath = Join-Path $env:FLEX_HOME "bin\mxmlc.bat"
+                }
+            }
+        }
+
+        if ($compilerPath) {
+            $compilerDirectory = Split-Path $compilerPath -Parent
+            $env:PATH = "$compilerDirectory;$env:PATH"
+            $mxmlcPath = Get-Command mxmlc -ErrorAction SilentlyContinue
+        }
+    }
+
     if ($mxmlcPath) {
         Write-Host "Found mxmlc in PATH at: $($mxmlcPath.Source)" -ForegroundColor Green
         $mxmlcCmd = "mxmlc"
