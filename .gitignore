@@ -393,3 +393,4 @@ Skua.Installer/FFDecComponentsGenerated.wxs
 # Ignore Flex SDK files
 Skua.AS3/flex_sdk/
 Skua.AS3/flex.zip
+Skua.AS3/skua/bin/skua.swf
