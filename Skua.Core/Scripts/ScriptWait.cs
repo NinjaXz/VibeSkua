@@ -261,7 +261,7 @@ public class ScriptWait : IScriptWait
     {
         while (!predicate() && !Manager.ShouldExit && !token.IsCancellationRequested)
         {
-            Manager.ScriptPauseEvent.Wait();
+            WaitIfScriptThreadPaused();
             loopFunction?.Invoke();
             if (token.IsCancellationRequested)
                 break;
@@ -280,7 +280,7 @@ public class ScriptWait : IScriptWait
         int counter = 0;
         while (!predicate() && !Manager.ShouldExit)
         {
-            Manager.ScriptPauseEvent.Wait();
+            WaitIfScriptThreadPaused();
             if (timeout > 0 && counter >= timeout)
                 return false;
             loopFunction?.Invoke();
@@ -297,7 +297,7 @@ public class ScriptWait : IScriptWait
             int counter = 0;
             while (!predicate() && !Manager.ShouldExit && !token.IsCancellationRequested)
             {
-                Manager.ScriptPauseEvent.Wait();
+                WaitIfScriptThreadPaused();
                 if (timeout > 0 && counter >= timeout)
                     return false;
                 loopFunction?.Invoke();
@@ -308,6 +308,12 @@ public class ScriptWait : IScriptWait
         }
         catch { }
         return false;
+    }
+
+    private void WaitIfScriptThreadPaused()
+    {
+        if (Thread.CurrentThread.Name == "Script Thread")
+            Manager.ScriptPauseEvent.Wait();
     }
 
     public bool ForActionCooldown(GameActions action, int timeout = 40)
