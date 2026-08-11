@@ -21,6 +21,8 @@ public partial class MainWindow : CustomWindow
     public MainWindow()
     {
         InitializeComponent();
+        Title = global::Skua.AppInfo.Title;
+        TitleText = global::Skua.AppInfo.Title;
         _flash = Ioc.Default.GetRequiredService<IFlashUtil>();
         _server = Ioc.Default.GetRequiredService<IScriptServers>();
         //_channel = GrpcChannel.ForAddress("http://localhost:5074");

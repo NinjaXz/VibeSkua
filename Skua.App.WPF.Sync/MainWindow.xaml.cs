@@ -10,5 +10,7 @@ public sealed partial class MainWindow : CustomWindow
     public MainWindow()
     {
         InitializeComponent();
+        Title = global::Skua.AppInfo.Title;
+        TitleText = global::Skua.AppInfo.Title;
     }
 }

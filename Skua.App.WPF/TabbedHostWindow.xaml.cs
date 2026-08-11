@@ -139,6 +139,8 @@ namespace Skua.App.WPF
         {
             _initialArgs = initialArgs ?? "";
             InitializeComponent();
+            Title = global::Skua.AppInfo.Title;
+            TitleText = global::Skua.AppInfo.Title;
 
             System.Windows.Media.CompositionTarget.Rendering += (s, e) => 
             {

@@ -10,5 +10,6 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Title = global::Skua.AppInfo.Title;
     }
 }

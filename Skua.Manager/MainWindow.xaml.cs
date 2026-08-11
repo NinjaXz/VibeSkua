@@ -18,7 +18,8 @@ public partial class MainWindow : CustomWindow
         InitializeComponent();
         DataContext = Ioc.Default.GetRequiredService<ManagerMainViewModel>();
         StrongReferenceMessenger.Default.Register<MainWindow, ShowMainWindowMessage>(this, ShowManager);
-        TitleText = "VibeSkua V1.8.4";
+        Title = global::Skua.AppInfo.Title;
+        TitleText = global::Skua.AppInfo.Title;
     }
 
     private void ShowManager(MainWindow recipient, ShowMainWindowMessage message)

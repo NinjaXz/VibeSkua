@@ -2,8 +2,12 @@
 <Project>
 	<!-- Set hardcoded version for all projects -->
 	<PropertyGroup>
-		<AssemblyVersion>1.8.4</AssemblyVersion>
-		<FileVersion>1.8.4</FileVersion>
-		<Version>1.8.4</Version>
+		<AssemblyVersion>1.8.5</AssemblyVersion>
+		<FileVersion>1.8.5</FileVersion>
+		<Version>1.8.5</Version>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<Compile Include="$(MSBuildThisFileDirectory)Shared\AppInfo.cs" Link="AppInfo.cs" />
+	</ItemGroup>
 </Project>
