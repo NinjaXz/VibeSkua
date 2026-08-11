@@ -80,7 +80,10 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
         if (value)
             ScriptPauseEvent.Reset();
         else
+        {
+            _lazyBot.Value.Auto.Stop();
             ScriptPauseEvent.Set();
+        }
     }
 
     [ObservableProperty]
