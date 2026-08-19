@@ -89,50 +89,11 @@ public class World {
         Main.instance.game.userPreference.data.bDeathAd = !enable;
     }
 
-    private static var _lastGoodFrame:String = "";
-    private static var _lastGoodPad:String = "";
-    private static const INVALID_CELL_REGEX:RegExp = /(^cut\w*$)|(^\w*cut$)|(^cut$)|(^r\d+$)|^(bs\d+|ar\d+|ms\d+|apo\d+|guild|move\d+|moveframe|game)$/i;
-
     public static function skipCutscenes():void {
-        var world:* = Main.instance.game.world;
-        var extSWF:* = Main.instance.game.mcExtSWF;
-        var currentFrame:String = world.strFrame;
-
-        if (extSWF.numChildren > 0) {
-            // A cutscene overlay is showing - clear it out
-            while (extSWF.numChildren > 0) {
-                extSWF.removeChildAt(0);
-            }
-            Main.instance.game.showInterface();
-
-            // Real cutscenes may resolve their final room/cell a beat after
-            // we clear the overlay (async network join), unlike an instant
-            // manual teleport. Re-check shortly after to catch that.
-            var settleTimer:Timer = new Timer(800, 1);
-            settleTimer.addEventListener(TimerEvent.TIMER, function(e:TimerEvent):void {
-                var settledFrame:String = world.strFrame;
-                if (settledFrame != "" && INVALID_CELL_REGEX.test(settledFrame)) {
-                    var sTargetFrame:String = (_lastGoodFrame != "") ? _lastGoodFrame : "Enter";
-                    var sTargetPad:String = (_lastGoodPad != "") ? _lastGoodPad : "Spawn";
-                    jumpCorrectRoom(sTargetFrame, sTargetPad, true, false);
-                }
-                settleTimer.stop();
-            });
-            settleTimer.start();
+        while (Main.instance.game.mcExtSWF.numChildren > 0) {
+            Main.instance.game.mcExtSWF.removeChildAt(0);
         }
-
-        // Regardless of whether a cutscene overlay was active, if we're
-        // currently sitting in a known cutscene/transition/instance cell,
-        // get out of it. This also covers the case where the cell was
-        // entered with no overlay ever loading into mcExtSWF.
-        if (currentFrame != "" && INVALID_CELL_REGEX.test(currentFrame)) {
-            var targetFrame:String = (_lastGoodFrame != "") ? _lastGoodFrame : "Enter";
-            var targetPad:String = (_lastGoodPad != "") ? _lastGoodPad : "Spawn";
-            jumpCorrectRoom(targetFrame, targetPad, true, false);
-        } else if (currentFrame != "") {
-            _lastGoodFrame = currentFrame;
-            _lastGoodPad = world.strPad;
-        }
+        Main.instance.game.showInterface();
     }
 
     public static function hidePlayers(enabled:Boolean):void {
