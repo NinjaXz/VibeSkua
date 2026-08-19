@@ -17,144 +17,146 @@
             </Grid.ColumnDefinitions>
 
             <TabControl x:Name="InstancesTabControl" Grid.Column="0" Background="Transparent" BorderThickness="0" SelectionChanged="InstancesTabControl_SelectionChanged">
-            <TabControl.Template>
-                <ControlTemplate TargetType="TabControl">
-                    <Grid>
-                        <TabPanel Panel.ZIndex="1" Margin="2,2,2,0" IsItemsHost="True" Background="#1E1E1E" />
-                    </Grid>
-                </ControlTemplate>
-            </TabControl.Template>
-            <TabControl.Resources>
-                <Style TargetType="TabItem">
-                    <Setter Property="Template">
-                        <Setter.Value>
-                            <ControlTemplate TargetType="TabItem">
-                                <Grid>
-                                    <Border Name="Border" BorderThickness="1,1,1,0" BorderBrush="#333" Margin="2,0" CornerRadius="4,4,0,0">
-                                        <Border.Background>
-                                            <SolidColorBrush Color="#252526" />
-                                        </Border.Background>
-                                        <ContentPresenter x:Name="ContentSite"
+                <TabControl.Template>
+                    <ControlTemplate TargetType="TabControl">
+                        <Grid>
+                            <TabPanel Panel.ZIndex="1" Margin="2,2,2,0" IsItemsHost="True" Background="#1E1E1E" />
+                        </Grid>
+                    </ControlTemplate>
+                </TabControl.Template>
+                <TabControl.Resources>
+                    <Style TargetType="TabItem">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="TabItem">
+                                    <Grid>
+                                        <Border Name="Border" BorderThickness="1,1,1,0" BorderBrush="#333" Margin="2,0" CornerRadius="4,4,0,0">
+                                            <Border.Background>
+                                                <SolidColorBrush Color="#252526" />
+                                            </Border.Background>
+                                            <ContentPresenter x:Name="ContentSite"
                                             VerticalAlignment="Center"
                                             HorizontalAlignment="Center"
                                             ContentSource="Header"
                                             Margin="10,5" />
-                                    </Border>
-                                    <Border Name="SelectionIndicator" Height="3" Background="{DynamicResource PrimaryHueMidBrush}" VerticalAlignment="Bottom" Margin="2,0" Opacity="0" RenderTransformOrigin="0.5,0.5">
-                                        <Border.RenderTransform>
-                                            <ScaleTransform ScaleX="0" />
-                                        </Border.RenderTransform>
-                                    </Border>
-                                </Grid>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Trigger.EnterActions>
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <ColorAnimation Storyboard.TargetName="Border" Storyboard.TargetProperty="Background.(SolidColorBrush.Color)" To="#2D2D30" Duration="0:0:0.15" />
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </Trigger.EnterActions>
-                                        <Trigger.ExitActions>
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <ColorAnimation Storyboard.TargetName="Border" Storyboard.TargetProperty="Background.(SolidColorBrush.Color)" To="#252526" Duration="0:0:0.25" />
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </Trigger.ExitActions>
-                                    </Trigger>
-                                    <Trigger Property="IsSelected" Value="True">
-                                        <Trigger.EnterActions>
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <ColorAnimation Storyboard.TargetName="Border" Storyboard.TargetProperty="Background.(SolidColorBrush.Color)" To="#3E3E42" Duration="0:0:0.2" />
-                                                    <DoubleAnimation Storyboard.TargetName="SelectionIndicator" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.1" />
-                                                    <DoubleAnimation Storyboard.TargetName="SelectionIndicator" Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)" To="1" Duration="0:0:0.2">
-                                                        <DoubleAnimation.EasingFunction>
-                                                            <QuadraticEase EasingMode="EaseOut" />
-                                                        </DoubleAnimation.EasingFunction>
-                                                    </DoubleAnimation>
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </Trigger.EnterActions>
-                                        <Trigger.ExitActions>
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <ColorAnimation Storyboard.TargetName="Border" Storyboard.TargetProperty="Background.(SolidColorBrush.Color)" To="#252526" Duration="0:0:0.2" />
-                                                    <DoubleAnimation Storyboard.TargetName="SelectionIndicator" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.2" />
-                                                    <DoubleAnimation Storyboard.TargetName="SelectionIndicator" Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)" To="0" Duration="0:0:0.2">
-                                                        <DoubleAnimation.EasingFunction>
-                                                            <QuadraticEase EasingMode="EaseIn" />
-                                                        </DoubleAnimation.EasingFunction>
-                                                    </DoubleAnimation>
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </Trigger.ExitActions>
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-            </TabControl.Resources>
-            <TabItem x:Name="AddTabItem" Cursor="Hand" PreviewMouseLeftButtonDown="AddTabItem_PreviewMouseLeftButtonDown">
-                <TabItem.Header>
-                    <TextBlock Text="+" FontSize="20" FontWeight="Bold" Margin="5,-2,5,0" Foreground="{DynamicResource PrimaryHueMidBrush}" />
-                </TabItem.Header>
-                <TabItem.Template>
-                    <ControlTemplate TargetType="TabItem">
-                        <Border Name="Border" BorderThickness="1,1,1,0" BorderBrush="#333" Background="Transparent" Margin="2,0" CornerRadius="4,4,0,0">
-                            <ContentPresenter x:Name="ContentSite"
+                                        </Border>
+                                        <Border Name="SelectionIndicator" Height="3" Background="{DynamicResource PrimaryHueMidBrush}" VerticalAlignment="Bottom" Margin="2,0" Opacity="0" RenderTransformOrigin="0.5,0.5">
+                                            <Border.RenderTransform>
+                                                <ScaleTransform ScaleX="0" />
+                                            </Border.RenderTransform>
+                                        </Border>
+                                    </Grid>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Trigger.EnterActions>
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <ColorAnimation Storyboard.TargetName="Border" Storyboard.TargetProperty="Background.(SolidColorBrush.Color)" To="#2D2D30" Duration="0:0:0.15" />
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </Trigger.EnterActions>
+                                            <Trigger.ExitActions>
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <ColorAnimation Storyboard.TargetName="Border" Storyboard.TargetProperty="Background.(SolidColorBrush.Color)" To="#252526" Duration="0:0:0.25" />
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </Trigger.ExitActions>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Trigger.EnterActions>
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <ColorAnimation Storyboard.TargetName="Border" Storyboard.TargetProperty="Background.(SolidColorBrush.Color)" To="#3E3E42" Duration="0:0:0.2" />
+                                                        <DoubleAnimation Storyboard.TargetName="SelectionIndicator" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.1" />
+                                                        <DoubleAnimation Storyboard.TargetName="SelectionIndicator" Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)" To="1" Duration="0:0:0.2">
+                                                            <DoubleAnimation.EasingFunction>
+                                                                <QuadraticEase EasingMode="EaseOut" />
+                                                            </DoubleAnimation.EasingFunction>
+                                                        </DoubleAnimation>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </Trigger.EnterActions>
+                                            <Trigger.ExitActions>
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <ColorAnimation Storyboard.TargetName="Border" Storyboard.TargetProperty="Background.(SolidColorBrush.Color)" To="#252526" Duration="0:0:0.2" />
+                                                        <DoubleAnimation Storyboard.TargetName="SelectionIndicator" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.2" />
+                                                        <DoubleAnimation Storyboard.TargetName="SelectionIndicator" Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)" To="0" Duration="0:0:0.2">
+                                                            <DoubleAnimation.EasingFunction>
+                                                                <QuadraticEase EasingMode="EaseIn" />
+                                                            </DoubleAnimation.EasingFunction>
+                                                        </DoubleAnimation>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </Trigger.ExitActions>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </TabControl.Resources>
+                <TabItem x:Name="AddTabItem" Cursor="Hand" PreviewMouseLeftButtonDown="AddTabItem_PreviewMouseLeftButtonDown">
+                    <TabItem.Header>
+                        <TextBlock Text="+" FontSize="20" FontWeight="Bold" Margin="5,-2,5,0" Foreground="{DynamicResource PrimaryHueMidBrush}" />
+                    </TabItem.Header>
+                    <TabItem.Template>
+                        <ControlTemplate TargetType="TabItem">
+                            <Border Name="Border" BorderThickness="1,1,1,0" BorderBrush="#333" Background="Transparent" Margin="2,0" CornerRadius="4,4,0,0">
+                                <ContentPresenter x:Name="ContentSite"
                                 VerticalAlignment="Center"
                                 HorizontalAlignment="Center"
                                 ContentSource="Header"
                                 Margin="10,5" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="#2D2D30" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </TabItem.Template>
-            </TabItem>
-        </TabControl>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Border" Property="Background" Value="#2D2D30" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </TabItem.Template>
+                </TabItem>
+            </TabControl>
 
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,5,0">
-            <!-- Globe Button -->
-            <Border x:Name="GlobeBorder" Cursor="Hand" BorderThickness="1,1,1,0" BorderBrush="#333" Background="#252526" Margin="2,0,2,0" CornerRadius="4,4,0,0" PreviewMouseLeftButtonDown="GlobeBorder_PreviewMouseLeftButtonDown" MouseEnter="GlobeBorder_MouseEnter" MouseLeave="GlobeBorder_MouseLeave">
-                <TextBlock Text="🌐 Army Control" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource PrimaryHueMidBrush}" VerticalAlignment="Center" Margin="10,5" />
-                <Border.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem x:Name="MenuStartScripts" Header="Start All Scripts" Click="MenuItem_StartAllScripts_Click" />
-                        <MenuItem x:Name="MenuStopScripts" Header="Stop All Scripts" Click="MenuItem_StopAllScripts_Click" />
-                        <MenuItem x:Name="MenuLoadScripts" Header="Load Script to All" Click="MenuItem_LoadScriptAll_Click" />
-                        <MenuItem Header="Army Scheduler" Click="MenuItem_ArmyScheduler_Click" />
-                        <Separator />
-                        <MenuItem Header="Login All Clients" Click="MenuItem_LoginAll_Click" />
-                        <MenuItem Header="Logout All Clients" Click="MenuItem_LogoutAll_Click" />
-                        <Separator />
-                        <MenuItem Header="Jump All to Map..." Click="MenuItem_JumpMap_Click" />
-                        <MenuItem Header="Jump All to Player..." Click="MenuItem_JumpPlayer_Click" />
-                        <Separator />
-                        <MenuItem x:Name="MiscOptionsMenu" Header="Misc Options" StaysOpenOnClick="True">
-                            <MenuItem Header="Lag Killer" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding LagKiller, Mode=TwoWay}" />
-                            <MenuItem Header="Headless Mode" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding HeadlessMode, Mode=TwoWay}" />
-                            <MenuItem Header="Hide Players" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding HidePlayers, Mode=TwoWay}" />
-                            <MenuItem Header="Disable FX" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding DisableFX, Mode=TwoWay}" />
-                            <MenuItem Header="Infinite Range" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding InfiniteRange, Mode=TwoWay}" />
-                            <MenuItem Header="Use Function-Based Skills" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding UseFunctionBasedSkills, Mode=TwoWay}" />
-                            <MenuItem Header="Streamer Mode" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding StreamerMode, Mode=TwoWay}" />
-                        </MenuItem>
-                    </ContextMenu>
-                </Border.ContextMenu>
-            </Border>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,5,0">
+                <!-- Globe Button -->
+                <Border x:Name="GlobeBorder" Cursor="Hand" BorderThickness="1,1,1,0" BorderBrush="#333" Background="#252526" Margin="2,0,2,0" CornerRadius="4,4,0,0" PreviewMouseLeftButtonDown="GlobeBorder_PreviewMouseLeftButtonDown" MouseEnter="GlobeBorder_MouseEnter" MouseLeave="GlobeBorder_MouseLeave">
+                    <TextBlock Text="🌐 Army Control" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource PrimaryHueMidBrush}" VerticalAlignment="Center" Margin="10,5" />
+                    <Border.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem x:Name="MenuStartScripts" Header="Start All Scripts" Click="MenuItem_StartAllScripts_Click" />
+                            <MenuItem x:Name="MenuStopScripts" Header="Stop All Scripts" Click="MenuItem_StopAllScripts_Click" />
+                            <MenuItem x:Name="MenuLoadScripts" Header="Load Script to All" Click="MenuItem_LoadScriptAll_Click" />
+                            <MenuItem Header="Army Scheduler" Click="MenuItem_ArmyScheduler_Click" />
+                            <Separator />
+                            <MenuItem Header="Login All Clients" Click="MenuItem_LoginAll_Click" />
+                            <MenuItem Header="Logout All Clients" Click="MenuItem_LogoutAll_Click" />
+                            <Separator />
+                            <MenuItem Header="Jump All to Map..." Click="MenuItem_JumpMap_Click" />
+                            <MenuItem Header="Jump All to Player..." Click="MenuItem_JumpPlayer_Click" />
+                            <Separator />
+                            <MenuItem Header="Accept Quest (All)..." Click="MenuItem_AcceptQuest_Click" />
+                            <Separator />
+                            <MenuItem x:Name="MiscOptionsMenu" Header="Misc Options" StaysOpenOnClick="True">
+                                <MenuItem Header="Lag Killer" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding LagKiller, Mode=TwoWay}" />
+                                <MenuItem Header="Headless Mode" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding HeadlessMode, Mode=TwoWay}" />
+                                <MenuItem Header="Hide Players" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding HidePlayers, Mode=TwoWay}" />
+                                <MenuItem Header="Disable FX" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding DisableFX, Mode=TwoWay}" />
+                                <MenuItem Header="Infinite Range" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding InfiniteRange, Mode=TwoWay}" />
+                                <MenuItem Header="Use Function-Based Skills" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding UseFunctionBasedSkills, Mode=TwoWay}" />
+                                <MenuItem Header="Streamer Mode" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding StreamerMode, Mode=TwoWay}" />
+                            </MenuItem>
+                        </ContextMenu>
+                    </Border.ContextMenu>
+                </Border>
 
-            <Border x:Name="GridViewBorder" Cursor="Hand" BorderThickness="1,1,1,0" BorderBrush="#333" Background="#252526" Margin="2,0,0,0" CornerRadius="4,4,0,0" PreviewMouseLeftButtonDown="GridViewBorder_PreviewMouseLeftButtonDown" MouseEnter="GridViewBorder_MouseEnter" MouseLeave="GridViewBorder_MouseLeave">
-                <TextBlock x:Name="GridViewText" Text="⊞ Grid View" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource PrimaryHueMidBrush}" VerticalAlignment="Center" Margin="10,5" />
-            </Border>
-        </StackPanel>
-    </Grid>
+                <Border x:Name="GridViewBorder" Cursor="Hand" BorderThickness="1,1,1,0" BorderBrush="#333" Background="#252526" Margin="2,0,0,0" CornerRadius="4,4,0,0" PreviewMouseLeftButtonDown="GridViewBorder_PreviewMouseLeftButtonDown" MouseEnter="GridViewBorder_MouseEnter" MouseLeave="GridViewBorder_MouseLeave">
+                    <TextBlock x:Name="GridViewText" Text="⊞ Grid View" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource PrimaryHueMidBrush}" VerticalAlignment="Center" Margin="10,5" />
+                </Border>
+            </StackPanel>
+        </Grid>
 
         <Grid Grid.Row="1" Background="#252526">
             <StackPanel x:Name="LoadingIndicator" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.5">
