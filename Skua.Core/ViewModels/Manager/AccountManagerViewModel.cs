@@ -314,12 +314,12 @@ public sealed partial class AccountManagerViewModel : BotControlViewModelBase
 
         foreach (AccountItemViewModel account in group.Accounts)
         {
-            _LaunchAcc(account.Username, account.Password, account.DisplayName, withScript);
+            _LaunchAcc(account.Username, account.Password, account.DisplayName, withScript, group.Name);
             await Task.Delay(Random.Shared.Next(500, 900));
         }
     }
 
-    private void _LaunchAcc(string username, string password, string displayName = null, bool? withScript = null)
+    private void _LaunchAcc(string username, string password, string displayName = null, bool? withScript = null, string groupName = null)
     {
         try
         {
@@ -336,6 +336,12 @@ public sealed partial class AccountManagerViewModel : BotControlViewModelBase
                 },
                 WorkingDirectory = AppContext.BaseDirectory
             };
+
+            if (!string.IsNullOrEmpty(groupName))
+            {
+                psi.ArgumentList.Add("--group");
+                psi.ArgumentList.Add(groupName);
+            }
 
             if (_syncThemes)
             {
