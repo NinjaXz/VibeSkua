@@ -337,7 +337,7 @@ public sealed partial class AccountManagerViewModel : BotControlViewModelBase
                 WorkingDirectory = AppContext.BaseDirectory
             };
 
-            if (!string.IsNullOrEmpty(groupName))
+            if (!string.IsNullOrWhiteSpace(groupName))
             {
                 psi.ArgumentList.Add("--group");
                 psi.ArgumentList.Add(groupName);

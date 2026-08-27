@@ -157,7 +157,10 @@ public partial class TabbedHostWindow : CustomWindow
                 }
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex);
+        }
     }
 
     private static void SaveGroupConfig()
@@ -172,7 +175,10 @@ public partial class TabbedHostWindow : CustomWindow
             string json = System.Text.Json.JsonSerializer.Serialize(_groupConfig, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(path, json);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex);
+        }
     }
 
     public static string GetDefaultColorForGroup(string groupName)
@@ -181,7 +187,7 @@ public partial class TabbedHostWindow : CustomWindow
         if (_groupConfig.GroupColors.TryGetValue(groupName, out string? customHex) && !string.IsNullOrWhiteSpace(customHex))
             return customHex;
 
-        int hash = Math.Abs(groupName.GetHashCode());
+        int hash = groupName.Aggregate(0, (h, c) => unchecked((h * 31) + c)) & int.MaxValue;
         return GroupColorPalette[hash % GroupColorPalette.Length].Hex;
     }
 
@@ -798,10 +804,10 @@ public partial class TabbedHostWindow : CustomWindow
 
         // Drag & Drop to reorder entire group
         Point startPoint = new Point();
-        pillBorder.PreviewMouseLeftButtonDown += (s, ev) =>
+        pillBorder.AddHandler(UIElement.PreviewMouseLeftButtonDownEvent, new System.Windows.Input.MouseButtonEventHandler((s, ev) =>
         {
             startPoint = ev.GetPosition(null);
-        };
+        }), true);
         pillBorder.PreviewMouseMove += (s, ev) =>
         {
             if (ev.LeftButton == System.Windows.Input.MouseButtonState.Pressed)
