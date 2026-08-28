@@ -108,13 +108,127 @@ public partial class TabbedHostWindow : CustomWindow
         public Process Process { get; set; }
         public IntPtr ChildHwnd { get; set; } = IntPtr.Zero;
         public bool IsThrottled { get; set; } = false;
+        public string GroupName { get; set; } = "";
+        public string GroupColor { get; set; } = "";
+    }
+
+    public static readonly (string Name, string Hex)[] GroupColorPalette = new[]
+    {
+        ("Cyan", "#00BCD4"),
+        ("Emerald", "#4CAF50"),
+        ("Amber", "#FF9800"),
+        ("Rose", "#F44336"),
+        ("Purple", "#9C27B0"),
+        ("Indigo", "#3F51B5"),
+        ("Pink", "#E91E63"),
+        ("Lime", "#8BC34A"),
+        ("Orange", "#FF5722"),
+        ("Teal", "#009688"),
+        ("Slate", "#607D8B")
+    };
+
+    private class TabGroupConfig
+    {
+        public Dictionary<string, string> GroupColors { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        public List<string> KnownGroups { get; set; } = new();
+    }
+
+    private static TabGroupConfig _groupConfig = new();
+
+    private static void LoadGroupConfig()
+    {
+        try
+        {
+            string path = Skua.Core.Models.ClientFileSources.SkuaTabGroupsFile;
+            if (File.Exists(path))
+            {
+                string json = File.ReadAllText(path);
+                var loaded = System.Text.Json.JsonSerializer.Deserialize<TabGroupConfig>(json);
+                if (loaded != null)
+                {
+                    _groupConfig = loaded;
+                    if (_groupConfig.GroupColors == null)
+                        _groupConfig.GroupColors = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    else
+                        _groupConfig.GroupColors = new Dictionary<string, string>(_groupConfig.GroupColors, StringComparer.OrdinalIgnoreCase);
+
+                    if (_groupConfig.KnownGroups == null)
+                        _groupConfig.KnownGroups = new List<string>();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex);
+        }
+    }
+
+    private static void SaveGroupConfig()
+    {
+        try
+        {
+            string path = Skua.Core.Models.ClientFileSources.SkuaTabGroupsFile;
+            string dir = Path.GetDirectoryName(path);
+            if (!string.IsNullOrWhiteSpace(dir) && !Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
+
+            string json = System.Text.Json.JsonSerializer.Serialize(_groupConfig, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(path, json);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex);
+        }
+    }
+
+    public static string GetDefaultColorForGroup(string groupName)
+    {
+        if (string.IsNullOrWhiteSpace(groupName)) return "#00BCD4";
+        if (_groupConfig.GroupColors.TryGetValue(groupName, out string? customHex) && !string.IsNullOrWhiteSpace(customHex))
+            return customHex;
+
+        int hash = groupName.Aggregate(0, (h, c) => unchecked((h * 31) + c)) & int.MaxValue;
+        return GroupColorPalette[hash % GroupColorPalette.Length].Hex;
+    }
+
+    private readonly HashSet<string> _collapsedGroups = new(StringComparer.OrdinalIgnoreCase);
+
+    public static bool IsGroupHeader(TabItem? tab)
+    {
+        return tab?.Tag is string tag && tag.StartsWith("GroupHeader:", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static string? GetGroupHeaderName(TabItem? tab)
+    {
+        if (tab?.Tag is string tag && tag.StartsWith("GroupHeader:", StringComparison.OrdinalIgnoreCase))
+            return tag.Substring("GroupHeader:".Length);
+        return null;
+    }
+
+    private void TabScrollViewer_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+    {
+        if (sender is ScrollViewer sv)
+        {
+            if (e.Delta < 0)
+                sv.LineRight();
+            else
+                sv.LineLeft();
+            e.Handled = true;
+        }
     }
 
     private string _initialArgs = "";
     private readonly Dictionary<TabItem, TabInfo> _tabs = new();
+    private string? _scriptLoadTargetGroup = null;
+    private string _lastJumpMap = "";
+    private string _lastJumpCell = "";
+    private string _lastJumpPlayer = "";
+    private string _lastAcceptQuestId = "";
+    private string _lastAcceptQuestItem = "";
     private bool _needsReposition = false;
     private bool _isClosing = false;
     private bool _isGridViewEnabled = false;
+    private string? _gridViewTargetGroup = null;
     private TabItem _lastSelectedTab;
     private IntPtr _hostHwnd = IntPtr.Zero;
     private TabInfo _prewarmedTabInfo = null;
@@ -142,6 +256,7 @@ public partial class TabbedHostWindow : CustomWindow
     public TabbedHostWindow(string initialArgs = "")
     {
         _initialArgs = initialArgs ?? "";
+        LoadGroupConfig();
         InitializeComponent();
         Title = global::Skua.AppInfo.Title;
         TitleText = global::Skua.AppInfo.Title;
@@ -371,21 +486,42 @@ public partial class TabbedHostWindow : CustomWindow
         }
     }
 
-    private void GridViewBorder_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    public void ToggleGridView(string? targetGroup = null, bool? forceState = null)
     {
-        e.Handled = true;
-        _isGridViewEnabled = !_isGridViewEnabled;
+        string? normalizedGroup = string.IsNullOrWhiteSpace(targetGroup) ? null : targetGroup.Trim();
+
+        if (forceState.HasValue)
+        {
+            _isGridViewEnabled = forceState.Value;
+            _gridViewTargetGroup = _isGridViewEnabled ? normalizedGroup : null;
+        }
+        else
+        {
+            if (_isGridViewEnabled && string.Equals(_gridViewTargetGroup, normalizedGroup, StringComparison.OrdinalIgnoreCase))
+            {
+                _isGridViewEnabled = false;
+                _gridViewTargetGroup = null;
+            }
+            else
+            {
+                _isGridViewEnabled = true;
+                _gridViewTargetGroup = normalizedGroup;
+            }
+        }
+
         UpdateGridViewBorderColor();
+
+        var targetTabs = _isGridViewEnabled ? GetTargetTabs(_gridViewTargetGroup).ToHashSet() : new HashSet<TabInfo>();
 
         foreach (var info in _tabs.Values)
         {
             if (info.ChildHwnd != IntPtr.Zero)
             {
-                PostMessage(info.ChildHwnd, WM_SKUA_GRIDVIEW, new IntPtr(_isGridViewEnabled ? 1 : 0), IntPtr.Zero);
+                bool isTarget = targetTabs.Contains(info);
+                PostMessage(info.ChildHwnd, WM_SKUA_GRIDVIEW, new IntPtr(isTarget ? 1 : 0), IntPtr.Zero);
             }
         }
 
-        // Deselect tabs if in Grid View so it doesn't look like a single tab is active
         if (_isGridViewEnabled)
         {
             if (InstancesTabControl.SelectedItem != null && InstancesTabControl.SelectedItem != AddTabItem)
@@ -408,6 +544,95 @@ public partial class TabbedHostWindow : CustomWindow
         DoReposition();
     }
 
+    private void GridViewBorder_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        e.Handled = true;
+
+        string? groupToToggle = null;
+        if (InstancesTabControl.SelectedItem is TabItem currentTab && _tabs.TryGetValue(currentTab, out TabInfo currentInfo))
+        {
+            if (!string.IsNullOrWhiteSpace(currentInfo.GroupName))
+                groupToToggle = currentInfo.GroupName;
+        }
+
+        ToggleGridView(groupToToggle);
+    }
+
+    private void GridViewBorder_PreviewMouseRightButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        e.Handled = true;
+        PopulateGridViewContextMenu();
+        if (GridViewBorder.ContextMenu != null)
+        {
+            GridViewBorder.ContextMenu.IsOpen = true;
+        }
+    }
+
+    private void PopulateGridViewContextMenu()
+    {
+        if (GridViewBorder.ContextMenu == null)
+            GridViewBorder.ContextMenu = new ContextMenu();
+
+        var ctx = GridViewBorder.ContextMenu;
+        ctx.Items.Clear();
+
+        MenuItem allTabsItem = new MenuItem
+        {
+            Header = "All Tabs",
+            IsChecked = _isGridViewEnabled && string.IsNullOrWhiteSpace(_gridViewTargetGroup)
+        };
+        allTabsItem.Click += (s, e) => ToggleGridView(null, true);
+        ctx.Items.Add(allTabsItem);
+
+        var activeGroups = _tabs.Values
+            .Select(i => i.GroupName)
+            .Where(g => !string.IsNullOrWhiteSpace(g))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(g => g)
+            .ToList();
+
+        if (activeGroups.Count > 0)
+        {
+            ctx.Items.Add(new Separator());
+
+            foreach (string grp in activeGroups)
+            {
+                string targetGrp = grp;
+                MenuItem grpItem = new MenuItem
+                {
+                    Header = $"Group: {grp}",
+                    IsChecked = _isGridViewEnabled && string.Equals(_gridViewTargetGroup, grp, StringComparison.OrdinalIgnoreCase)
+                };
+
+                string hex = _tabs.Values.FirstOrDefault(t => string.Equals(t.GroupName, grp, StringComparison.OrdinalIgnoreCase))?.GroupColor ?? GetDefaultColorForGroup(grp);
+                try
+                {
+                    var col = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex);
+                    grpItem.Icon = new System.Windows.Shapes.Rectangle
+                    {
+                        Width = 12,
+                        Height = 12,
+                        RadiusX = 2,
+                        RadiusY = 2,
+                        Fill = new System.Windows.Media.SolidColorBrush(col)
+                    };
+                }
+                catch { }
+
+                grpItem.Click += (s, e) => ToggleGridView(targetGrp, true);
+                ctx.Items.Add(grpItem);
+            }
+        }
+
+        if (_isGridViewEnabled)
+        {
+            ctx.Items.Add(new Separator());
+            MenuItem exitGridItem = new MenuItem { Header = "Exit Grid View" };
+            exitGridItem.Click += (s, e) => ToggleGridView(null, false);
+            ctx.Items.Add(exitGridItem);
+        }
+    }
+
     private void GridViewBorder_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
     {
         if (!_isGridViewEnabled)
@@ -418,10 +643,10 @@ public partial class TabbedHostWindow : CustomWindow
     {
         UpdateGridViewBorderColor();
     }
-
     private void GlobeBorder_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         e.Handled = true;
+        PopulateArmyContextMenu();
         GlobeBorder.ContextMenu.IsOpen = true;
     }
 
@@ -462,12 +687,892 @@ public partial class TabbedHostWindow : CustomWindow
         }
     }
 
-    private async void MenuItem_StartAllScripts_Click(object sender, RoutedEventArgs e)
+    private IEnumerable<TabInfo> GetTargetTabs(string? targetGroup = null)
     {
+        if (string.IsNullOrWhiteSpace(targetGroup) || targetGroup.Equals("All Tabs", StringComparison.OrdinalIgnoreCase))
+            return _tabs.Values.Where(i => i.ChildHwnd != IntPtr.Zero);
+
+        return _tabs.Values.Where(i => i.ChildHwnd != IntPtr.Zero && string.Equals(i.GroupName, targetGroup, StringComparison.OrdinalIgnoreCase));
+    }
+
+    #region Group Header Management
+
+    private TabItem CreateGroupHeaderTab(string groupName)
+    {
+        TabItem headerTab = new TabItem
+        {
+            Tag = $"GroupHeader:{groupName}",
+            Focusable = false,
+            Cursor = System.Windows.Input.Cursors.Hand,
+            AllowDrop = true
+        };
+
+        // Custom template to render only the Header content (the pill)
+        var template = new ControlTemplate(typeof(TabItem));
+        var cpFactory = new FrameworkElementFactory(typeof(ContentPresenter));
+        cpFactory.SetValue(ContentPresenter.ContentSourceProperty, "Header");
+        cpFactory.SetValue(ContentPresenter.VerticalAlignmentProperty, VerticalAlignment.Center);
+        cpFactory.SetValue(ContentPresenter.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+        template.VisualTree = cpFactory;
+        headerTab.Template = template;
+
+        Border pillBorder = new Border
+        {
+            Tag = "PillBorder",
+            CornerRadius = new CornerRadius(10),
+            Padding = new Thickness(8, 2, 8, 2),
+            Margin = new Thickness(3, 2, 3, 2),
+            BorderThickness = new Thickness(1),
+            Cursor = System.Windows.Input.Cursors.Hand
+        };
+
+        StackPanel pillPanel = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+
+        TextBlock iconBlock = new TextBlock
+        {
+            Tag = "PillIcon",
+            Text = "●",
+            FontSize = 10,
+            Margin = new Thickness(0, 0, 5, 0),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        TextBlock nameBlock = new TextBlock
+        {
+            Tag = "PillName",
+            Text = groupName,
+            FontSize = 11,
+            FontWeight = FontWeights.SemiBold,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        TextBlock countBlock = new TextBlock
+        {
+            Tag = "PillCount",
+            Text = "",
+            FontSize = 11,
+            FontWeight = FontWeights.Normal,
+            Opacity = 0.85,
+            Margin = new Thickness(4, 0, 0, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+            Visibility = Visibility.Collapsed
+        };
+
+        pillPanel.Children.Add(iconBlock);
+        pillPanel.Children.Add(nameBlock);
+        pillPanel.Children.Add(countBlock);
+        pillBorder.Child = pillPanel;
+        headerTab.Header = pillBorder;
+
+        UpdateGroupHeaderAppearance(headerTab, groupName);
+
+        // Hover effect
+        pillBorder.MouseEnter += (s, ev) =>
+        {
+            string hex = _tabs.Values.FirstOrDefault(t => string.Equals(t.GroupName, groupName, StringComparison.OrdinalIgnoreCase))?.GroupColor ?? GetDefaultColorForGroup(groupName);
+            try
+            {
+                var col = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex);
+                pillBorder.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(80, col.R, col.G, col.B));
+            }
+            catch { }
+        };
+        pillBorder.MouseLeave += (s, ev) =>
+        {
+            UpdateGroupHeaderAppearance(headerTab, groupName);
+        };
+
+        // Left Click -> Toggle Collapse/Expand
+        pillBorder.PreviewMouseLeftButtonDown += (s, ev) =>
+        {
+            ev.Handled = true;
+            ToggleGroupCollapse(groupName);
+        };
+
+        // Right Click -> Group Context Menu
+        ContextMenu ctx = new ContextMenu();
+        ctx.Opened += (s, ev) => PopulateGroupContextMenu(groupName, ctx);
+        PopulateGroupContextMenu(groupName, ctx);
+        pillBorder.ContextMenu = ctx;
+
+        pillBorder.PreviewMouseRightButtonDown += (s, ev) =>
+        {
+            ev.Handled = true;
+            PopulateGroupContextMenu(groupName, ctx);
+            ctx.IsOpen = true;
+        };
+
+        // Drag & Drop to reorder entire group
+        Point startPoint = new Point();
+        pillBorder.AddHandler(UIElement.PreviewMouseLeftButtonDownEvent, new System.Windows.Input.MouseButtonEventHandler((s, ev) =>
+        {
+            startPoint = ev.GetPosition(null);
+        }), true);
+        pillBorder.PreviewMouseMove += (s, ev) =>
+        {
+            if (ev.LeftButton == System.Windows.Input.MouseButtonState.Pressed)
+            {
+                Point mousePos = ev.GetPosition(null);
+                Vector diff = startPoint - mousePos;
+                if (Math.Abs(diff.X) > SystemParameters.MinimumHorizontalDragDistance ||
+                    Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance)
+                {
+                    DragDrop.DoDragDrop(headerTab, headerTab, DragDropEffects.Move);
+                }
+            }
+        };
+
+        headerTab.Drop += (s, ev) =>
+        {
+            if (ev.Data.GetDataPresent(typeof(TabItem)))
+            {
+                TabItem droppedTab = (TabItem)ev.Data.GetData(typeof(TabItem));
+                if (droppedTab != null && droppedTab != headerTab)
+                {
+                    int targetIndex = InstancesTabControl.Items.IndexOf(headerTab);
+                    if (IsGroupHeader(droppedTab))
+                    {
+                        string? droppedGroup = GetGroupHeaderName(droppedTab);
+                        if (!string.IsNullOrWhiteSpace(droppedGroup))
+                        {
+                            MoveWholeGroup(droppedGroup, targetIndex);
+                        }
+                    }
+                    else if (_tabs.ContainsKey(droppedTab))
+                    {
+                        InstancesTabControl.Items.Remove(droppedTab);
+                        int newIdx = Math.Min(targetIndex, InstancesTabControl.Items.Count - 1);
+                        if (newIdx < 0) newIdx = 0;
+                        InstancesTabControl.Items.Insert(newIdx, droppedTab);
+                        InstancesTabControl.SelectedItem = droppedTab;
+                        SetTabGroup(droppedTab, groupName);
+                    }
+                }
+            }
+        };
+
+        return headerTab;
+    }
+
+    private void UpdateGroupHeaderAppearance(TabItem headerTab, string groupName)
+    {
+        if (headerTab.Header is not Border pillBorder) return;
+        if (pillBorder.Child is not StackPanel pillPanel) return;
+
+        var iconBlock = pillPanel.Children.OfType<TextBlock>().FirstOrDefault(tb => (string)tb.Tag == "PillIcon");
+        var nameBlock = pillPanel.Children.OfType<TextBlock>().FirstOrDefault(tb => (string)tb.Tag == "PillName");
+        var countBlock = pillPanel.Children.OfType<TextBlock>().FirstOrDefault(tb => (string)tb.Tag == "PillCount");
+
+        string hex = _tabs.Values.FirstOrDefault(t => string.Equals(t.GroupName, groupName, StringComparison.OrdinalIgnoreCase))?.GroupColor ?? GetDefaultColorForGroup(groupName);
+        System.Windows.Media.Color col;
+        try
+        {
+            col = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex);
+        }
+        catch
+        {
+            col = System.Windows.Media.Color.FromRgb(0, 188, 212);
+        }
+
+        bool isCollapsed = _collapsedGroups.Contains(groupName);
+        int memberCount = _tabs.Values.Count(t => string.Equals(t.GroupName, groupName, StringComparison.OrdinalIgnoreCase));
+
+        if (nameBlock != null) nameBlock.Text = groupName;
+
+        if (isCollapsed)
+        {
+            if (iconBlock != null)
+            {
+                iconBlock.Text = "▸";
+                iconBlock.FontSize = 11;
+            }
+            if (countBlock != null)
+            {
+                countBlock.Text = $"({memberCount})";
+                countBlock.Visibility = Visibility.Visible;
+            }
+            pillBorder.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(60, col.R, col.G, col.B));
+        }
+        else
+        {
+            if (iconBlock != null)
+            {
+                iconBlock.Text = "●";
+                iconBlock.FontSize = 10;
+            }
+            if (countBlock != null)
+            {
+                countBlock.Visibility = Visibility.Collapsed;
+            }
+            pillBorder.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(35, col.R, col.G, col.B));
+        }
+
+        pillBorder.BorderBrush = new System.Windows.Media.SolidColorBrush(col);
+        var brush = new System.Windows.Media.SolidColorBrush(col);
+        if (iconBlock != null) iconBlock.Foreground = brush;
+        if (nameBlock != null) nameBlock.Foreground = brush;
+        if (countBlock != null) countBlock.Foreground = brush;
+    }
+
+    private void ToggleGroupCollapse(string groupName)
+    {
+        if (string.IsNullOrWhiteSpace(groupName)) return;
+
+        bool isNowCollapsed;
+        if (_collapsedGroups.Contains(groupName))
+        {
+            _collapsedGroups.Remove(groupName);
+            isNowCollapsed = false;
+        }
+        else
+        {
+            _collapsedGroups.Add(groupName);
+            isNowCollapsed = true;
+        }
+
+        foreach (var kvp in _tabs)
+        {
+            if (string.Equals(kvp.Value.GroupName, groupName, StringComparison.OrdinalIgnoreCase))
+            {
+                kvp.Key.Visibility = isNowCollapsed ? Visibility.Collapsed : Visibility.Visible;
+            }
+        }
+
+        if (isNowCollapsed && InstancesTabControl.SelectedItem is TabItem currentTab && _tabs.TryGetValue(currentTab, out var curInfo) && string.Equals(curInfo.GroupName, groupName, StringComparison.OrdinalIgnoreCase))
+        {
+            var firstVis = InstancesTabControl.Items.OfType<TabItem>().FirstOrDefault(t => t != AddTabItem && !IsGroupHeader(t) && t.Visibility == Visibility.Visible && _tabs.ContainsKey(t));
+            if (firstVis != null)
+            {
+                InstancesTabControl.SelectedItem = firstVis;
+            }
+        }
+
+        RefreshGroupHeaders();
+        DoReposition();
+    }
+
+    private void PopulateGroupContextMenu(string groupName, ContextMenu ctx)
+    {
+        ctx.Items.Clear();
+
+        // 1. Rename Group...
+        MenuItem renameItem = new MenuItem { Header = "Rename Group..." };
+        renameItem.Click += (s, ev) =>
+        {
+            var vm = new Skua.Core.ViewModels.InputDialogViewModel("Rename Tab Group", "Enter new group name:", groupName, false);
+            if (CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<Skua.Core.Interfaces.IDialogService>().ShowDialog(vm) == true)
+            {
+                string newName = vm.DialogTextInput?.Trim() ?? "";
+                if (!string.IsNullOrWhiteSpace(newName) && !string.Equals(newName, groupName, StringComparison.OrdinalIgnoreCase))
+                {
+                    RenameGroup(groupName, newName);
+                }
+            }
+        };
+        ctx.Items.Add(renameItem);
+
+        // 2. Change Group Color
+        MenuItem colorItem = new MenuItem { Header = "Change Group Color" };
+        foreach (var (name, hex) in GroupColorPalette)
+        {
+            MenuItem cItem = new MenuItem { Header = name };
+            try
+            {
+                var col = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex);
+                cItem.Icon = new System.Windows.Shapes.Rectangle
+                {
+                    Width = 12,
+                    Height = 12,
+                    RadiusX = 2,
+                    RadiusY = 2,
+                    Fill = new System.Windows.Media.SolidColorBrush(col)
+                };
+            }
+            catch { }
+
+            string chosenHex = hex;
+            cItem.Click += (s, ev) =>
+            {
+                _groupConfig.GroupColors[groupName] = chosenHex;
+                SaveGroupConfig();
+
+                foreach (var kvp in _tabs)
+                {
+                    if (string.Equals(kvp.Value.GroupName, groupName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        UpdateTabGroupUI(kvp.Key, groupName, chosenHex);
+                    }
+                }
+                RefreshGroupHeaders();
+                UpdateGridViewBorderColor();
+            };
+            colorItem.Items.Add(cItem);
+        }
+        ctx.Items.Add(colorItem);
+
+        ctx.Items.Add(new Separator());
+
+        // 3. Grid View: This Group
+        MenuItem gridGroupItem = new MenuItem { Header = $"Grid View (Group '{groupName}')" };
+        gridGroupItem.Click += (s, ev) => ToggleGridView(groupName, true);
+        ctx.Items.Add(gridGroupItem);
+
+        // 4. Auto-Arrange Tabs
+        MenuItem arrangeItem = new MenuItem { Header = "Auto-Arrange Tabs by Group" };
+        arrangeItem.Click += (s, ev) => AutoArrangeTabsByGroup();
+        ctx.Items.Add(arrangeItem);
+
+        ctx.Items.Add(new Separator());
+
+        // 5. Delete Group (Ungroup Tabs & Remove from Config)
+        MenuItem deleteGroupItem = new MenuItem { Header = $"Delete Group '{groupName}' (Ungroup Tabs)" };
+        deleteGroupItem.Click += (s, ev) => DeleteGroup(groupName);
+        ctx.Items.Add(deleteGroupItem);
+
+        // 6. Close Group (Close All Tabs in Group)
+        MenuItem closeGroupItem = new MenuItem { Header = $"Close Group ('{groupName}')" };
+        closeGroupItem.Click += (s, ev) =>
+        {
+            var toRemove = _tabs.Where(kvp => string.Equals(kvp.Value.GroupName, groupName, StringComparison.OrdinalIgnoreCase))
+                                .Select(kvp => kvp.Key)
+                                .ToList();
+            foreach (var t in toRemove) CloseTab(t);
+        };
+        ctx.Items.Add(closeGroupItem);
+    }
+
+    private void RenameGroup(string oldName, string newName)
+    {
+        if (string.IsNullOrWhiteSpace(oldName) || string.IsNullOrWhiteSpace(newName)) return;
+
+        if (_groupConfig.KnownGroups.Contains(oldName, StringComparer.OrdinalIgnoreCase))
+        {
+            _groupConfig.KnownGroups.RemoveAll(g => string.Equals(g, oldName, StringComparison.OrdinalIgnoreCase));
+        }
+        if (!_groupConfig.KnownGroups.Contains(newName, StringComparer.OrdinalIgnoreCase))
+        {
+            _groupConfig.KnownGroups.Add(newName);
+        }
+
+        if (_groupConfig.GroupColors.TryGetValue(oldName, out string? color))
+        {
+            _groupConfig.GroupColors.Remove(oldName);
+            _groupConfig.GroupColors[newName] = color;
+        }
+        SaveGroupConfig();
+
+        if (_collapsedGroups.Contains(oldName))
+        {
+            _collapsedGroups.Remove(oldName);
+            _collapsedGroups.Add(newName);
+        }
+
+        if (string.Equals(_gridViewTargetGroup, oldName, StringComparison.OrdinalIgnoreCase))
+        {
+            _gridViewTargetGroup = newName;
+        }
+
+        foreach (var kvp in _tabs)
+        {
+            if (string.Equals(kvp.Value.GroupName, oldName, StringComparison.OrdinalIgnoreCase))
+            {
+                kvp.Value.GroupName = newName;
+                UpdateTabGroupUI(kvp.Key, newName, kvp.Value.GroupColor);
+            }
+        }
+
+        var headerTab = InstancesTabControl.Items.OfType<TabItem>().FirstOrDefault(t => string.Equals(GetGroupHeaderName(t), oldName, StringComparison.OrdinalIgnoreCase));
+        if (headerTab != null)
+        {
+            headerTab.Tag = $"GroupHeader:{newName}";
+        }
+
+        RefreshGroupHeaders();
+        UpdateGridViewBorderColor();
+    }
+
+    private void DeleteGroup(string groupName)
+    {
+        if (string.IsNullOrWhiteSpace(groupName)) return;
+
+        _groupConfig.KnownGroups.RemoveAll(g => string.Equals(g, groupName, StringComparison.OrdinalIgnoreCase));
+        _groupConfig.GroupColors.Remove(groupName);
+        SaveGroupConfig();
+
+        _collapsedGroups.Remove(groupName);
+
+        if (string.Equals(_gridViewTargetGroup, groupName, StringComparison.OrdinalIgnoreCase))
+        {
+            _gridViewTargetGroup = null;
+        }
+
+        var memberTabs = _tabs.Where(kvp => string.Equals(kvp.Value.GroupName, groupName, StringComparison.OrdinalIgnoreCase)).Select(kvp => kvp.Key).ToList();
+        foreach (var tab in memberTabs)
+        {
+            SetTabGroup(tab, "");
+        }
+
+        RefreshGroupHeaders();
+        UpdateGridViewBorderColor();
+    }
+
+    private void MoveWholeGroup(string groupName, int targetIndex)
+    {
+        var headerTab = InstancesTabControl.Items.OfType<TabItem>().FirstOrDefault(t => string.Equals(GetGroupHeaderName(t), groupName, StringComparison.OrdinalIgnoreCase));
+        var memberTabs = _tabs.Where(kvp => string.Equals(kvp.Value.GroupName, groupName, StringComparison.OrdinalIgnoreCase)).Select(kvp => kvp.Key).ToList();
+
+        var allGroupItems = new List<TabItem>();
+        if (headerTab != null) allGroupItems.Add(headerTab);
+        allGroupItems.AddRange(memberTabs);
+
+        foreach (var item in allGroupItems)
+        {
+            InstancesTabControl.Items.Remove(item);
+        }
+
+        int insertIdx = Math.Min(targetIndex, InstancesTabControl.Items.Count - 1);
+        if (insertIdx < 0) insertIdx = 0;
+
+        for (int i = 0; i < allGroupItems.Count; i++)
+        {
+            InstancesTabControl.Items.Insert(insertIdx + i, allGroupItems[i]);
+        }
+
+        RefreshGroupHeaders();
+    }
+
+    public void RefreshGroupHeaders()
+    {
+        var activeGroups = _tabs.Values
+            .Select(i => i.GroupName)
+            .Where(g => !string.IsNullOrWhiteSpace(g))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        // 1. Remove orphan headers
+        var existingHeaders = InstancesTabControl.Items.OfType<TabItem>().Where(IsGroupHeader).ToList();
+        foreach (var h in existingHeaders)
+        {
+            string? grp = GetGroupHeaderName(h);
+            if (grp == null || !activeGroups.Contains(grp, StringComparer.OrdinalIgnoreCase))
+            {
+                InstancesTabControl.Items.Remove(h);
+            }
+        }
+
+        // 2. Ensure each active group has a header placed before its first member tab
+        foreach (string grp in activeGroups)
+        {
+            var memberTabs = InstancesTabControl.Items.OfType<TabItem>()
+                .Where(t => _tabs.TryGetValue(t, out var info) && string.Equals(info.GroupName, grp, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (memberTabs.Count == 0) continue;
+
+            var header = InstancesTabControl.Items.OfType<TabItem>().FirstOrDefault(t => string.Equals(GetGroupHeaderName(t), grp, StringComparison.OrdinalIgnoreCase));
+            if (header == null)
+            {
+                header = CreateGroupHeaderTab(grp);
+                int firstMemberIdx = InstancesTabControl.Items.IndexOf(memberTabs[0]);
+                InstancesTabControl.Items.Insert(firstMemberIdx, header);
+            }
+            else
+            {
+                int currentHeaderIdx = InstancesTabControl.Items.IndexOf(header);
+                int firstMemberIdx = InstancesTabControl.Items.IndexOf(memberTabs[0]);
+                if (currentHeaderIdx > firstMemberIdx)
+                {
+                    InstancesTabControl.Items.Remove(header);
+                    firstMemberIdx = InstancesTabControl.Items.IndexOf(memberTabs[0]);
+                    InstancesTabControl.Items.Insert(firstMemberIdx, header);
+                }
+                UpdateGroupHeaderAppearance(header, grp);
+            }
+
+            // Sync member visibility
+            bool isCollapsed = _collapsedGroups.Contains(grp);
+            foreach (var mTab in memberTabs)
+            {
+                mTab.Visibility = isCollapsed ? Visibility.Collapsed : Visibility.Visible;
+            }
+        }
+    }
+
+    #endregion Group Header Management
+
+    private void SetTabGroup(TabItem tab, string groupName, string? customColor = null)
+    {
+        if (!_tabs.TryGetValue(tab, out TabInfo info)) return;
+
+        string trimmed = groupName?.Trim() ?? "";
+
+        if (!string.IsNullOrWhiteSpace(trimmed))
+        {
+            if (!_groupConfig.KnownGroups.Contains(trimmed, StringComparer.OrdinalIgnoreCase))
+            {
+                _groupConfig.KnownGroups.Add(trimmed);
+                SaveGroupConfig();
+            }
+
+            if (string.IsNullOrWhiteSpace(customColor))
+            {
+                var existingTabWithGroup = _tabs.Values.FirstOrDefault(t => string.Equals(t.GroupName, trimmed, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(t.GroupColor));
+                if (existingTabWithGroup != null)
+                    customColor = existingTabWithGroup.GroupColor;
+                else if (_groupConfig.GroupColors.TryGetValue(trimmed, out string? savedColor))
+                    customColor = savedColor;
+            }
+            else
+            {
+                _groupConfig.GroupColors[trimmed] = customColor;
+                SaveGroupConfig();
+            }
+        }
+
+        UpdateTabGroupUI(tab, trimmed, customColor);
+        RefreshGroupHeaders();
+    }
+
+    private void UpdateTabGroupUI(TabItem tab, string groupName, string? customColor = null)
+    {
+        if (!_tabs.TryGetValue(tab, out TabInfo info)) return;
+
+        info.GroupName = groupName?.Trim() ?? "";
+        if (!string.IsNullOrWhiteSpace(customColor))
+            info.GroupColor = customColor;
+        else if (!string.IsNullOrWhiteSpace(info.GroupName))
+            info.GroupColor = GetDefaultColorForGroup(info.GroupName);
+        else
+            info.GroupColor = "";
+
+        if (tab.Header is StackPanel panel)
+        {
+            var dot = panel.Children.OfType<System.Windows.Shapes.Ellipse>().FirstOrDefault(e => (string)e.Tag == "GroupDot");
+            if (dot != null)
+            {
+                if (string.IsNullOrWhiteSpace(info.GroupName))
+                {
+                    dot.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    string hex = string.IsNullOrWhiteSpace(info.GroupColor) ? GetDefaultColorForGroup(info.GroupName) : info.GroupColor;
+                    try
+                    {
+                        var col = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex);
+                        dot.Fill = new System.Windows.Media.SolidColorBrush(col);
+                        dot.Visibility = Visibility.Visible;
+                    }
+                    catch
+                    {
+                        dot.Visibility = Visibility.Collapsed;
+                    }
+                }
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(info.GroupName) && _collapsedGroups.Contains(info.GroupName))
+        {
+            tab.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            tab.Visibility = Visibility.Visible;
+        }
+    }
+
+    public void AutoArrangeTabsByGroup()
+    {
+        var existingHeaders = InstancesTabControl.Items.OfType<TabItem>().Where(IsGroupHeader).ToList();
+        foreach (var h in existingHeaders) InstancesTabControl.Items.Remove(h);
+
+        var clientTabs = InstancesTabControl.Items.OfType<TabItem>()
+            .Where(t => _tabs.ContainsKey(t))
+            .ToList();
+
+        if (clientTabs.Count == 0) return;
+
+        var selectedTab = InstancesTabControl.SelectedItem as TabItem;
+
+        var sortedTabs = clientTabs
+            .OrderBy(t => string.IsNullOrWhiteSpace(_tabs[t].GroupName) ? 1 : 0) // grouped tabs first, ungrouped last
+            .ThenBy(t => _tabs[t].GroupName, StringComparer.OrdinalIgnoreCase) // group name A-Z
+            .ThenBy(t =>
+            {
+                if (t.Header is StackPanel sp)
+                {
+                    var tb = sp.Children.OfType<TextBlock>().FirstOrDefault(b => b.Text != "✕");
+                    return tb?.Text ?? "";
+                }
+                return "";
+            })
+            .ToList();
+
+        foreach (var tab in clientTabs) InstancesTabControl.Items.Remove(tab);
+
+        int insertPos = 0;
+        string? currentGroup = null;
+
+        foreach (var tab in sortedTabs)
+        {
+            string grp = _tabs[tab].GroupName;
+            if (!string.IsNullOrWhiteSpace(grp) && !string.Equals(grp, currentGroup, StringComparison.OrdinalIgnoreCase))
+            {
+                currentGroup = grp;
+                var header = CreateGroupHeaderTab(grp);
+                InstancesTabControl.Items.Insert(insertPos++, header);
+            }
+            else if (string.IsNullOrWhiteSpace(grp))
+            {
+                currentGroup = null;
+            }
+
+            InstancesTabControl.Items.Insert(insertPos++, tab);
+        }
+
+        RefreshGroupHeaders();
+
+        if (selectedTab != null && InstancesTabControl.Items.Contains(selectedTab) && selectedTab.Visibility == Visibility.Visible)
+        {
+            InstancesTabControl.SelectedItem = selectedTab;
+        }
+        else
+        {
+            var firstVis = InstancesTabControl.Items.OfType<TabItem>().FirstOrDefault(t => t != AddTabItem && !IsGroupHeader(t) && t.Visibility == Visibility.Visible && _tabs.ContainsKey(t));
+            if (firstVis != null) InstancesTabControl.SelectedItem = firstVis;
+        }
+
+        DoReposition();
+    }
+
+    private void MenuItem_ArrangeTabs_Click(object sender, RoutedEventArgs e)
+    {
+        AutoArrangeTabsByGroup();
+    }
+
+    private void PopulateTabContextMenu(TabItem tab, ContextMenu ctx)
+    {
+        ctx.Items.Clear();
+        if (!_tabs.TryGetValue(tab, out TabInfo info)) return;
+
+        // 1. Assign to Group
+        MenuItem assignGroupItem = new MenuItem { Header = "Assign to Group" };
+
+        var existingGroups = _groupConfig.KnownGroups
+            .Concat(_tabs.Values.Select(i => i.GroupName))
+            .Where(g => !string.IsNullOrWhiteSpace(g))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(g => g)
+            .ToList();
+
+        foreach (string grp in existingGroups)
+        {
+            MenuItem grpItem = new MenuItem
+            {
+                Header = grp,
+                IsChecked = string.Equals(info.GroupName, grp, StringComparison.OrdinalIgnoreCase)
+            };
+            string targetGrp = grp;
+            grpItem.Click += (s, ev) => SetTabGroup(tab, targetGrp);
+            assignGroupItem.Items.Add(grpItem);
+        }
+
+        if (existingGroups.Count > 0)
+            assignGroupItem.Items.Add(new Separator());
+
+        MenuItem newGroupItem = new MenuItem { Header = "+ New Group..." };
+        newGroupItem.Click += (s, ev) =>
+        {
+            var vm = new Skua.Core.ViewModels.InputDialogViewModel("New Tab Group", "Enter group name:", "e.g. Ultra Team", false);
+            if (CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<Skua.Core.Interfaces.IDialogService>().ShowDialog(vm) == true)
+            {
+                string newName = vm.DialogTextInput?.Trim() ?? "";
+                if (!string.IsNullOrWhiteSpace(newName))
+                {
+                    SetTabGroup(tab, newName);
+                }
+            }
+        };
+        assignGroupItem.Items.Add(newGroupItem);
+
+        if (!string.IsNullOrWhiteSpace(info.GroupName))
+        {
+            MenuItem removeGroupItem = new MenuItem { Header = "Remove from Group" };
+            removeGroupItem.Click += (s, ev) => SetTabGroup(tab, "");
+            assignGroupItem.Items.Add(removeGroupItem);
+        }
+
+        ctx.Items.Add(assignGroupItem);
+
+        // 2. Change Group Color
+        if (!string.IsNullOrWhiteSpace(info.GroupName))
+        {
+            MenuItem colorItem = new MenuItem { Header = "Change Group Color" };
+            foreach (var (name, hex) in GroupColorPalette)
+            {
+                MenuItem cItem = new MenuItem { Header = name };
+                try
+                {
+                    var col = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex);
+                    cItem.Icon = new System.Windows.Shapes.Rectangle
+                    {
+                        Width = 12,
+                        Height = 12,
+                        RadiusX = 2,
+                        RadiusY = 2,
+                        Fill = new System.Windows.Media.SolidColorBrush(col)
+                    };
+                }
+                catch { }
+
+                string chosenHex = hex;
+                cItem.Click += (s, ev) =>
+                {
+                    _groupConfig.GroupColors[info.GroupName] = chosenHex;
+                    SaveGroupConfig();
+
+                    foreach (var kvp in _tabs)
+                    {
+                        if (string.Equals(kvp.Value.GroupName, info.GroupName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            UpdateTabGroupUI(kvp.Key, info.GroupName, chosenHex);
+                        }
+                    }
+                    RefreshGroupHeaders();
+                    UpdateGridViewBorderColor();
+                };
+                colorItem.Items.Add(cItem);
+            }
+            ctx.Items.Add(colorItem);
+        }
+
+        ctx.Items.Add(new Separator());
+
+        // 3. Tab Group Batch Actions & Arrangement
+        if (!string.IsNullOrWhiteSpace(info.GroupName))
+        {
+            MenuItem gridGroupItem = new MenuItem { Header = $"Grid View (Group '{info.GroupName}')" };
+            gridGroupItem.Click += (s, ev) => ToggleGridView(info.GroupName, true);
+            ctx.Items.Add(gridGroupItem);
+
+            MenuItem deleteGroupItem = new MenuItem { Header = $"Delete Group '{info.GroupName}' (Ungroup Tabs)" };
+            deleteGroupItem.Click += (s, ev) => DeleteGroup(info.GroupName);
+            ctx.Items.Add(deleteGroupItem);
+
+            MenuItem closeGroupItem = new MenuItem { Header = $"Close Group ('{info.GroupName}')" };
+            closeGroupItem.Click += (s, ev) =>
+            {
+                var toRemove = _tabs.Where(kvp => string.Equals(kvp.Value.GroupName, info.GroupName, StringComparison.OrdinalIgnoreCase))
+                                    .Select(kvp => kvp.Key)
+                                    .ToList();
+                foreach (var t in toRemove) CloseTab(t);
+            };
+            ctx.Items.Add(closeGroupItem);
+        }
+
+        MenuItem arrangeItem = new MenuItem { Header = "Auto-Arrange Tabs by Group" };
+        arrangeItem.Click += (s, ev) => AutoArrangeTabsByGroup();
+        ctx.Items.Add(arrangeItem);
+
+        ctx.Items.Add(new Separator());
+
+        // 4. Tab Closing Actions
+        MenuItem closeItem = new MenuItem { Header = "Close Tab" };
+        closeItem.Click += (s, ev) => CloseTab(tab);
+
+        MenuItem closeOthersItem = new MenuItem { Header = "Close Other Tabs" };
+        closeOthersItem.Click += (s, ev) =>
+        {
+            var toRemove = InstancesTabControl.Items.OfType<TabItem>().Where(t => t != tab && _tabs.ContainsKey(t)).ToList();
+            foreach (var t in toRemove) CloseTab(t);
+        };
+
+        MenuItem closeRightItem = new MenuItem { Header = "Close Tabs to the Right" };
+        closeRightItem.Click += (s, ev) =>
+        {
+            int idx = InstancesTabControl.Items.IndexOf(tab);
+            var toRemove = InstancesTabControl.Items.OfType<TabItem>().Where((t, i) => i > idx && _tabs.ContainsKey(t)).ToList();
+            foreach (var t in toRemove) CloseTab(t);
+        };
+
+        ctx.Items.Add(closeItem);
+        ctx.Items.Add(closeOthersItem);
+        ctx.Items.Add(closeRightItem);
+    }
+
+    private void PopulateArmyContextMenu()
+    {
+        var groups = _tabs.Values
+            .Select(i => i.GroupName)
+            .Where(g => !string.IsNullOrWhiteSpace(g))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(g => g)
+            .ToList();
+
+        SetupArmyMenuItem(MenuStartScripts, "Start Scripts", StartScriptsAction, groups);
+        SetupArmyMenuItem(MenuStopScripts, "Stop Scripts", StopScriptsAction, groups);
+        SetupArmyMenuItem(MenuLoadScripts, "Load Script to", LoadScriptAction, groups);
+        SetupArmyMenuItem(MenuLoginClients, "Login Clients", LoginClientsAction, groups);
+        SetupArmyMenuItem(MenuLogoutClients, "Logout Clients", LogoutClientsAction, groups);
+        SetupArmyMenuItem(MenuJumpMap, "Jump to Map...", JumpMapAction, groups);
+        SetupArmyMenuItem(MenuJumpPlayer, "Jump to Player...", JumpPlayerAction, groups);
+        SetupArmyMenuItem(MenuAcceptQuest, "Accept Quest...", AcceptQuestAction, groups);
+    }
+
+    private void SetupArmyMenuItem(MenuItem item, string baseTitle, Action<string?> action, List<string> groups)
+    {
+        if (item == null) return;
+        item.Items.Clear();
+
+        if (groups.Count == 0)
+        {
+            item.Header = baseTitle.Contains("...") ? baseTitle.Replace("...", " (All)...") : $"{baseTitle} (All)";
+        }
+        else
+        {
+            item.Header = baseTitle;
+
+            MenuItem allItem = new MenuItem { Header = "All Tabs" };
+            allItem.Click += (s, e) => action(null);
+            item.Items.Add(allItem);
+
+            item.Items.Add(new Separator());
+
+            foreach (string grp in groups)
+            {
+                string targetGrp = grp;
+                MenuItem grpItem = new MenuItem { Header = $"Group: {grp}" };
+
+                string hex = _tabs.Values.FirstOrDefault(t => string.Equals(t.GroupName, grp, StringComparison.OrdinalIgnoreCase))?.GroupColor ?? GetDefaultColorForGroup(grp);
+                try
+                {
+                    var col = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex);
+                    grpItem.Icon = new System.Windows.Shapes.Rectangle
+                    {
+                        Width = 12,
+                        Height = 12,
+                        RadiusX = 2,
+                        RadiusY = 2,
+                        Fill = new System.Windows.Media.SolidColorBrush(col)
+                    };
+                }
+                catch { }
+
+                grpItem.Click += (s, e) => action(targetGrp);
+                item.Items.Add(grpItem);
+            }
+        }
+    }
+
+    private async void StartScriptsAction(string? targetGroup = null)
+    {
+        var targetTabs = GetTargetTabs(targetGroup).ToList();
+        if (targetTabs.Count == 0) return;
+
         if (MenuStartScripts != null) MenuStartScripts.IsEnabled = false;
         if (MenuStopScripts != null) MenuStopScripts.IsEnabled = false;
 
-        foreach (var info in _tabs.Values)
+        foreach (var info in targetTabs)
             if (info.ChildHwnd != IntPtr.Zero)
                 PostMessage(info.ChildHwnd, WM_SKUA_SET_OPTION, new IntPtr(99), new IntPtr(1));
 
@@ -477,89 +1582,72 @@ public partial class TabbedHostWindow : CustomWindow
         if (MenuStopScripts != null) MenuStopScripts.IsEnabled = true;
     }
 
-    private async void MenuItem_StopAllScripts_Click(object sender, RoutedEventArgs e)
+    private async void StopScriptsAction(string? targetGroup = null)
     {
+        var targetTabs = GetTargetTabs(targetGroup).ToList();
+        if (targetTabs.Count == 0) return;
+
         if (MenuStartScripts != null) MenuStartScripts.IsEnabled = false;
         if (MenuStopScripts != null) MenuStopScripts.IsEnabled = false;
 
-        foreach (var info in _tabs.Values)
+        foreach (var info in targetTabs)
             if (info.ChildHwnd != IntPtr.Zero)
                 PostMessage(info.ChildHwnd, WM_SKUA_SET_OPTION, new IntPtr(99), new IntPtr(0));
 
-        await Task.Delay(4000); // 4 second wait to ensure graceful stop
+        await Task.Delay(4000);
 
         if (MenuStartScripts != null) MenuStartScripts.IsEnabled = true;
         if (MenuStopScripts != null) MenuStopScripts.IsEnabled = true;
     }
 
-    private void BroadcastScriptAction(string scriptPath, int msg)
+    private void LoadScriptAction(string? targetGroup = null)
     {
-        try
-        {
-            string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "skua_global_script.txt");
-            System.IO.File.WriteAllText(tempFile, scriptPath);
-
-            foreach (var info in _tabs.Values)
-            {
-                if (info.ChildHwnd != IntPtr.Zero)
-                {
-                    PostMessage(info.ChildHwnd, (uint)msg, IntPtr.Zero, IntPtr.Zero);
-                }
-            }
-        }
-        catch { }
-    }
-
-    private void MenuItem_LoadScriptAll_Click(object sender, RoutedEventArgs e)
-    {
+        _scriptLoadTargetGroup = targetGroup;
         var windowService = CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<Skua.Core.Interfaces.IWindowService>();
         windowService.RegisterManagedWindow("Script Repo", CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<Skua.Core.ViewModels.ScriptRepoViewModel>());
         windowService.ShowManagedWindow("Script Repo");
     }
 
-    private async void MenuItem_LoginAll_Click(object sender, RoutedEventArgs e)
+    private async void LoginClientsAction(string? targetGroup = null)
     {
-        var menuItem = sender as MenuItem;
-        string originalHeader = menuItem?.Header?.ToString() ?? "Login All Clients";
-        if (menuItem != null) menuItem.IsEnabled = false;
+        var targetTabs = GetTargetTabs(targetGroup).ToList();
+        if (targetTabs.Count == 0) return;
+
+        if (MenuLoginClients != null) MenuLoginClients.IsEnabled = false;
+        string originalHeader = MenuLoginClients?.Header?.ToString() ?? "Login Clients";
 
         int count = 1;
-        int total = _tabs.Values.Count(i => i.ChildHwnd != IntPtr.Zero);
+        int total = targetTabs.Count;
 
-        foreach (var info in _tabs.Values)
+        foreach (var info in targetTabs)
         {
             if (info.ChildHwnd != IntPtr.Zero)
             {
-                if (menuItem != null) menuItem.Header = $"Logging in... ({count}/{total})";
+                if (MenuLoginClients != null) MenuLoginClients.Header = $"Logging in... ({count}/{total})";
                 PostMessage(info.ChildHwnd, WM_SKUA_LOGIN, IntPtr.Zero, IntPtr.Zero);
                 await Task.Delay(2000);
                 count++;
             }
         }
 
-        if (menuItem != null)
+        if (MenuLoginClients != null)
         {
-            menuItem.Header = originalHeader;
-            menuItem.IsEnabled = true;
+            MenuLoginClients.Header = originalHeader;
+            MenuLoginClients.IsEnabled = true;
         }
     }
 
-    private void MenuItem_LogoutAll_Click(object sender, RoutedEventArgs e)
+    private void LogoutClientsAction(string? targetGroup = null)
     {
-        foreach (var info in _tabs.Values)
+        foreach (var info in GetTargetTabs(targetGroup))
             if (info.ChildHwnd != IntPtr.Zero)
                 PostMessage(info.ChildHwnd, WM_SKUA_LOGOUT, IntPtr.Zero, IntPtr.Zero);
     }
 
-    private string _lastJumpMap = "";
-    private string _lastJumpCell = "";
-    private string _lastJumpPlayer = "";
-    private string _lastAcceptQuestId = "";
-    private string _lastAcceptQuestItem = "";
-
-    private void MenuItem_JumpMap_Click(object sender, RoutedEventArgs e)
+    private void JumpMapAction(string? targetGroup = null)
     {
-        var vm = new Skua.Core.ViewModels.InputDialogViewModel("Jump Army to Map / Cell", "Enter target location:", "Map (e.g., yulgar-829472)", "Cell (e.g., Enter)", false);
+        string title = string.IsNullOrWhiteSpace(targetGroup) ? "Jump Army to Map / Cell" : $"Jump [{targetGroup}] to Map / Cell";
+        var vm = new Skua.Core.ViewModels.InputDialogViewModel(title, "Enter target location:", "Map (e.g., yulgar-829472)", "Cell (e.g., Enter)", false);
         vm.DialogTextInput = _lastJumpMap;
         vm.SecondTextInput = _lastJumpCell;
 
@@ -574,16 +1662,17 @@ public partial class TabbedHostWindow : CustomWindow
                 string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "skua_global_jump.txt");
                 System.IO.File.WriteAllLines(tempFile, new[] { targetMap, targetCell });
 
-                foreach (var info in _tabs.Values)
+                foreach (var info in GetTargetTabs(targetGroup))
                     if (info.ChildHwnd != IntPtr.Zero)
                         PostMessage(info.ChildHwnd, WM_SKUA_JUMP_MAP, IntPtr.Zero, IntPtr.Zero);
             }
         }
     }
 
-    private void MenuItem_JumpPlayer_Click(object sender, RoutedEventArgs e)
+    private void JumpPlayerAction(string? targetGroup = null)
     {
-        var vm = new Skua.Core.ViewModels.InputDialogViewModel("Jump Army to Player", "Enter target player username:", "e.g., Artix", false);
+        string title = string.IsNullOrWhiteSpace(targetGroup) ? "Jump Army to Player" : $"Jump [{targetGroup}] to Player";
+        var vm = new Skua.Core.ViewModels.InputDialogViewModel(title, "Enter target player username:", "e.g., Artix", false);
         vm.DialogTextInput = _lastJumpPlayer;
 
         if (CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<Skua.Core.Interfaces.IDialogService>().ShowDialog(vm) == true)
@@ -595,16 +1684,17 @@ public partial class TabbedHostWindow : CustomWindow
                 string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "skua_global_jump_player.txt");
                 System.IO.File.WriteAllText(tempFile, targetPlayer);
 
-                foreach (var info in _tabs.Values)
+                foreach (var info in GetTargetTabs(targetGroup))
                     if (info.ChildHwnd != IntPtr.Zero)
                         PostMessage(info.ChildHwnd, WM_SKUA_JUMP_PLAYER, IntPtr.Zero, IntPtr.Zero);
             }
         }
     }
 
-    private void MenuItem_AcceptQuest_Click(object sender, RoutedEventArgs e)
+    private void AcceptQuestAction(string? targetGroup = null)
     {
-        var vm = new Skua.Core.ViewModels.InputDialogViewModel("Accept Quest (Army)", "Enter quest to accept:", "Quest ID (e.g., 1907)", "Item to accept (optional, e.g., 40816)", false);
+        string title = string.IsNullOrWhiteSpace(targetGroup) ? "Accept Quest (Army)" : $"Accept Quest (Group [{targetGroup}])";
+        var vm = new Skua.Core.ViewModels.InputDialogViewModel(title, "Enter quest to accept:", "Quest ID (e.g., 1907)", "Item to accept (optional, e.g., 40816)", false);
         vm.DialogTextInput = _lastAcceptQuestId;
         vm.SecondTextInput = _lastAcceptQuestItem;
 
@@ -619,23 +1709,123 @@ public partial class TabbedHostWindow : CustomWindow
                 string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "skua_global_accept_quest.txt");
                 System.IO.File.WriteAllLines(tempFile, new[] { questId, itemToAccept });
 
-                foreach (var info in _tabs.Values)
+                foreach (var info in GetTargetTabs(targetGroup))
                     if (info.ChildHwnd != IntPtr.Zero)
                         PostMessage(info.ChildHwnd, WM_SKUA_ACCEPT_QUEST, IntPtr.Zero, IntPtr.Zero);
             }
         }
     }
 
+    private void MenuItem_StartAllScripts_Click(object sender, RoutedEventArgs e)
+    {
+        var item = sender as MenuItem;
+        if (item != null && item.Items.Count > 0) return;
+        StartScriptsAction(null);
+    }
+
+    private void MenuItem_StopAllScripts_Click(object sender, RoutedEventArgs e)
+    {
+        var item = sender as MenuItem;
+        if (item != null && item.Items.Count > 0) return;
+        StopScriptsAction(null);
+    }
+
+    private void MenuItem_LoadScriptAll_Click(object sender, RoutedEventArgs e)
+    {
+        var item = sender as MenuItem;
+        if (item != null && item.Items.Count > 0) return;
+        LoadScriptAction(null);
+    }
+
+    private void MenuItem_LoginAll_Click(object sender, RoutedEventArgs e)
+    {
+        var item = sender as MenuItem;
+        if (item != null && item.Items.Count > 0) return;
+        LoginClientsAction(null);
+    }
+
+    private void MenuItem_LogoutAll_Click(object sender, RoutedEventArgs e)
+    {
+        var item = sender as MenuItem;
+        if (item != null && item.Items.Count > 0) return;
+        LogoutClientsAction(null);
+    }
+
+    private void MenuItem_JumpMap_Click(object sender, RoutedEventArgs e)
+    {
+        var item = sender as MenuItem;
+        if (item != null && item.Items.Count > 0) return;
+        JumpMapAction(null);
+    }
+
+    private void MenuItem_JumpPlayer_Click(object sender, RoutedEventArgs e)
+    {
+        var item = sender as MenuItem;
+        if (item != null && item.Items.Count > 0) return;
+        JumpPlayerAction(null);
+    }
+
+    private void MenuItem_AcceptQuest_Click(object sender, RoutedEventArgs e)
+    {
+        var item = sender as MenuItem;
+        if (item != null && item.Items.Count > 0) return;
+        AcceptQuestAction(null);
+    }
+
+    private void BroadcastScriptAction(string scriptPath, int msg)
+    {
+        try
+        {
+            string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "skua_global_script.txt");
+            System.IO.File.WriteAllText(tempFile, scriptPath);
+
+            var targets = GetTargetTabs(_scriptLoadTargetGroup).ToList();
+            _scriptLoadTargetGroup = null;
+
+            foreach (var info in targets)
+            {
+                if (info.ChildHwnd != IntPtr.Zero)
+                {
+                    PostMessage(info.ChildHwnd, (uint)msg, IntPtr.Zero, IntPtr.Zero);
+                }
+            }
+        }
+        catch { }
+    }
+
     private void UpdateGridViewBorderColor()
     {
         if (_isGridViewEnabled)
         {
-            GridViewBorder.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(62, 62, 66)); // #3E3E42
-            GridViewBorder.BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 122, 204)); // #007ACC
-            GridViewText.Foreground = (System.Windows.Media.Brush)FindResource("PrimaryHueMidBrush");
+            if (!string.IsNullOrWhiteSpace(_gridViewTargetGroup))
+            {
+                GridViewText.Text = $"⊞ Grid ({_gridViewTargetGroup})";
+                string hex = _tabs.Values.FirstOrDefault(t => string.Equals(t.GroupName, _gridViewTargetGroup, StringComparison.OrdinalIgnoreCase))?.GroupColor ?? GetDefaultColorForGroup(_gridViewTargetGroup);
+                try
+                {
+                    var col = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex);
+                    GridViewBorder.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(50, col.R, col.G, col.B));
+                    GridViewBorder.BorderBrush = new System.Windows.Media.SolidColorBrush(col);
+                    GridViewText.Foreground = new System.Windows.Media.SolidColorBrush(col);
+                }
+                catch
+                {
+                    GridViewBorder.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(62, 62, 66));
+                    GridViewBorder.BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 122, 204));
+                    GridViewText.Foreground = (System.Windows.Media.Brush)FindResource("PrimaryHueMidBrush");
+                }
+            }
+            else
+            {
+                GridViewText.Text = "⊞ Grid View";
+                GridViewBorder.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(62, 62, 66)); // #3E3E42
+                GridViewBorder.BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 122, 204)); // #007ACC
+                GridViewText.Foreground = (System.Windows.Media.Brush)FindResource("PrimaryHueMidBrush");
+            }
         }
         else
         {
+            GridViewText.Text = "⊞ Grid View";
             GridViewBorder.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(37, 37, 38)); // #252526
             GridViewBorder.BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(51, 51, 51)); // #333
             GridViewText.Foreground = (System.Windows.Media.Brush)FindResource("PrimaryHueMidBrush"); // Always user color
@@ -651,10 +1841,12 @@ public partial class TabbedHostWindow : CustomWindow
     private void InstancesTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (e.OriginalSource != InstancesTabControl) return;
+        if (IsGroupHeader(InstancesTabControl.SelectedItem as TabItem)) return;
 
         if (_isGridViewEnabled && InstancesTabControl.SelectedItem != null && InstancesTabControl.SelectedItem != AddTabItem)
         {
             _isGridViewEnabled = false;
+            _gridViewTargetGroup = null;
             UpdateGridViewBorderColor();
             foreach (var info in _tabs.Values)
             {
@@ -662,6 +1854,9 @@ public partial class TabbedHostWindow : CustomWindow
                     PostMessage(info.ChildHwnd, WM_SKUA_GRIDVIEW, IntPtr.Zero, IntPtr.Zero);
             }
         }
+
+        if (InstancesTabControl.SelectedItem is FrameworkElement fe)
+            fe.BringIntoView();
 
         DoReposition();
     }
@@ -681,7 +1876,7 @@ public partial class TabbedHostWindow : CustomWindow
         if (!IsLoaded || _isClosing) return;
 
         TabItem selectedTab = InstancesTabControl.SelectedItem as TabItem;
-        if (selectedTab == AddTabItem) return;
+        if (selectedTab == AddTabItem || IsGroupHeader(selectedTab)) return;
         if (!_isGridViewEnabled && selectedTab == null) return;
 
         // When minimized, do NOT hide the child windows (SW_HIDE causes Flash to suspend and disconnect sockets).
@@ -707,11 +1902,12 @@ public partial class TabbedHostWindow : CustomWindow
         uint baseFlags = SWP_SHOWWINDOW | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS;
 
         var activeWindows = _tabs.Values.Where(v => v.ChildHwnd != IntPtr.Zero).ToList();
+        var targetWindows = _isGridViewEnabled ? GetTargetTabs(_gridViewTargetGroup).ToList() : new List<TabInfo>();
 
         bool isLoading = false;
         if (_isGridViewEnabled)
         {
-            isLoading = _tabs.Values.Any(v => v.ChildHwnd == IntPtr.Zero);
+            isLoading = targetWindows.Count == 0 || targetWindows.Any(v => v.ChildHwnd == IntPtr.Zero);
         }
         else
         {
@@ -724,22 +1920,37 @@ public partial class TabbedHostWindow : CustomWindow
 
         if (_isGridViewEnabled)
         {
-            int n = activeWindows.Count;
-            int cols = (int)Math.Ceiling(Math.Sqrt(n));
-            int rows = (int)Math.Ceiling((double)n / cols);
-            int cellW = w / cols;
-            int cellH = h / rows;
+            var backgroundWindows = _tabs.Values.Where(v => v.ChildHwnd != IntPtr.Zero && !targetWindows.Contains(v)).ToList();
 
-            for (int i = 0; i < n; i++)
+            int n = targetWindows.Count;
+            if (n > 0)
             {
-                int r = i / cols;
-                int c = i % cols;
-                SetWindowPos(activeWindows[i].ChildHwnd, HWND_TOP, x + c * cellW, y + r * cellH, cellW, cellH, baseFlags);
-                if (activeWindows[i].IsThrottled)
+                int cols = (int)Math.Ceiling(Math.Sqrt(n));
+                int rows = (int)Math.Ceiling((double)n / cols);
+                int cellW = w / cols;
+                int cellH = h / rows;
+
+                for (int i = 0; i < n; i++)
                 {
-                    activeWindows[i].IsThrottled = false;
-                    PostMessage(activeWindows[i].ChildHwnd, WM_SKUA_THROTTLE, new IntPtr(0), IntPtr.Zero);
+                    int r = i / cols;
+                    int c = i % cols;
+                    SetWindowPos(targetWindows[i].ChildHwnd, HWND_TOP, x + c * cellW, y + r * cellH, cellW, cellH, baseFlags);
+                    if (targetWindows[i].IsThrottled)
+                    {
+                        targetWindows[i].IsThrottled = false;
+                        PostMessage(targetWindows[i].ChildHwnd, WM_SKUA_THROTTLE, new IntPtr(0), IntPtr.Zero);
+                    }
                 }
+            }
+
+            foreach (var bg in backgroundWindows)
+            {
+                if (!bg.IsThrottled)
+                {
+                    bg.IsThrottled = true;
+                    PostMessage(bg.ChildHwnd, WM_SKUA_THROTTLE, new IntPtr(1), IntPtr.Zero);
+                }
+                SetWindowPos(bg.ChildHwnd, HWND_TOP, -32000, -32000, 1, 1, baseFlags);
             }
         }
         else
@@ -832,9 +2043,10 @@ public partial class TabbedHostWindow : CustomWindow
             });
         }
         InstancesTabControl.Items.Remove(tab);
+        RefreshGroupHeaders();
 
-        var remaining = InstancesTabControl.Items.OfType<TabItem>().FirstOrDefault(t => t != AddTabItem);
-        if (remaining != null && (InstancesTabControl.SelectedItem == null || InstancesTabControl.SelectedItem == AddTabItem))
+        var remaining = InstancesTabControl.Items.OfType<TabItem>().FirstOrDefault(t => t != AddTabItem && !IsGroupHeader(t) && t.Visibility == Visibility.Visible && _tabs.ContainsKey(t));
+        if (remaining != null && (InstancesTabControl.SelectedItem == null || InstancesTabControl.SelectedItem == AddTabItem || IsGroupHeader(InstancesTabControl.SelectedItem as TabItem)))
             InstancesTabControl.SelectedItem = remaining;
     }
 
@@ -929,12 +2141,26 @@ public partial class TabbedHostWindow : CustomWindow
         }
 
         string tabName = "Skua " + availableId;
-        var match = Regex.Match(extraArgs, @"(?:--user|-u)\s+""?([^""\s]+)""?");
-        if (match.Success) tabName = match.Groups[1].Value;
+        var userMatch = Regex.Match(extraArgs, @"(?:--user|-u)\s+(?:""([^""]+)""|([^\s]+))");
+        if (userMatch.Success) tabName = userMatch.Groups[1].Success ? userMatch.Groups[1].Value : userMatch.Groups[2].Value;
+
+        var groupMatch = Regex.Match(extraArgs, @"(?:--group|-g)\s+(?:""([^""]+)""|([^\s]+))");
+        string initialGroup = groupMatch.Success ? (groupMatch.Groups[1].Success ? groupMatch.Groups[1].Value : groupMatch.Groups[2].Value) : "";
 
         #region Tab Header UI
 
         StackPanel headerPanel = new StackPanel { Orientation = Orientation.Horizontal };
+        
+        System.Windows.Shapes.Ellipse groupDot = new System.Windows.Shapes.Ellipse
+        {
+            Tag = "GroupDot",
+            Width = 7,
+            Height = 7,
+            Margin = new Thickness(0, 0, 6, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+            Visibility = Visibility.Collapsed
+        };
+
         TextBox editTitle = new TextBox
         {
             Text = tabName,
@@ -949,11 +2175,8 @@ public partial class TabbedHostWindow : CustomWindow
             Margin = new Thickness(0, 0, 10, 0),
             BorderBrush = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#3E3E42")),
             BorderThickness = new Thickness(1),
-            Style = null // remove default styles that might override appearance
+            Style = null
         };
-
-        // To add corner radius in code-behind without a control template, we rely on the border thickness and padding
-        // since TextBox doesn't have CornerRadius property directly, the flat dark theme is standard and clean.
 
         TextBlock title = new TextBlock
         {
@@ -977,6 +2200,7 @@ public partial class TabbedHostWindow : CustomWindow
             VerticalAlignment = VerticalAlignment.Center
         };
         closeBtn.Child = closeTxt;
+        headerPanel.Children.Add(groupDot);
         headerPanel.Children.Add(editTitle);
         headerPanel.Children.Add(title);
         headerPanel.Children.Add(closeBtn);
@@ -1040,6 +2264,11 @@ public partial class TabbedHostWindow : CustomWindow
             _prewarmedTabInfo = null;
             _tabs[newTab] = info;
 
+            if (!string.IsNullOrWhiteSpace(initialGroup))
+            {
+                SetTabGroup(newTab, initialGroup);
+            }
+
             if (info.ChildHwnd != IntPtr.Zero)
             {
                 DoReposition();
@@ -1051,6 +2280,11 @@ public partial class TabbedHostWindow : CustomWindow
         {
             info = new TabInfo();
             _tabs[newTab] = info;
+
+            if (!string.IsNullOrWhiteSpace(initialGroup))
+            {
+                SetTabGroup(newTab, initialGroup);
+            }
 
             EnqueueSpawn(() =>
             {
@@ -1087,7 +2321,11 @@ public partial class TabbedHostWindow : CustomWindow
 
                             if (_isGridViewEnabled)
                             {
-                                PostMessage(childHwnd, WM_SKUA_GRIDVIEW, new IntPtr(1), IntPtr.Zero);
+                                bool isTarget = string.IsNullOrWhiteSpace(_gridViewTargetGroup) || string.Equals(info.GroupName, _gridViewTargetGroup, StringComparison.OrdinalIgnoreCase);
+                                if (isTarget)
+                                {
+                                    PostMessage(childHwnd, WM_SKUA_GRIDVIEW, new IntPtr(1), IntPtr.Zero);
+                                }
                             }
 
                             DoReposition();
@@ -1123,24 +2361,8 @@ public partial class TabbedHostWindow : CustomWindow
         };
 
         ContextMenu ctx = new ContextMenu();
-        MenuItem closeItem = new MenuItem { Header = "Close Tab" };
-        closeItem.Click += (s, ev) => CloseTab(newTab);
-        MenuItem closeOthersItem = new MenuItem { Header = "Close Other Tabs" };
-        closeOthersItem.Click += (s, ev) =>
-        {
-            var toRemove = InstancesTabControl.Items.OfType<TabItem>().Where(t => t != newTab && t.Header is StackPanel).ToList();
-            foreach (var tab in toRemove) CloseTab(tab);
-        };
-        MenuItem closeRightItem = new MenuItem { Header = "Close Tabs to the Right" };
-        closeRightItem.Click += (s, ev) =>
-        {
-            int idx = InstancesTabControl.Items.IndexOf(newTab);
-            var toRemove = InstancesTabControl.Items.OfType<TabItem>().Where((t, i) => i > idx && t.Header is StackPanel).ToList();
-            foreach (var tab in toRemove) CloseTab(tab);
-        };
-        ctx.Items.Add(closeItem);
-        ctx.Items.Add(closeOthersItem);
-        ctx.Items.Add(closeRightItem);
+        ctx.Opened += (s, ev) => PopulateTabContextMenu(newTab, ctx);
+        PopulateTabContextMenu(newTab, ctx);
         headerPanel.ContextMenu = ctx;
 
         Point startPoint = new Point();
@@ -1152,12 +2374,13 @@ public partial class TabbedHostWindow : CustomWindow
             if (_isGridViewEnabled)
             {
                 _isGridViewEnabled = false;
+                _gridViewTargetGroup = null;
                 UpdateGridViewBorderColor();
-                foreach (var info in _tabs.Values)
+                foreach (var i in _tabs.Values)
                 {
-                    if (info.ChildHwnd != IntPtr.Zero)
+                    if (i.ChildHwnd != IntPtr.Zero)
                     {
-                        PostMessage(info.ChildHwnd, WM_SKUA_GRIDVIEW, IntPtr.Zero, IntPtr.Zero);
+                        PostMessage(i.ChildHwnd, WM_SKUA_GRIDVIEW, IntPtr.Zero, IntPtr.Zero);
                     }
                 }
                 DoReposition();
@@ -1191,9 +2414,23 @@ public partial class TabbedHostWindow : CustomWindow
                 if (droppedTab != null && droppedTab != newTab)
                 {
                     int targetIndex = InstancesTabControl.Items.IndexOf(newTab);
-                    InstancesTabControl.Items.Remove(droppedTab);
-                    InstancesTabControl.Items.Insert(targetIndex, droppedTab);
-                    InstancesTabControl.SelectedItem = droppedTab;
+                    if (IsGroupHeader(droppedTab))
+                    {
+                        string? droppedGroup = GetGroupHeaderName(droppedTab);
+                        if (!string.IsNullOrWhiteSpace(droppedGroup))
+                        {
+                            MoveWholeGroup(droppedGroup, targetIndex);
+                        }
+                    }
+                    else if (_tabs.ContainsKey(droppedTab))
+                    {
+                        InstancesTabControl.Items.Remove(droppedTab);
+                        int newIdx = Math.Min(targetIndex, InstancesTabControl.Items.Count - 1);
+                        if (newIdx < 0) newIdx = 0;
+                        InstancesTabControl.Items.Insert(newIdx, droppedTab);
+                        InstancesTabControl.SelectedItem = droppedTab;
+                        RefreshGroupHeaders();
+                    }
                 }
             }
         };
@@ -1202,6 +2439,7 @@ public partial class TabbedHostWindow : CustomWindow
 
         int insertIdx = InstancesTabControl.Items.Count - 1;
         InstancesTabControl.Items.Insert(insertIdx, newTab);
+        RefreshGroupHeaders();
         Dispatcher.BeginInvoke(new Action(() => InstancesTabControl.SelectedItem = newTab));
     }
 

@@ -20,7 +20,18 @@
                 <TabControl.Template>
                     <ControlTemplate TargetType="TabControl">
                         <Grid>
-                            <TabPanel Panel.ZIndex="1" Margin="2,2,2,0" IsItemsHost="True" Background="#1E1E1E" />
+                            <ScrollViewer x:Name="TabScrollViewer"
+                                          HorizontalScrollBarVisibility="Hidden"
+                                          VerticalScrollBarVisibility="Disabled"
+                                          Focusable="False"
+                                          PreviewMouseWheel="TabScrollViewer_PreviewMouseWheel">
+                                <ScrollViewer.Template>
+                                    <ControlTemplate TargetType="ScrollViewer">
+                                        <ScrollContentPresenter CanContentScroll="{TemplateBinding CanContentScroll}" />
+                                    </ControlTemplate>
+                                </ScrollViewer.Template>
+                                <StackPanel Orientation="Horizontal" Margin="2,2,2,0" IsItemsHost="True" Background="#1E1E1E" />
+                            </ScrollViewer>
                         </Grid>
                     </ControlTemplate>
                 </TabControl.Template>
@@ -38,7 +49,7 @@
                                             VerticalAlignment="Center"
                                             HorizontalAlignment="Center"
                                             ContentSource="Header"
-                                            Margin="10,5" />
+                                            Margin="8,4" />
                                         </Border>
                                         <Border Name="SelectionIndicator" Height="3" Background="{DynamicResource PrimaryHueMidBrush}" VerticalAlignment="Bottom" Margin="2,0" Opacity="0" RenderTransformOrigin="0.5,0.5">
                                             <Border.RenderTransform>
@@ -125,19 +136,21 @@
                 <Border x:Name="GlobeBorder" Cursor="Hand" BorderThickness="1,1,1,0" BorderBrush="#333" Background="#252526" Margin="2,0,2,0" CornerRadius="4,4,0,0" PreviewMouseLeftButtonDown="GlobeBorder_PreviewMouseLeftButtonDown" MouseEnter="GlobeBorder_MouseEnter" MouseLeave="GlobeBorder_MouseLeave">
                     <TextBlock Text="🌐 Army Control" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource PrimaryHueMidBrush}" VerticalAlignment="Center" Margin="10,5" />
                     <Border.ContextMenu>
-                        <ContextMenu>
+                        <ContextMenu x:Name="ArmyContextMenu">
                             <MenuItem x:Name="MenuStartScripts" Header="Start All Scripts" Click="MenuItem_StartAllScripts_Click" />
                             <MenuItem x:Name="MenuStopScripts" Header="Stop All Scripts" Click="MenuItem_StopAllScripts_Click" />
                             <MenuItem x:Name="MenuLoadScripts" Header="Load Script to All" Click="MenuItem_LoadScriptAll_Click" />
                             <MenuItem Header="Army Scheduler" Click="MenuItem_ArmyScheduler_Click" />
                             <Separator />
-                            <MenuItem Header="Login All Clients" Click="MenuItem_LoginAll_Click" />
-                            <MenuItem Header="Logout All Clients" Click="MenuItem_LogoutAll_Click" />
+                            <MenuItem x:Name="MenuLoginClients" Header="Login All Clients" Click="MenuItem_LoginAll_Click" />
+                            <MenuItem x:Name="MenuLogoutClients" Header="Logout All Clients" Click="MenuItem_LogoutAll_Click" />
                             <Separator />
-                            <MenuItem Header="Jump All to Map..." Click="MenuItem_JumpMap_Click" />
-                            <MenuItem Header="Jump All to Player..." Click="MenuItem_JumpPlayer_Click" />
+                            <MenuItem x:Name="MenuJumpMap" Header="Jump All to Map..." Click="MenuItem_JumpMap_Click" />
+                            <MenuItem x:Name="MenuJumpPlayer" Header="Jump All to Player..." Click="MenuItem_JumpPlayer_Click" />
                             <Separator />
-                            <MenuItem Header="Accept Quest (All)..." Click="MenuItem_AcceptQuest_Click" />
+                            <MenuItem x:Name="MenuAcceptQuest" Header="Accept Quest (All)..." Click="MenuItem_AcceptQuest_Click" />
+                            <Separator />
+                            <MenuItem x:Name="MenuArrangeTabs" Header="Auto-Arrange Tabs by Group" Click="MenuItem_ArrangeTabs_Click" />
                             <Separator />
                             <MenuItem x:Name="MiscOptionsMenu" Header="Misc Options" StaysOpenOnClick="True">
                                 <MenuItem Header="Lag Killer" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding LagKiller, Mode=TwoWay}" />
@@ -152,8 +165,11 @@
                     </Border.ContextMenu>
                 </Border>
 
-                <Border x:Name="GridViewBorder" Cursor="Hand" BorderThickness="1,1,1,0" BorderBrush="#333" Background="#252526" Margin="2,0,0,0" CornerRadius="4,4,0,0" PreviewMouseLeftButtonDown="GridViewBorder_PreviewMouseLeftButtonDown" MouseEnter="GridViewBorder_MouseEnter" MouseLeave="GridViewBorder_MouseLeave">
+                <Border x:Name="GridViewBorder" Cursor="Hand" BorderThickness="1,1,1,0" BorderBrush="#333" Background="#252526" Margin="2,0,0,0" CornerRadius="4,4,0,0" PreviewMouseLeftButtonDown="GridViewBorder_PreviewMouseLeftButtonDown" PreviewMouseRightButtonDown="GridViewBorder_PreviewMouseRightButtonDown" MouseEnter="GridViewBorder_MouseEnter" MouseLeave="GridViewBorder_MouseLeave">
                     <TextBlock x:Name="GridViewText" Text="⊞ Grid View" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource PrimaryHueMidBrush}" VerticalAlignment="Center" Margin="10,5" />
+                    <Border.ContextMenu>
+                        <ContextMenu x:Name="GridViewContextMenu" />
+                    </Border.ContextMenu>
                 </Border>
             </StackPanel>
         </Grid>
