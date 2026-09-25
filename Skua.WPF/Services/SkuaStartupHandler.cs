@@ -123,4 +123,7 @@ public sealed class SkuaOptions
 
     [Option("host-pid", HelpText = "PID of the host process.")]
     public int HostPid { get; set; }
+
+    [Option('g', "group", HelpText = "Tab group name for multi-client grouping.")]
+    public string Group { get; set; }
 }
