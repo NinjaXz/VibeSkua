@@ -37,6 +37,26 @@ public class OptionValueEditorControl : ContentControl
             };
             Content = checkBox;
         }
+        else if (item.IsEnum && item.Option.Searchable)
+        {
+            // Options that ask for it (IOption.Searchable): type any part of a name to filter.
+            SearchComboBox search = new()
+            {
+                ItemsSource = item.EnumValues,
+                MinWidth = 160,
+                MaxWidth = 220,
+                Height = 32,
+                Watermark = "Type to search",
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            search[!SearchComboBox.ValueProperty] = new Binding(nameof(OptionContainerItemViewModel.SelectedValue))
+            {
+                Mode = BindingMode.TwoWay
+            };
+            ToolTip.SetTip(search, "Type any part of a name to filter the list");
+            Content = search;
+        }
         else if (item.IsEnum)
         {
             ComboBox comboBox = new()

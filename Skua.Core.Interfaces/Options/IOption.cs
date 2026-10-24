@@ -9,4 +9,10 @@ public interface IOption
     object? DefaultValue { get; }
     bool Transient { get; }
     Type Type { get; }
+
+    /// <summary>
+    /// For enum options: show a dropdown that filters as you type instead of a plain one.
+    /// Off unless an option turns it on.
+    /// </summary>
+    bool Searchable => false;
 }

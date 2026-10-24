@@ -8,6 +8,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Skua.Core.Interfaces;
+using Skua.Shared.Avalonia.Controls.Options;
 
 namespace ButlerV5;
 
@@ -259,6 +260,27 @@ public sealed class SettingsWindow : Window
                 }
             };
             return checkBox;
+        }
+
+        if (option.Type.IsEnum && option.Searchable)
+        {
+            // As the script options window: a dropdown that filters as you type (IOption.Searchable).
+            object current = (Enum.TryParse(option.Type, raw, ignoreCase: false, out object? exact) ? exact : null)
+                ?? TryParseEnum(option.Type, raw) ?? option.DefaultValue ?? Enum.GetValues(option.Type).GetValue(0)!;
+            SearchComboBox search = new()
+            {
+                MinWidth = 160,
+                ItemsSource = Enum.GetNames(option.Type),
+                Value = Enum.GetName(option.Type, current) ?? current.ToString(),
+            };
+            search.PropertyChanged += (_, e) =>
+            {
+                // Exact case: the list's names, and enums may have names that differ only in case.
+                if (e.Property == SearchComboBox.ValueProperty && search.Value is { } name
+                    && Enum.TryParse(option.Type, name, ignoreCase: false, out object? value))
+                    _plugin.SaveSetting(option.Name, value!);
+            };
+            return search;
         }
 
         if (option.Type.IsEnum)

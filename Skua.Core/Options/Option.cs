@@ -11,6 +11,9 @@ public class Option<T> : IOption where T : IConvertible
     public object? DefaultValue { get; set; }
     public bool Transient { get; set; }
 
+    /// <summary>For enum options: a dropdown that filters as you type, e.g. <c>new Option&lt;MyEnum&gt;(...) { Searchable = true }</c>.</summary>
+    public bool Searchable { get; set; }
+
     public Type Type => typeof(T);
 
     /// <summary>
