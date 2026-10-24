@@ -48,6 +48,7 @@ internal class CoreBots
             new DisplayOptionItemViewModel<int>("Hunt Delay", "HuntDelayNr", 100),
             new DisplayOptionItemViewModel<int>("Accept and Complete Tries", "QuestTriesNr", 20),
             new DisplayOptionItemViewModel<int>("Loaded Quests Max.", "QuestMaxNr", 150),
+            new DisplayOptionItemViewModel<int>("Public Room Stuck Minutes", "PublicRoomStuckMinutes", 10),
 
             new DisplayOptionItemViewModel<string>("Map after stopping the Bot", "StopLocationSelect", "Home"),
         };
