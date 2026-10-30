@@ -18,7 +18,7 @@ public sealed class ServerPingTextConverter : IValueConverter
         return server.Ping switch
         {
             -1 => "...",
-            9999 => "timeout",
+            9999 => "No response",
             _ => $"{server.Ping}ms"
         };
     }
