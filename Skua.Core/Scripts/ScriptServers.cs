@@ -308,6 +308,16 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
 
         HashSet<string> triedServers = attemptedServers ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+        if (Options is not ScriptOption { ReloginFallback: true })
+        {
+            // Without the Relogin Fallback option there is no hop to whichever server is free: the preferred and
+            // Relogin Server picks are retried even after a failed attempt, and null makes the caller wait and retry
+            Server? preferredServer = FindByName(candidates, preferredName, true);
+            if (preferredServer is null && Options.AutoReloginAny)
+                preferredServer = candidates.Find(x => x.IP != LastIP && !triedServers.Contains(x.Name ?? string.Empty));
+            return preferredServer ?? FindByName(candidates, Options.ReloginServer, true);
+        }
+
         Server? selectedServer = FindByName(candidates, preferredName, true, triedServers);
         if (selectedServer is not null)
             return selectedServer;
