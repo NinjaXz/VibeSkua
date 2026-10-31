@@ -67,11 +67,22 @@ public partial class App : Application
         clientFiles.CreateDirectories();
         clientFiles.CreateFiles();
 
-        System.Threading.Tasks.Task.Run(() =>
+        System.Threading.Tasks.Task.Run(async () =>
         {
             try
             {
-                _ = Ioc.Default.GetService<Skua.Core.Interfaces.IGetScriptsService>()?.GetScriptsAsync(null, default);
+                IGetScriptsService? getScripts = Ioc.Default.GetService<IGetScriptsService>();
+                if (getScripts is null)
+                    return;
+
+                await getScripts.GetScriptsAsync(null, default);
+
+                ISettingsService settings = Ioc.Default.GetRequiredService<ISettingsService>();
+                if (settings.Get<bool>("CheckBotScriptsUpdates") && settings.Get<bool>("AutoUpdateBotScripts")
+                    && (getScripts.Missing > 0 || getScripts.Outdated > 0))
+                {
+                    await ScriptStartupUpdater.DownloadMissingAndOutdatedAsync(getScripts, Ioc.Default.GetRequiredService<IDialogService>());
+                }
             }
             catch { }
         });

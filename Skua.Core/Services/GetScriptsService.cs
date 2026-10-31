@@ -342,13 +342,32 @@ public partial class GetScriptsService : ObservableObject, IGetScriptsService
 
     public async Task DownloadScriptAsync(ScriptInfo info, CancellationToken token = default)
     {
+        string scriptsRoot = Path.GetFullPath(ClientFileSources.SkuaScriptsDIR) + Path.DirectorySeparatorChar;
+        if (!info.LocalFile.StartsWith(scriptsRoot, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException($"Refusing to download '{info.FilePath}': it resolves outside the scripts folder.");
+        if (!Uri.TryCreate(info.DownloadUrl, UriKind.Absolute, out Uri? downloadUri)
+            || downloadUri.Scheme != Uri.UriSchemeHttps
+            || !downloadUri.Host.Equals("raw.githubusercontent.com", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException($"Refusing to download '{info.FilePath}': its URL is not on raw.githubusercontent.com.");
+
         string? localDir = Path.GetDirectoryName(info.LocalFile);
         if (!string.IsNullOrEmpty(localDir) && !Directory.Exists(localDir))
             Directory.CreateDirectory(localDir);
 
         using HttpResponseMessage response = await ValidatedHttpExtensions.GetAsync(HttpClients.GitHubRaw, info.DownloadUrl, token);
         byte[] scriptBytes = await response.Content.ReadAsByteArrayAsync(token);
-        await File.WriteAllBytesAsync(info.LocalFile, scriptBytes, token);
+
+        // Write beside the target and move it in, so a script being started never reads a half-written file.
+        string temporaryFile = $"{info.LocalFile}.{Guid.NewGuid():N}.tmp";
+        try
+        {
+            await File.WriteAllBytesAsync(temporaryFile, scriptBytes, token);
+            File.Move(temporaryFile, info.LocalFile, true);
+        }
+        finally
+        {
+            try { File.Delete(temporaryFile); } catch { }
+        }
 
         info.CachedDownloaded = true;
         info.CachedLocalSize = scriptBytes.Length;
