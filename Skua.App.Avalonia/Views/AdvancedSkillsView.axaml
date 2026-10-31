@@ -379,7 +379,7 @@
 
                         <!-- Loaded Skills Sequence List -->
                         <Border Grid.Row="1" Classes="list-frame" MinHeight="260">
-                            <ListBox ItemsSource="{Binding LoadedSkills}"
+                            <ListBox ItemsSource="{Binding FilteredLoadedSkills}"
                                      SelectedItem="{Binding SelectedSkill}"
                                      Classes="embedded"
                                      DoubleTapped="OnSkillDoubleTapped">
