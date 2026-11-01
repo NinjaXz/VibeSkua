@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using System.Collections.Concurrent;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using Skua.Core.Interfaces;
@@ -28,6 +29,10 @@ public partial class ScriptDrop : ObservableRecipient, IScriptDrop, IAsyncDispos
         _lazyInventory = inventory;
 
         StrongReferenceMessenger.Default.Register<ScriptDrop, ItemDroppedMessage, int>(this, (int)MessageChannels.GameEvents, AddDrop);
+        StrongReferenceMessenger.Default.Register<ScriptDrop, DropPickupResultMessage, int>(this, (int)MessageChannels.GameEvents, PickupResult);
+        StrongReferenceMessenger.Default.Register<ScriptDrop, ItemSoldMessage, int>(this, (int)MessageChannels.GameEvents, (r, _) => r._refusedIDs.Clear());
+        StrongReferenceMessenger.Default.Register<ScriptDrop, ItemBoughtMessage, int>(this, (int)MessageChannels.GameEvents, (r, _) => r._refusedIDs.Clear());
+        StrongReferenceMessenger.Default.Register<ScriptDrop, ItemAddedToBankMessage, int>(this, (int)MessageChannels.GameEvents, (r, _) => r._refusedIDs.Clear());
         StrongReferenceMessenger.Default.Register<ScriptDrop, LogoutMessage, int>(this, (int)MessageChannels.GameEvents, ClearDrops);
         StrongReferenceMessenger.Default.Register<ScriptDrop, ScriptStoppedMessage, int>(this, (int)MessageChannels.ScriptStatus, ScriptStopped);
         Messenger.Register<ScriptDrop, PropertyChangedMessage<bool>>(this, OptionsChanged);
@@ -65,6 +70,8 @@ public partial class ScriptDrop : ObservableRecipient, IScriptDrop, IAsyncDispos
     public IEnumerable<string> ToPickup => _toPickup.Items;
     private readonly SynchronizedList<int> _toPickupIDs = new();
     public IEnumerable<int> ToPickupIDs => _toPickupIDs.Items;
+    private readonly ConcurrentDictionary<int, byte> _refusedIDs = new();
+    private readonly AsyncLocal<bool> _automaticPickup = new();
     private readonly SynchronizedList<ItemBase> _currentDropInfos = new();
     public IEnumerable<ItemBase> CurrentDropInfos => _currentDropInfos.Items;
     public IEnumerable<string> CurrentDrops => CurrentDropInfos.Select(x => x.Name.Trim()).ToList();
@@ -75,24 +82,29 @@ public partial class ScriptDrop : ObservableRecipient, IScriptDrop, IAsyncDispos
             return;
 
         ItemBase drop = _currentDropInfos.Find(d => d.Name.ToLowerInvariant() == name.ToLowerInvariant())!;
-        if (!drop.Temp && !Inventory.HasSpaceFor(drop))
-            return;
-        Send.Packet($"%xt%zm%getDrop%{Map.RoomID}%{drop.ID}%");
-        _currentDropInfos.Remove(drop);
-        OnPropertyChanged(nameof(CurrentDropInfos));
-        OnPropertyChanged(nameof(CurrentDrops));
+        SendPickup(drop);
     }
 
     public void Pickup(int id)
     {
         ItemBase? drop = CurrentDropInfos.FirstOrDefault(i => i.ID == id);
-        if (drop is null || (!drop.Temp && !Inventory.HasSpaceFor(drop)))
+        if (drop is null)
             return;
 
-        Send.Packet($"%xt%zm%getDrop%{Map.RoomID}%{id}%");
-        _currentDropInfos.Remove(drop);
-        OnPropertyChanged(nameof(CurrentDropInfos));
-        OnPropertyChanged(nameof(CurrentDrops));
+        SendPickup(drop);
+    }
+
+    // The drop leaves the list only when the server accepts it (PickupResult), so a refused pickup stays listed.
+    private void SendPickup(ItemBase drop)
+    {
+        if (!drop.Temp && !Inventory.HasSpaceFor(drop))
+            return;
+        // The automatic loop doesn't re-send a refused drop every tick; an explicit pickup always retries.
+        if (_automaticPickup.Value && _refusedIDs.ContainsKey(drop.ID))
+            return;
+
+        _refusedIDs.TryRemove(drop.ID, out _);
+        Send.Packet($"%xt%zm%getDrop%{Map.RoomID}%{drop.ID}%");
     }
 
     public void Pickup(params string[] names)
@@ -247,6 +259,7 @@ public partial class ScriptDrop : ObservableRecipient, IScriptDrop, IAsyncDispos
                 if (!Player.Playing)
                     continue;
 
+                _automaticPickup.Value = true;
                 if (Interval > 0)
                     await Task.Delay(Interval, token);
 
@@ -318,8 +331,23 @@ public partial class ScriptDrop : ObservableRecipient, IScriptDrop, IAsyncDispos
         }
     }
 
+    private void PickupResult(ScriptDrop recipient, DropPickupResultMessage message)
+    {
+        if (!message.Success)
+        {
+            recipient._refusedIDs[message.ItemID] = 0;
+            return;
+        }
+
+        recipient._refusedIDs.TryRemove(message.ItemID, out _);
+        recipient._currentDropInfos.Remove(d => d.ID == message.ItemID);
+        recipient.OnPropertyChanged(nameof(recipient.CurrentDropInfos));
+        recipient.OnPropertyChanged(nameof(recipient.CurrentDrops));
+    }
+
     private void ClearDrops(ScriptDrop recipient, LogoutMessage message)
     {
+        recipient._refusedIDs.Clear();
         recipient._currentDropInfos.Clear();
         recipient.OnPropertyChanged(nameof(recipient.CurrentDropInfos));
         recipient.OnPropertyChanged(nameof(recipient.CurrentDrops));

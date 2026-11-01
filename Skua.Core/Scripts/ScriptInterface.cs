@@ -642,6 +642,7 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
 
                         case "getDrop":
                             bool toBank = Convert.ToBoolean(data.bBank);
+                            Messenger.Send<DropPickupResultMessage, int>(new(Convert.ToInt32(data.ItemID), data.bSuccess == 1), (int)MessageChannels.GameEvents);
                             if (data.bSuccess == 1)
                             {
                                 Stats.Drops += (int)data.iQty;
