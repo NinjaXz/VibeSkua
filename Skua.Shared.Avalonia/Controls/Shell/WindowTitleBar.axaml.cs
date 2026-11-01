@@ -90,11 +90,16 @@ public partial class WindowTitleBar : UserControl
 
             UpdateMaximizeGlyph(window.WindowState);
             window.PropertyChanged += OnWindowPropertyChanged;
+            if (window.CanResize)
+                MaximizedResizeGuard.Attach(window);
         };
         Unloaded += (_, _) =>
         {
             if (TopLevel.GetTopLevel(this) is Window window)
+            {
                 window.PropertyChanged -= OnWindowPropertyChanged;
+                MaximizedResizeGuard.Detach(window);
+            }
         };
     }
 
