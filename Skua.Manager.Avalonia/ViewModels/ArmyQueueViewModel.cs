@@ -266,7 +266,7 @@ public partial class ArmyQueueViewModel : ObservableRecipient
     {
         if (member == null || string.IsNullOrWhiteSpace(member.ScriptPath))
         {
-            _dialogService.ShowMessageBox("Please assign a role script for this player first.", "No Script Selected");
+            _dialogService.ShowMessageBox("Please assign a script to this account first.", "No Script Selected");
             return;
         }
 
