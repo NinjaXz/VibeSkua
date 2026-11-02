@@ -384,13 +384,14 @@ public partial class ArmyQueueViewModel : ObservableRecipient
     private async Task FilterAvailableAccountsAsync(string searchText)
     {
         CancellationTokenSource searchCts = new();
+        CancellationToken searchToken = searchCts.Token;
         CancellationTokenSource? previousCts = Interlocked.Exchange(ref _accountPickerSearchCts, searchCts);
         previousCts?.Cancel();
         previousCts?.Dispose();
 
         try
         {
-            await Task.Delay(200, searchCts.Token);
+            await Task.Delay(200, searchToken);
 
             AccountPickerItemViewModel[] accounts = _allPickerAccounts.ToArray();
             string normalizedSearchText = searchText.Trim();
@@ -398,11 +399,11 @@ public partial class ArmyQueueViewModel : ObservableRecipient
                 .Where(account => string.IsNullOrEmpty(normalizedSearchText) ||
                     account.DisplayName.Contains(normalizedSearchText, StringComparison.OrdinalIgnoreCase) ||
                     account.Username.Contains(normalizedSearchText, StringComparison.OrdinalIgnoreCase))
-                .ToArray(), searchCts.Token);
+                .ToArray(), searchToken);
 
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
-                if (searchCts.IsCancellationRequested || !ReferenceEquals(_accountPickerSearchCts, searchCts))
+                if (searchToken.IsCancellationRequested || !ReferenceEquals(_accountPickerSearchCts, searchCts))
                     return;
 
                 AvailableAccounts = new ObservableCollection<AccountPickerItemViewModel>(matches);
