@@ -195,21 +195,17 @@ public partial class GetScriptsService : ObservableObject, IGetScriptsService
                 if (!string.IsNullOrEmpty(fileToRead))
                 {
                     string datesJson = await File.ReadAllTextAsync(fileToRead, token).ConfigureAwait(false);
-                    var rawDict = JsonConvert.DeserializeObject<Dictionary<string, DateTime>>(datesJson);
-                    if (rawDict != null)
-                    {
-                        _cachedDates = new Dictionary<string, DateTime>(rawDict, StringComparer.OrdinalIgnoreCase);
+                    _cachedDates = ParseScriptDates(datesJson);
 
-                        if (!File.Exists(primaryDatesFile))
+                    if (!File.Exists(primaryDatesFile))
+                    {
+                        try
                         {
-                            try
-                            {
-                                string dir = Path.GetDirectoryName(primaryDatesFile)!;
-                                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
-                                File.Copy(fileToRead, primaryDatesFile, overwrite: true);
-                            }
-                            catch { }
+                            string dir = Path.GetDirectoryName(primaryDatesFile)!;
+                            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                            File.Copy(fileToRead, primaryDatesFile, overwrite: true);
                         }
+                        catch { }
                     }
                 }
             }
@@ -234,6 +230,23 @@ public partial class GetScriptsService : ObservableObject, IGetScriptsService
         return scripts ?? new List<ScriptInfo>();
     }
 
+    // Paths match ignoring case. A file renamed in the repo can be in the dates file under both casings; the older
+    // date is the script's creation.
+    private static Dictionary<string, DateTime> ParseScriptDates(string json)
+    {
+        Dictionary<string, DateTime> dates = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, DateTime>? raw = JsonConvert.DeserializeObject<Dictionary<string, DateTime>>(json);
+        if (raw == null)
+            return dates;
+
+        foreach (KeyValuePair<string, DateTime> entry in raw)
+        {
+            if (!dates.TryGetValue(entry.Key, out DateTime known) || entry.Value.ToUniversalTime() < known.ToUniversalTime())
+                dates[entry.Key] = entry.Value;
+        }
+        return dates;
+    }
+
     public async Task UpdateScriptDatesAsync(IProgress<string>? progress, CancellationToken token)
     {
         string datesFile = ClientFileSources.SkuaScriptDatesFile;
@@ -244,11 +257,11 @@ public partial class GetScriptsService : ObservableObject, IGetScriptsService
         {
             if (File.Exists(datesFile))
             {
-                dict = JsonConvert.DeserializeObject<Dictionary<string, DateTime>>(await File.ReadAllTextAsync(datesFile, token)) ?? new();
+                dict = ParseScriptDates(await File.ReadAllTextAsync(datesFile, token));
             }
             else if (File.Exists(fallbackDatesFile))
             {
-                dict = JsonConvert.DeserializeObject<Dictionary<string, DateTime>>(await File.ReadAllTextAsync(fallbackDatesFile, token)) ?? new();
+                dict = ParseScriptDates(await File.ReadAllTextAsync(fallbackDatesFile, token));
             }
         }
         catch { }
@@ -317,6 +330,8 @@ public partial class GetScriptsService : ObservableObject, IGetScriptsService
 
         if (newScripts > 0 || processedSinceSave > 0)
         {
+            _cachedDates = dict;
+
             try
             {
                 string dir = Path.GetDirectoryName(datesFile)!;
