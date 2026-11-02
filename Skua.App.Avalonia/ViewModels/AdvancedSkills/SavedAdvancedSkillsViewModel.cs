@@ -7,6 +7,7 @@ using Skua.Core.Messaging;
 using Skua.Core.Models.Skills;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Skua.App.Avalonia.ViewModels.AdvancedSkills;
@@ -50,6 +51,9 @@ public partial class SavedAdvancedSkillsViewModel : ObservableRecipient
     private ObservableCollection<string> _availableModes = new();
 
     [ObservableProperty]
+    private ObservableCollection<AdvancedSkill> _filteredLoadedSkills = new();
+
+    [ObservableProperty]
     private string? _selectedClassName;
 
     [ObservableProperty]
@@ -68,6 +72,7 @@ public partial class SavedAdvancedSkillsViewModel : ObservableRecipient
         {
             _loadedSkills = value;
             OnPropertyChanged(nameof(LoadedSkills));
+            RefreshFilteredSkills();
         }
     }
 
@@ -82,9 +87,7 @@ public partial class SavedAdvancedSkillsViewModel : ObservableRecipient
         List<string> sortedKeys = new(classModeDictionary.Keys);
         sortedKeys.Sort();
         foreach (string className in sortedKeys)
-        {
             AvailableClasses.Add(className);
-        }
     }
 
     partial void OnSelectedClassNameChanged(string? value)
@@ -92,6 +95,7 @@ public partial class SavedAdvancedSkillsViewModel : ObservableRecipient
         if (value == null)
         {
             AvailableModes.Clear();
+            RefreshFilteredSkills();
             return;
         }
 
@@ -102,11 +106,25 @@ public partial class SavedAdvancedSkillsViewModel : ObservableRecipient
             List<string> sortedModes = new(modes);
             sortedModes.Sort();
             foreach (string mode in sortedModes)
-            {
                 AvailableModes.Add(mode);
-            }
         }
+
         SelectedMode = null;
+        RefreshFilteredSkills();
+    }
+
+    private void RefreshFilteredSkills()
+    {
+        FilteredLoadedSkills.Clear();
+        IEnumerable<AdvancedSkill> skills = LoadedSkills;
+        if (!string.IsNullOrWhiteSpace(SelectedClassName))
+            skills = skills.Where(skill => string.Equals(skill.ClassName, SelectedClassName, System.StringComparison.OrdinalIgnoreCase));
+
+        foreach (AdvancedSkill skill in skills)
+            FilteredLoadedSkills.Add(skill);
+
+        if (SelectedSkill != null && !FilteredLoadedSkills.Contains(SelectedSkill))
+            SelectedSkill = null;
     }
 
     [RelayCommand]
@@ -141,7 +159,6 @@ public partial class SavedAdvancedSkillsViewModel : ObservableRecipient
         Messenger.Send<EditAdvancedSkillMessage>(new(SelectedSkill));
     }
 
-
     private void SaveSkill(SavedAdvancedSkillsViewModel recipient, SaveAdvancedSkillMessage message)
     {
         recipient._advancedSkillContainer.TryOverride(message.AdvSkill);
@@ -149,6 +166,7 @@ public partial class SavedAdvancedSkillsViewModel : ObservableRecipient
         {
             recipient._loadedSkills = null;
             recipient.OnPropertyChanged(nameof(recipient.LoadedSkills));
+            recipient.RefreshFilteredSkills();
         });
     }
 
@@ -158,6 +176,7 @@ public partial class SavedAdvancedSkillsViewModel : ObservableRecipient
         {
             recipient._loadedSkills = null;
             recipient.OnPropertyChanged(nameof(recipient.LoadedSkills));
+            recipient.RefreshFilteredSkills();
         }
     }
 }

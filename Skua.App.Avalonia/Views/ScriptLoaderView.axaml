@@ -181,7 +181,7 @@
         
         <!-- 3. Script log: header with its actions, then the log (lines wrap; the copy hint doesn't fit here) -->
         <Grid Grid.Row="2" RowDefinitions="Auto,*" RowSpacing="6">
-            <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" ColumnSpacing="6">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="6">
                 <TextBlock Grid.Column="0" Classes="section-label" Text="SCRIPT LOG" />
                 <Border Grid.Column="1" Classes="count">
                     <TextBlock Text="{Binding ScriptLogs.Logs.Count}" />
@@ -191,10 +191,14 @@
                     <materialIcons:MaterialIcon Kind="ContentCopy" Width="14" Height="14" />
                 </Button>
                 <Button Grid.Column="4" Classes="skua-button small" Width="26" Padding="0" HorizontalContentAlignment="Center"
+                        ToolTip.Tip="Clear the selected lines" Click="DeselectLog_Click">
+                    <materialIcons:MaterialIcon Kind="SelectionRemove" Width="14" Height="14" />
+                </Button>
+                <Button Grid.Column="5" Classes="skua-button small" Width="26" Padding="0" HorizontalContentAlignment="Center"
                         ToolTip.Tip="Save the log to a file" Command="{Binding ScriptLogs.SaveLogCommand}">
                     <materialIcons:MaterialIcon Kind="ContentSave" Width="14" Height="14" />
                 </Button>
-                <Button Grid.Column="5" Classes="skua-button small skua-danger-soft" Width="26" Padding="0" HorizontalContentAlignment="Center"
+                <Button Grid.Column="6" Classes="skua-button small skua-danger-soft" Width="26" Padding="0" HorizontalContentAlignment="Center"
                         ToolTip.Tip="Clear the log" Command="{Binding ScriptLogs.ClearLogCommand}">
                     <materialIcons:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" />
                 </Button>

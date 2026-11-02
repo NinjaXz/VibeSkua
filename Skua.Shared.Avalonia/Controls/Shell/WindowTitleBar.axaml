@@ -30,6 +30,7 @@
              Width="30"
              Height="30"
              Stretch="Uniform"
+             RenderOptions.BitmapInterpolationMode="HighQuality"
              HorizontalAlignment="Center"
              VerticalAlignment="Center" />
     </Grid>

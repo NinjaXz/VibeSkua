@@ -20,6 +20,8 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
     private readonly IDialogService _dialogService;
     private readonly ISettingsService _settings;
     private string _searchText = string.Empty;
+    private string _selectedCategory = "All Categories";
+    private string _acFilter = "All Items";
 
     public JunkItemsViewModel(
         IScriptInventory inventory,
@@ -27,7 +29,7 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
         IJunkService junkService,
         IDialogService dialogService,
         ISettingsService settings)
-       : base("Junk Items", 550, 500)
+       : base("Junk Items", 700, 500)
     {
         _inventory = inventory;
         _bank = bank;
@@ -36,11 +38,15 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
         _settings = settings;
         Items = new RangedObservableCollection<JunkItemEntry>();
         FilteredItems = new ObservableCollection<JunkItemEntry>();
+        CategoryOptions = new ObservableCollection<string> { "All Categories" };
+        AcFilterOptions = new ObservableCollection<string> { "All Items", "AC Items", "Non-AC Items" };
         _skipSellWarning = _settings.Get("JunkSkipSellWarning", false);
     }
 
     public RangedObservableCollection<JunkItemEntry> Items { get; }
     public ObservableCollection<JunkItemEntry> FilteredItems { get; }
+    public ObservableCollection<string> CategoryOptions { get; }
+    public ObservableCollection<string> AcFilterOptions { get; }
 
     public string SearchText
     {
@@ -48,6 +54,26 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
         set
         {
             if (SetProperty(ref _searchText, value))
+                ApplySearch();
+        }
+    }
+
+    public string SelectedCategory
+    {
+        get => _selectedCategory;
+        set
+        {
+            if (SetProperty(ref _selectedCategory, value))
+                ApplySearch();
+        }
+    }
+
+    public string AcFilter
+    {
+        get => _acFilter;
+        set
+        {
+            if (SetProperty(ref _acFilter, value))
                 ApplySearch();
         }
     }
@@ -122,13 +148,16 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
             List<InventoryItem> inventoryItems = _inventory.Items.ToList();
             List<InventoryItem> bankItems = _bank.Items.ToList();
 
-            IEnumerable<InventoryItem> allItems = inventoryItems.Concat(bankItems);
-
-            return allItems
-                .GroupBy(i => i.ID)
-                .Select(g => g.First())
-                .OrderBy(i => i.Name)
-                .Select(item => new JunkItemEntry(item.ID, item.Name, item.Category.ToString(), junkIds.Contains(item.ID)))
+            return inventoryItems.Concat(bankItems)
+                .GroupBy(item => item.ID)
+                .Select(group =>
+                {
+                    InventoryItem item = group.First();
+                    int inventoryQuantity = inventoryItems.Where(candidate => candidate.ID == item.ID).Sum(candidate => candidate.Quantity);
+                    int bankQuantity = bankItems.Where(candidate => candidate.ID == item.ID).Sum(candidate => candidate.Quantity);
+                    return new JunkItemEntry(item.ID, item.Name, item.Category.ToString(), item.Coins, inventoryQuantity, bankQuantity, junkIds.Contains(item.ID));
+                })
+                .OrderBy(item => item.Name)
                 .ToList();
         });
 
@@ -144,6 +173,12 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
             entry.PropertyChanged += Entry_PropertyChanged;
 
         Items.ReplaceRange(entries);
+        CategoryOptions.Clear();
+        CategoryOptions.Add("All Categories");
+        foreach (string category in entries.Select(entry => entry.Category).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(category => category))
+            CategoryOptions.Add(category);
+        if (!CategoryOptions.Contains(SelectedCategory))
+            SelectedCategory = "All Categories";
         ApplySearch();
         OnPropertyChanged(nameof(TotalJunk));
         OnPropertyChanged(nameof(SelectedCount));
@@ -319,13 +354,18 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
         FilteredItems.Clear();
         foreach (JunkItemEntry item in Items)
         {
-            if (string.IsNullOrEmpty(filter) ||
-                item.Name.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
-                item.ID.ToString().Contains(filter, StringComparison.OrdinalIgnoreCase) ||
-                item.Category.Contains(filter, StringComparison.OrdinalIgnoreCase))
-            {
+            bool matchesSearch = string.IsNullOrEmpty(filter)
+                || item.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                || item.ID.ToString().Contains(filter, StringComparison.OrdinalIgnoreCase)
+                || item.Category.Contains(filter, StringComparison.OrdinalIgnoreCase);
+            bool matchesCategory = SelectedCategory == "All Categories"
+                || item.Category.Equals(SelectedCategory, StringComparison.OrdinalIgnoreCase);
+            bool matchesAc = AcFilter == "All Items"
+                || (AcFilter == "AC Items" && item.IsAc)
+                || (AcFilter == "Non-AC Items" && !item.IsAc);
+
+            if (matchesSearch && matchesCategory && matchesAc)
                 FilteredItems.Add(item);
-            }
         }
         OnPropertyChanged(nameof(SelectionState));
     }
@@ -333,17 +373,24 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
 
 public sealed partial class JunkItemEntry : ObservableObject
 {
-    public JunkItemEntry(int id, string name, string category, bool isJunk)
+    public JunkItemEntry(int id, string name, string category, bool isAc, int inventoryQuantity, int bankQuantity, bool isJunk)
     {
         ID = id;
         Name = name;
         Category = category;
+        IsAc = isAc;
+        InventoryQuantity = inventoryQuantity;
+        BankQuantity = bankQuantity;
         _isJunk = isJunk;
     }
 
     public int ID { get; }
     public string Name { get; }
     public string Category { get; }
+    public bool IsAc { get; }
+    public int InventoryQuantity { get; }
+    public int BankQuantity { get; }
+    public string QuantityDisplay => $"Inv: {InventoryQuantity}  |  Bank: {BankQuantity}";
 
     [ObservableProperty]
     private bool _isSelected;

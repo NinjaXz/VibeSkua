@@ -1018,7 +1018,7 @@ public sealed partial class AccountManagerViewModel : BotControlViewModelBase
         const int TimeoutMs = 2500;
         const int SampleCount = 3;
         const long FailedPing = 9999;
-        byte[] versionCheck = System.Text.Encoding.UTF8.GetBytes("<msg t='sys'><body action='verChk' r='0'><ver v='165' /></body></msg>\\0");
+        byte[] versionCheck = System.Text.Encoding.UTF8.GetBytes("<msg t='sys'><body action='verChk' r='0'><ver v='165' /></body></msg>\0");
 
         List<Task> pingTasks = servers.Select(server => Task.Run(async () =>
         {
@@ -1063,7 +1063,7 @@ public sealed partial class AccountManagerViewModel : BotControlViewModelBase
                         response.Clear();
 
                         if (message.Contains("action='apiOK'", StringComparison.OrdinalIgnoreCase)
-                            || message.Contains("action=\\"apiOK\\"", StringComparison.OrdinalIgnoreCase))
+                            || message.Contains("action=\"apiOK\"", StringComparison.OrdinalIgnoreCase))
                         {
                             stopwatch.Stop();
                             samples.Add(stopwatch.Elapsed.TotalMilliseconds);
@@ -1071,7 +1071,7 @@ public sealed partial class AccountManagerViewModel : BotControlViewModelBase
                         }
 
                         if (message.Contains("action='apiKO'", StringComparison.OrdinalIgnoreCase)
-                            || message.Contains("action=\\"apiKO\\"", StringComparison.OrdinalIgnoreCase))
+                            || message.Contains("action=\"apiKO\"", StringComparison.OrdinalIgnoreCase))
                             break;
                     }
                 }

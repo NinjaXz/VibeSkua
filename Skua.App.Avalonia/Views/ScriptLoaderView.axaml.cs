@@ -14,4 +14,9 @@ public partial class ScriptLoaderView : UserControl
     {
         await ScriptLog.CopySelectedOrAllAsync();
     }
+
+    private void DeselectLog_Click(object? sender, RoutedEventArgs e)
+    {
+        ScriptLog.DeselectAll();
+    }
 }

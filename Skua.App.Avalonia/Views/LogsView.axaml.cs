@@ -17,4 +17,10 @@ public partial class LogsView : UserControl
         if (TabContent.Presenter?.Child is LogTabUserControl tab)
             await tab.CopySelectedOrAllAsync();
     }
+
+    private void DeselectButton_Click(object? sender, RoutedEventArgs e)
+    {
+        if (TabContent.Presenter?.Child is LogTabUserControl tab)
+            tab.DeselectAll();
+    }
 }

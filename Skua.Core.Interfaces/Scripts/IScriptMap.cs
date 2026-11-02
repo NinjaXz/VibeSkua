@@ -56,6 +56,11 @@ public interface IScriptMap
     int RoomID { get; }
 
     /// <summary>
+    /// Gets the numeric room number from the server-assigned current area name, or 0 when unavailable.
+    /// </summary>
+    int RoomNumber { get; }
+
+    /// <summary>
     /// Gets the number of players in the currently loaded map.
     /// </summary>
     int PlayerCount { get; }

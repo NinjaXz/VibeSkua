@@ -87,6 +87,26 @@ public partial class ScriptMap : IScriptMap
     [ObjectBinding("world.curRoom")]
     private int _roomID;
 
+    /// <summary>
+    /// Gets the numeric room number from the server-assigned current area name.
+    /// Returns 0 when the area name is unavailable or does not end in a numeric room suffix.
+    /// </summary>
+    public int RoomNumber
+    {
+        get
+        {
+            string? areaName = Flash.GetGameObject("world.strAreaName")?.Trim('"');
+            if (string.IsNullOrWhiteSpace(areaName))
+                return 0;
+
+            int separatorIndex = areaName.LastIndexOf('-');
+            if (separatorIndex < 0 || separatorIndex == areaName.Length - 1)
+                return 0;
+
+            return int.TryParse(areaName[(separatorIndex + 1)..], out int roomNumber) ? roomNumber : 0;
+        }
+    }
+
     [ObjectBinding("world.areaUsers.length")]
     private int _playerCount;
 

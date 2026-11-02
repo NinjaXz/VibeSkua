@@ -159,6 +159,10 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
     [ObservableProperty]
     private bool _safeRelogin;
 
+    // Deliberately not on IScriptOption: it is a UI setting only, scripts don't get a handle on it
+    [ObservableProperty]
+    private bool _reloginFallback;
+
     [ModuleBinding("DisableCollisions")]
     private bool _disableCollisions;
 

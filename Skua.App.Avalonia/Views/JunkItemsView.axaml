@@ -6,7 +6,7 @@
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              x:Class="Skua.App.Avalonia.Views.JunkItemsView"
              x:DataType="vms:JunkItemsViewModel"
-             mc:Ignorable="d" d:DesignHeight="500" d:DesignWidth="550">
+             mc:Ignorable="d" d:DesignHeight="500" d:DesignWidth="700">
   <UserControl.Styles>
     <!-- Rows select through their check box, so the row shows the item's IsSelected, not ListBox selection -->
     <Style Selector="Border.junk-row">
@@ -29,7 +29,7 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid Margin="12" RowDefinitions="Auto,Auto,*,Auto" RowSpacing="10">
+  <Grid Margin="12" RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="10">
     <!-- Search and refresh -->
     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="8">
       <TextBox Grid.Column="0"
@@ -49,8 +49,14 @@
       </Button>
     </Grid>
 
+    <!-- Item filters -->
+    <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="8">
+      <ComboBox Grid.Column="0" ItemsSource="{Binding CategoryOptions}" SelectedItem="{Binding SelectedCategory, Mode=TwoWay}" HorizontalAlignment="Stretch" ToolTip.Tip="Filter by item category" />
+      <ComboBox Grid.Column="1" ItemsSource="{Binding AcFilterOptions}" SelectedItem="{Binding AcFilter, Mode=TwoWay}" HorizontalAlignment="Stretch" ToolTip.Tip="Filter AC items or non-AC items" />
+    </Grid>
+
     <!-- Selection bar: select all / clear, and what to do with the selection -->
-    <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8" Margin="9,0,0,0">
+    <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8" Margin="9,0,0,0">
       <CheckBox Grid.Column="0"
                 IsChecked="{Binding SelectionState, Mode=TwoWay}"
                 Content="{Binding SelectedCount, StringFormat='{}{0} selected'}"
@@ -66,14 +72,14 @@
     </Grid>
 
     <!-- Inventory and bank items -->
-    <ListBox Grid.Row="2"
+    <ListBox Grid.Row="3"
              Classes="card-list"
              ItemsSource="{Binding FilteredItems}"
              Padding="4">
       <ListBox.ItemTemplate>
         <DataTemplate x:DataType="vms:JunkItemEntry">
           <Border Classes="junk-row" Classes.selected="{Binding IsSelected}" Margin="0,0,0,2">
-            <Grid ColumnDefinitions="Auto,52,*,Auto" ColumnSpacing="8">
+            <Grid ColumnDefinitions="Auto,52,*,Auto,Auto,Auto" ColumnSpacing="8">
               <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Center" />
               <TextBlock Grid.Column="1"
                          Text="{Binding ID}"
@@ -86,7 +92,15 @@
                          TextTrimming="CharacterEllipsis"
                          VerticalAlignment="Center"
                          ToolTip.Tip="{Binding Category}" />
-              <Border Grid.Column="3" Classes="chip danger" IsVisible="{Binding IsJunk}">
+              <Border Grid.Column="3" Classes="chip" IsVisible="{Binding IsAc}">
+                <TextBlock Text="AC" />
+              </Border>
+              <TextBlock Grid.Column="4"
+                         Text="{Binding QuantityDisplay}"
+                         FontSize="11"
+                         Foreground="{DynamicResource SkuaMutedTextBrush}"
+                         VerticalAlignment="Center" />
+              <Border Grid.Column="5" Classes="chip danger" IsVisible="{Binding IsJunk}">
                 <TextBlock Text="Junk" />
               </Border>
             </Grid>
@@ -96,7 +110,7 @@
     </ListBox>
 
     <!-- Selling -->
-    <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8">
+    <Grid Grid.Row="4" ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8">
       <CheckBox Grid.Column="0"
                 Content="Skip sell warning"
                 IsChecked="{Binding SkipSellWarning, Mode=TwoWay}"

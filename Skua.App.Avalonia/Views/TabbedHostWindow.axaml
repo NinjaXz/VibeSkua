@@ -207,7 +207,7 @@
                                     </MenuItem.Icon>
                                 </MenuItem>
                                 <Separator />
-                                <MenuItem Header="Jump All to Map..." Click="MenuItem_JumpMap_Click">
+                                <MenuItem Header="Map Travel..." Click="MenuItem_MapTravel_Click">
                                     <MenuItem.Icon>
                                         <materialIcons:MaterialIcon Kind="MapMarkerOutline" Width="14" Height="14" />
                                     </MenuItem.Icon>
@@ -220,6 +220,11 @@
                                 <MenuItem Header="Jump All to House" Click="MenuItem_JumpHouse_Click">
                                     <MenuItem.Icon>
                                         <materialIcons:MaterialIcon Kind="HomeOutline" Width="14" Height="14" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <MenuItem Header="Change Server for All..." Click="MenuItem_ChangeServerAll_Click">
+                                    <MenuItem.Icon>
+                                        <materialIcons:MaterialIcon Kind="ServerNetwork" Width="14" Height="14" />
                                     </MenuItem.Icon>
                                 </MenuItem>
                                 <MenuItem Header="Accept Quest to All..." Click="MenuItem_AcceptQuest_Click">

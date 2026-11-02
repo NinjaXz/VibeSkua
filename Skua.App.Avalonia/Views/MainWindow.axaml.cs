@@ -14,10 +14,12 @@ using Skua.Core.Messaging;
 using System;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Linq;
 using Skua.Core.Interfaces.ViewModels;
 using System.Threading.Tasks;
+using System.Text.Json;
 using Skua.Core.AppStartup;
 
 #if IS_WINDOWS
@@ -87,6 +89,7 @@ public partial class MainWindow : Window
     private const int WM_SKUA_GRIDVIEW = 0x0400 + 444;
     private const int WM_SKUA_AUTO_ATTACK = 0x0400 + 459;
     private const int WM_SKUA_OPEN_BANK = 0x0400 + 460;
+    private const int WM_SKUA_CHANGE_SERVER = 0x0400 + 465;
 
     private static readonly TimeSpan MetricRefreshInterval = TimeSpan.FromSeconds(1);
 
@@ -330,18 +333,41 @@ public partial class MainWindow : Window
             try
             {
                 var bot = Ioc.Default.GetRequiredService<IScriptInterface>();
-                if (bot.Player.LoggedIn && !string.IsNullOrWhiteSpace(bot.Player.Username))
+                if (!bot.Player.LoggedIn || string.IsNullOrWhiteSpace(bot.Player.Username))
+                    return;
+
+                string username = bot.Player.Username;
+                string dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "VibeSkuaTabs");
+                System.IO.Directory.CreateDirectory(dir);
+
+                if (username != lastWrittenUsername)
                 {
-                    string username = bot.Player.Username;
-                    if (username != lastWrittenUsername)
-                    {
-                        lastWrittenUsername = username;
-                        string dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "VibeSkuaTabs");
-                        System.IO.Directory.CreateDirectory(dir);
-                        string file = System.IO.Path.Combine(dir, $"{Environment.ProcessId}.txt");
-                        System.IO.File.WriteAllText(file, username);
-                    }
+                    lastWrittenUsername = username;
+                    string usernameFile = System.IO.Path.Combine(dir, $"{Environment.ProcessId}.txt");
+                    System.IO.File.WriteAllText(usernameFile, username);
                 }
+
+                IScriptMap map = Ioc.Default.GetRequiredService<IScriptMap>();
+                IScriptPlayer player = Ioc.Default.GetRequiredService<IScriptPlayer>();
+                IScriptOption options = Ioc.Default.GetRequiredService<IScriptOption>();
+                if (!map.Loaded || string.IsNullOrWhiteSpace(map.Name) || string.IsNullOrWhiteSpace(player.Cell))
+                    return;
+
+                // Report the server-assigned room number rather than the internal area ID or requested private-room number.
+                string room = map.RoomNumber > 0 ? map.RoomNumber.ToString() : string.Empty;
+                string locationFile = System.IO.Path.Combine(dir, $"{Environment.ProcessId}.location.json");
+                string temporaryFile = locationFile + ".tmp";
+                string locationJson = JsonSerializer.Serialize(new
+                {
+                    Map = map.Name,
+                    Room = room,
+                    Cell = player.Cell,
+                    Pad = string.IsNullOrWhiteSpace(player.Pad) ? "Spawn" : player.Pad,
+                    Username = username,
+                    UpdatedUtc = DateTime.UtcNow
+                });
+                System.IO.File.WriteAllText(temporaryFile, locationJson);
+                System.IO.File.Move(temporaryFile, locationFile, true);
             }
             catch { }
         };
@@ -354,9 +380,16 @@ public partial class MainWindow : Window
         _tabTitleSyncTimer?.Stop();
         try
         {
-            string file = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "VibeSkuaTabs", $"{Environment.ProcessId}.txt");
+            string dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "VibeSkuaTabs");
+            string file = System.IO.Path.Combine(dir, $"{Environment.ProcessId}.txt");
+            string locationFile = System.IO.Path.Combine(dir, $"{Environment.ProcessId}.location.json");
+            string temporaryFile = locationFile + ".tmp";
             if (System.IO.File.Exists(file))
                 System.IO.File.Delete(file);
+            if (System.IO.File.Exists(locationFile))
+                System.IO.File.Delete(locationFile);
+            if (System.IO.File.Exists(temporaryFile))
+                System.IO.File.Delete(temporaryFile);
         }
         catch { }
 
@@ -380,6 +413,8 @@ public partial class MainWindow : Window
             _isFlashLoaded = true;
             Dispatcher.UIThread.Post(() =>
             {
+                // Hiding alone leaves the indeterminate animation running at the monitor's refresh rate.
+                LoadingBar.IsIndeterminate = false;
                 LoadingBar.IsVisible = false;
                 FlashHost.IsVisible = !_options.HeadlessMode;
                 HeadlessOverlay.IsVisible = _options.HeadlessMode;
@@ -493,6 +528,27 @@ public partial class MainWindow : Window
             Ioc.Default.GetRequiredService<IScriptServers>().Logout();
             return IntPtr.Zero;
         }
+        else if (uMsg == WM_SKUA_CHANGE_SERVER)
+        {
+            Task.Run(() =>
+            {
+                try
+                {
+                    string tempFile = Path.Combine(Path.GetTempPath(), "skua_global_change_server.txt");
+                    if (!System.IO.File.Exists(tempFile))
+                        return;
+
+                    string targetServer = System.IO.File.ReadAllText(tempFile).Trim();
+                    if (!string.IsNullOrWhiteSpace(targetServer))
+                        Ioc.Default.GetRequiredService<IScriptServers>().Relogin(targetServer);
+                }
+                catch (Exception ex)
+                {
+                    Trace.WriteLine($"Army Control server change failed: {ex.GetType().Name}: {ex.Message}");
+                }
+            });
+            return IntPtr.Zero;
+        }
         else if (uMsg == WM_SKUA_JUMP_MAP)
         {
             Task.Run(() => 
@@ -505,7 +561,7 @@ public partial class MainWindow : Window
                         string[] lines = System.IO.File.ReadAllLines(tempFile);
                         string map = lines.Length > 0 ? lines[0].Trim() : "";
                         string cell = lines.Length > 1 && !string.IsNullOrWhiteSpace(lines[1]) ? lines[1].Trim() : "Enter";
-                        string pad = "Spawn";
+                        string pad = lines.Length > 2 && !string.IsNullOrWhiteSpace(lines[2]) ? lines[2].Trim() : "Spawn";
                         
                         if (cell.Contains(','))
                         {
@@ -515,7 +571,7 @@ public partial class MainWindow : Window
                         }
                         
                         var mapService = Ioc.Default.GetRequiredService<IScriptMap>();
-                        if (string.IsNullOrWhiteSpace(map) || mapService.Name.Equals(map.Split('-')[0], StringComparison.OrdinalIgnoreCase))
+                        if (string.IsNullOrWhiteSpace(map) || mapService.Name.Equals(map, StringComparison.OrdinalIgnoreCase))
                             mapService.Jump(cell, pad, false);
                         else
                             mapService.Join(map, cell, pad, true, false);

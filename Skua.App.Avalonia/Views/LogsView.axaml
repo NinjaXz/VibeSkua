@@ -5,7 +5,7 @@
 
     <Grid Margin="12" RowDefinitions="Auto,*" RowSpacing="10">
         <!-- Log tabs; the actions apply to the open tab -->
-        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="8">
             <ListBox Grid.Column="0"
                      Classes="top-tabs-client"
                      ItemsSource="{Binding LogTabs}"
@@ -29,13 +29,19 @@
                     <TextBlock Text="Copy" VerticalAlignment="Center" />
                 </StackPanel>
             </Button>
-            <Button Grid.Column="2" Classes="skua-button small w84" Command="{Binding SelectedTab.SaveLogCommand}" ToolTip.Tip="Save this log to a file">
+            <Button Grid.Column="2" Classes="skua-button small w84" Click="DeselectButton_Click" ToolTip.Tip="Clear the selected lines">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <materialIcons:MaterialIcon Kind="SelectionRemove" Width="14" Height="14" />
+                    <TextBlock Text="Deselect" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+            <Button Grid.Column="3" Classes="skua-button small w84" Command="{Binding SelectedTab.SaveLogCommand}" ToolTip.Tip="Save this log to a file">
                 <StackPanel Orientation="Horizontal" Spacing="5">
                     <materialIcons:MaterialIcon Kind="ContentSaveOutline" Width="14" Height="14" />
                     <TextBlock Text="Save" VerticalAlignment="Center" />
                 </StackPanel>
             </Button>
-            <Button Grid.Column="3" Classes="skua-button small skua-danger-soft w84" Command="{Binding SelectedTab.ClearLogCommand}" ToolTip.Tip="Clear this log">
+            <Button Grid.Column="4" Classes="skua-button small skua-danger-soft w84" Command="{Binding SelectedTab.ClearLogCommand}" ToolTip.Tip="Clear this log">
                 <StackPanel Orientation="Horizontal" Spacing="5">
                     <materialIcons:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" />
                     <TextBlock Text="Clear" VerticalAlignment="Center" />

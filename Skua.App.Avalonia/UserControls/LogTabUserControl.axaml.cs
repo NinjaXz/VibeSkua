@@ -120,6 +120,11 @@ public partial class LogTabUserControl : UserControl
             vm.CopyLogCommand.Execute(null);
     }
 
+    public void DeselectAll()
+    {
+        LogsListBox.SelectedItems?.Clear();
+    }
+
     private void LogsListBox_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         UpdateCountText();

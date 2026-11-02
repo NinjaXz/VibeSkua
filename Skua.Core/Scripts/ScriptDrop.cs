@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using System.Collections.Concurrent;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using Skua.Core.Interfaces;
@@ -28,6 +29,10 @@ public partial class ScriptDrop : ObservableRecipient, IScriptDrop, IAsyncDispos
         _lazyInventory = inventory;
 
         StrongReferenceMessenger.Default.Register<ScriptDrop, ItemDroppedMessage, int>(this, (int)MessageChannels.GameEvents, AddDrop);
+        StrongReferenceMessenger.Default.Register<ScriptDrop, DropPickupResultMessage, int>(this, (int)MessageChannels.GameEvents, PickupResult);
+        StrongReferenceMessenger.Default.Register<ScriptDrop, ItemSoldMessage, int>(this, (int)MessageChannels.GameEvents, (r, _) => r._refusedIDs.Clear());
+        StrongReferenceMessenger.Default.Register<ScriptDrop, ItemBoughtMessage, int>(this, (int)MessageChannels.GameEvents, (r, _) => r._refusedIDs.Clear());
+        StrongReferenceMessenger.Default.Register<ScriptDrop, ItemAddedToBankMessage, int>(this, (int)MessageChannels.GameEvents, (r, _) => r._refusedIDs.Clear());
         StrongReferenceMessenger.Default.Register<ScriptDrop, LogoutMessage, int>(this, (int)MessageChannels.GameEvents, ClearDrops);
         StrongReferenceMessenger.Default.Register<ScriptDrop, ScriptStoppedMessage, int>(this, (int)MessageChannels.ScriptStatus, ScriptStopped);
         Messenger.Register<ScriptDrop, PropertyChangedMessage<bool>>(this, OptionsChanged);
@@ -60,72 +65,100 @@ public partial class ScriptDrop : ObservableRecipient, IScriptDrop, IAsyncDispos
     [ObservableProperty]
     private bool _rejectElse;
 
-    public bool Enabled => _taskDrops is { IsCompleted: false };
+    public bool Enabled => _taskDrops is { IsCompleted: false } && _ctsDrops is { IsCancellationRequested: false };
     private readonly SynchronizedList<string> _toPickup = new();
     public IEnumerable<string> ToPickup => _toPickup.Items;
     private readonly SynchronizedList<int> _toPickupIDs = new();
     public IEnumerable<int> ToPickupIDs => _toPickupIDs.Items;
+    // Refused drop IDs, with the free slots at the time of the refusal.
+    private readonly ConcurrentDictionary<int, (int Bag, int Misc)> _refusedIDs = new();
+    // Set only on the automatic loop, so its pickups stop waiting as soon as it is cancelled.
+    private readonly AsyncLocal<CancellationToken?> _loopToken = new();
     private readonly SynchronizedList<ItemBase> _currentDropInfos = new();
     public IEnumerable<ItemBase> CurrentDropInfos => _currentDropInfos.Items;
     public IEnumerable<string> CurrentDrops => CurrentDropInfos.Select(x => x.Name.Trim()).ToList();
 
     public void Pickup(string name)
     {
-        if (!CurrentDrops.Contains(name, StringComparer.OrdinalIgnoreCase))
+        ItemBase? drop = CurrentDropInfos.FirstOrDefault(d => d.Name.Trim().Equals(name, StringComparison.OrdinalIgnoreCase));
+        if (drop is null)
             return;
 
-        ItemBase drop = _currentDropInfos.Find(d => d.Name.ToLowerInvariant() == name.ToLowerInvariant())!;
-        if (!drop.Temp && !Inventory.HasSpaceFor(drop))
-            return;
-        Send.Packet($"%xt%zm%getDrop%{Map.RoomID}%{drop.ID}%");
-        _currentDropInfos.Remove(drop);
-        OnPropertyChanged(nameof(CurrentDropInfos));
-        OnPropertyChanged(nameof(CurrentDrops));
+        SendPickup(drop);
     }
 
     public void Pickup(int id)
     {
         ItemBase? drop = CurrentDropInfos.FirstOrDefault(i => i.ID == id);
-        if (drop is null || (!drop.Temp && !Inventory.HasSpaceFor(drop)))
+        if (drop is null)
             return;
 
-        Send.Packet($"%xt%zm%getDrop%{Map.RoomID}%{id}%");
-        _currentDropInfos.Remove(drop);
-        OnPropertyChanged(nameof(CurrentDropInfos));
-        OnPropertyChanged(nameof(CurrentDrops));
+        SendPickup(drop);
     }
+
+    // The drop leaves the list only when the server accepts it (PickupResult), so a refused pickup stays listed.
+    // Returns whether a request went out, and so whether a reply is coming.
+    private bool SendPickup(ItemBase drop)
+    {
+        _loopToken.Value?.ThrowIfCancellationRequested();
+        if (!drop.Temp && !Inventory.HasSpaceFor(drop))
+            return false;
+        // The automatic loop only re-sends a refused drop once a slot has freed up; an explicit pickup always retries.
+        if (_loopToken.Value is not null && _refusedIDs.TryGetValue(drop.ID, out (int Bag, int Misc) refused))
+        {
+            (int bag, int misc) = FreeSlots();
+            if (bag <= refused.Bag && misc <= refused.Misc)
+                return false;
+        }
+
+        _refusedIDs.TryRemove(drop.ID, out _);
+        Send.Packet($"%xt%zm%getDrop%{Map.RoomID}%{drop.ID}%");
+        return true;
+    }
+
+    private (int Bag, int Misc) FreeSlots() => (Inventory.FreeSlots, Inventory.MiscFreeSlots);
+
+    private void PickupEach(IEnumerable<ItemBase> drops)
+    {
+        foreach (ItemBase drop in drops)
+        {
+            if (SendPickup(drop))
+                WaitForReplies(drop.ID);
+        }
+    }
+
+    private void WaitForReplies(params int[] ids)
+    {
+        CancellationToken token = _loopToken.Value ?? CancellationToken.None;
+        Wait.ForTrue(() => token.IsCancellationRequested || !Player.Playing || ids.All(HasReply), Wait.OverrideTimeout ? Wait.DropActionTimeout : 10);
+        token.ThrowIfCancellationRequested();
+    }
+
+    private bool HasReply(int id) => _refusedIDs.ContainsKey(id) || !CurrentDropInfos.Any(d => d.ID == id);
 
     public void Pickup(params string[] names)
     {
-        foreach (string name in names)
-        {
-            Pickup(name);
-            Wait.ForPickup(name);
-        }
+        HashSet<string> wanted = new(names, StringComparer.OrdinalIgnoreCase);
+        PickupEach(CurrentDropInfos.Where(d => wanted.Contains(d.Name.Trim())));
     }
 
     public void Pickup(params int[] ids)
     {
-        foreach (int id in ids)
-        {
-            Pickup(id);
-            Wait.ForPickup(id);
-        }
+        PickupEach(CurrentDropInfos.Where(d => ids.Contains(d.ID)));
     }
 
     public void PickupACItems()
     {
-        Pickup(CurrentDropInfos.Where(d => d.Coins).Select(d => d.Name).ToArray());
+        PickupEach(CurrentDropInfos.Where(d => d.Coins));
     }
 
     public void PickupAll(bool skipWait = false)
     {
-        foreach (ItemBase drop in _currentDropInfos.Items)
-            Pickup(drop.Name);
+        int[] sent = _currentDropInfos.Items.Where(SendPickup).Select(d => d.ID).ToArray();
         OnPropertyChanged(nameof(CurrentDropInfos));
         OnPropertyChanged(nameof(CurrentDrops));
         if (!skipWait)
-            Wait.ForPickup("*");
+            WaitForReplies(sent);
     }
 
     public void RejectExcept(params string[] names)
@@ -169,29 +202,36 @@ public partial class ScriptDrop : ObservableRecipient, IScriptDrop, IAsyncDispos
         _ctsDrops?.Dispose();
 
         _ctsDrops = new();
-        _taskDrops = HandleDrops(_timerDrops, _ctsDrops.Token);
+        CancellationToken token = _ctsDrops.Token;
+        // Off the UI thread, where the replies this loop waits for arrive.
+        _taskDrops = Task.Run(() => HandleDrops(_timerDrops, token));
         OnPropertyChanged(nameof(Enabled));
     }
 
     public void Stop()
     {
-        if (_taskDrops is null)
+        if (_taskDrops is not { } task)
             return;
 
         _ctsDrops?.Cancel();
-        Wait.ForTrue(() => _taskDrops?.IsCompleted == true, null, 2);
-        _ctsDrops?.Dispose();
-        _taskDrops = null;
+        Wait.ForTrue(() => task.IsCompleted, null, 2);
         OnPropertyChanged(nameof(Enabled));
+        // Still finishing: keep the reference so Start can't run a second loop beside it.
+        if (!task.IsCompleted)
+            return;
+
+        _ctsDrops?.Dispose();
+        _ctsDrops = null;
+        _taskDrops = null;
     }
 
     public async ValueTask StopAsync()
     {
-        if (_taskDrops is null)
+        if (_taskDrops is not { } task)
             return;
 
         _ctsDrops?.Cancel();
-        await Wait.ForTrueAsync(() => _taskDrops?.IsCompleted == true, 20);
+        await task;
         _ctsDrops?.Dispose();
         _ctsDrops = null;
         _taskDrops = null;
@@ -238,6 +278,7 @@ public partial class ScriptDrop : ObservableRecipient, IScriptDrop, IAsyncDispos
 
     private async Task HandleDrops(PeriodicTimer timer, CancellationToken token)
     {
+        _loopToken.Value = token;
         while (!token.IsCancellationRequested)
         {
             try
@@ -318,8 +359,23 @@ public partial class ScriptDrop : ObservableRecipient, IScriptDrop, IAsyncDispos
         }
     }
 
+    private void PickupResult(ScriptDrop recipient, DropPickupResultMessage message)
+    {
+        if (!message.Success)
+        {
+            recipient._refusedIDs[message.ItemID] = recipient.FreeSlots();
+            return;
+        }
+
+        recipient._refusedIDs.TryRemove(message.ItemID, out _);
+        recipient._currentDropInfos.Remove(d => d.ID == message.ItemID);
+        recipient.OnPropertyChanged(nameof(recipient.CurrentDropInfos));
+        recipient.OnPropertyChanged(nameof(recipient.CurrentDrops));
+    }
+
     private void ClearDrops(ScriptDrop recipient, LogoutMessage message)
     {
+        recipient._refusedIDs.Clear();
         recipient._currentDropInfos.Clear();
         recipient.OnPropertyChanged(nameof(recipient.CurrentDropInfos));
         recipient.OnPropertyChanged(nameof(recipient.CurrentDrops));
