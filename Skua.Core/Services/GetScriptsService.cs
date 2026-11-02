@@ -330,6 +330,8 @@ public partial class GetScriptsService : ObservableObject, IGetScriptsService
 
         if (newScripts > 0 || processedSinceSave > 0)
         {
+            _cachedDates = dict;
+
             try
             {
                 string dir = Path.GetDirectoryName(datesFile)!;

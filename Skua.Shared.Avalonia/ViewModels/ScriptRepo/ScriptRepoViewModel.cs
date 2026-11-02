@@ -250,18 +250,27 @@ public partial class ScriptRepoViewModel : BotControlViewModelBase
         if (_scripts.Count == 0) return;
 
         List<ScriptInfoViewModel> sorted = _scripts.ToList();
-        sorted.Sort(CompareScripts);
+        sorted.Sort(CurrentSortOrder());
 
         _scripts.ReplaceRange(sorted);
         ApplySearchFilter();
     }
 
-    private int CompareScripts(ScriptInfoViewModel a, ScriptInfoViewModel b)
+    // The order is read once: a sort can run on a worker while the button is clicked, and a comparer that changes
+    // partway through can throw
+    private Comparison<ScriptInfoViewModel> CurrentSortOrder()
+    {
+        bool byDate = IsSortedByDate;
+        bool descending = SortDescending;
+        return (a, b) => CompareScripts(a, b, byDate, descending);
+    }
+
+    private static int CompareScripts(ScriptInfoViewModel a, ScriptInfoViewModel b, bool byDate, bool descending)
     {
         if (a.IsPinned != b.IsPinned)
             return a.IsPinned ? -1 : 1;
 
-        if (IsSortedByDate)
+        if (byDate)
         {
             // Scripts without a date go last either way; scripts from the same commit fall back to the name
             if (a.HasCreationDate != b.HasCreationDate)
@@ -272,13 +281,13 @@ public partial class ScriptRepoViewModel : BotControlViewModelBase
                 ? a.Info.CreationDate!.Value.ToUniversalTime().CompareTo(b.Info.CreationDate!.Value.ToUniversalTime())
                 : 0;
             if (dateCmp != 0)
-                return SortDescending ? -dateCmp : dateCmp;
+                return descending ? -dateCmp : dateCmp;
 
             return string.Compare(a.FileName, b.FileName, StringComparison.OrdinalIgnoreCase);
         }
 
         int cmp = string.Compare(a.FileName, b.FileName, StringComparison.OrdinalIgnoreCase);
-        return SortDescending ? -cmp : cmp;
+        return descending ? -cmp : cmp;
     }
 
     [RelayCommand]
@@ -474,6 +483,10 @@ public partial class ScriptRepoViewModel : BotControlViewModelBase
         IsLoadingScripts = true;
         try
         {
+            string sortBy = SortBy;
+            bool sortDescending = SortDescending;
+            Comparison<ScriptInfoViewModel> sortOrder = CurrentSortOrder();
+
             List<ScriptInfoViewModel> scriptViewModels = await Task.Run(() =>
             {
                 ISettingsService? settingsService = Ioc.Default.GetService<ISettingsService>();
@@ -649,10 +662,14 @@ public partial class ScriptRepoViewModel : BotControlViewModelBase
                 }
 
                 // 3. Fast in-place sorting
-                viewModels.Sort(CompareScripts);
+                viewModels.Sort(sortOrder);
 
                 return viewModels;
             });
+
+            // Clicked during the rebuild: that click's own sort ran on the old list, so this one has to catch up
+            if (sortBy != SortBy || sortDescending != SortDescending)
+                scriptViewModels.Sort(CurrentSortOrder());
 
             _scripts.ReplaceRange(scriptViewModels);
 
