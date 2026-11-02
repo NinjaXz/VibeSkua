@@ -119,7 +119,7 @@ public partial class ScriptRepoViewModel : BotControlViewModelBase
     private bool _isLoadingScripts;
 
     [ObservableProperty]
-    private string _sortBy = "Name";
+    private string _sortBy = SortByName;
 
     [ObservableProperty]
     private bool _sortDescending = false;
@@ -148,9 +148,42 @@ public partial class ScriptRepoViewModel : BotControlViewModelBase
     public bool ShowStartButton => !IsManagerMode;
     public IRelayCommand OpenScriptFolderCommand { get; }
 
-    // The window sorts by name only; the toggle flips the direction
-    public string SortDirectionText => SortDescending ? "Name Z to A" : "Name A to Z";
-    public string SortDirectionIcon => SortDescending ? "SortDescending" : "SortAscending";
+    private const string SortByName = "Name";
+    private const string SortByDate = "Date Created";
+
+    private bool IsSortedByDate => SortBy == SortByDate;
+
+    public string SortDirectionText => IsSortedByDate
+        ? (SortDescending ? "Newest first" : "Oldest first")
+        : (SortDescending ? "Name Z to A" : "Name A to Z");
+    public string SortDirectionIcon => IsSortedByDate
+        ? "ClockOutline"
+        : (SortDescending ? "SortDescending" : "SortAscending");
+
+    // The button's lit state: off for A to Z and Newest, on for their reverses. It alternates on every click, as a
+    // ToggleButton does by itself, so the two stay in step through the four orders.
+    public bool IsSortReversed => IsSortedByDate ? !SortDescending : SortDescending;
+
+    // A to Z, Z to A, Newest, Oldest, and round again. Each step changes one property, so each sorts once.
+    [RelayCommand]
+    private void CycleSort()
+    {
+        if (IsSortedByDate)
+        {
+            if (SortDescending)
+                SortDescending = false;
+            else
+                SortBy = SortByName;
+        }
+        else if (SortDescending)
+        {
+            SortBy = SortByDate;
+        }
+        else
+        {
+            SortDescending = true;
+        }
+    }
 
     [RelayCommand]
     private void ClearSearch()
@@ -191,13 +224,19 @@ public partial class ScriptRepoViewModel : BotControlViewModelBase
 
     partial void OnSortByChanged(string value)
     {
-        ApplySort();
+        OnSortOrderChanged();
     }
 
     partial void OnSortDescendingChanged(bool value)
     {
+        OnSortOrderChanged();
+    }
+
+    private void OnSortOrderChanged()
+    {
         OnPropertyChanged(nameof(SortDirectionText));
         OnPropertyChanged(nameof(SortDirectionIcon));
+        OnPropertyChanged(nameof(IsSortReversed));
         ApplySort();
     }
 
@@ -211,25 +250,35 @@ public partial class ScriptRepoViewModel : BotControlViewModelBase
         if (_scripts.Count == 0) return;
 
         List<ScriptInfoViewModel> sorted = _scripts.ToList();
-        sorted.Sort((a, b) =>
-        {
-            if (a.IsPinned != b.IsPinned)
-                return a.IsPinned ? -1 : 1;
-
-            if (SortBy == "Date Created")
-            {
-                int cmp = (a.Info.CreationDate ?? DateTime.MinValue).CompareTo(b.Info.CreationDate ?? DateTime.MinValue);
-                return SortDescending ? -cmp : cmp;
-            }
-            else
-            {
-                int cmp = string.Compare(a.FileName, b.FileName, StringComparison.OrdinalIgnoreCase);
-                return SortDescending ? -cmp : cmp;
-            }
-        });
+        sorted.Sort(CompareScripts);
 
         _scripts.ReplaceRange(sorted);
         ApplySearchFilter();
+    }
+
+    private int CompareScripts(ScriptInfoViewModel a, ScriptInfoViewModel b)
+    {
+        if (a.IsPinned != b.IsPinned)
+            return a.IsPinned ? -1 : 1;
+
+        if (IsSortedByDate)
+        {
+            // Scripts without a date go last either way; scripts from the same commit fall back to the name
+            if (a.HasCreationDate != b.HasCreationDate)
+                return a.HasCreationDate ? -1 : 1;
+
+            // ScriptDates.json mixes UTC and offset dates, which load as different kinds
+            int dateCmp = a.HasCreationDate
+                ? a.Info.CreationDate!.Value.ToUniversalTime().CompareTo(b.Info.CreationDate!.Value.ToUniversalTime())
+                : 0;
+            if (dateCmp != 0)
+                return SortDescending ? -dateCmp : dateCmp;
+
+            return string.Compare(a.FileName, b.FileName, StringComparison.OrdinalIgnoreCase);
+        }
+
+        int cmp = string.Compare(a.FileName, b.FileName, StringComparison.OrdinalIgnoreCase);
+        return SortDescending ? -cmp : cmp;
     }
 
     [RelayCommand]
@@ -600,22 +649,7 @@ public partial class ScriptRepoViewModel : BotControlViewModelBase
                 }
 
                 // 3. Fast in-place sorting
-                viewModels.Sort((a, b) =>
-                {
-                    if (a.IsPinned != b.IsPinned)
-                        return a.IsPinned ? -1 : 1;
-
-                    if (SortBy == "Date Created")
-                    {
-                        int cmp = (a.Info.CreationDate ?? DateTime.MinValue).CompareTo(b.Info.CreationDate ?? DateTime.MinValue);
-                        return SortDescending ? -cmp : cmp;
-                    }
-                    else
-                    {
-                        int cmp = string.Compare(a.FileName, b.FileName, StringComparison.OrdinalIgnoreCase);
-                        return SortDescending ? -cmp : cmp;
-                    }
-                });
+                viewModels.Sort(CompareScripts);
 
                 return viewModels;
             });
