@@ -115,7 +115,7 @@
                         <StackPanel Grid.Row="1" Spacing="4" Margin="22,0,0,0">
                             <TextBlock Text="1. Create Squads: Keep Squad 1 or click '+ Squad' to add more squads (runs one after another)." FontSize="11" Foreground="{DynamicResource SkuaTextBrush}" />
                             <TextBlock Text="2. Pick Players: Click '+ Pick Accounts' to check off accounts directly from your list." FontSize="11" Foreground="{DynamicResource SkuaTextBrush}" />
-                            <TextBlock Text="3. Assign Scripts: Set a squad script, or click 'Role Script' on an account for custom class scripts (e.g. LoO, AP, SC, DPS)." FontSize="11" Foreground="{DynamicResource SkuaTextBrush}" />
+                            <TextBlock Text="3. Assign Scripts: Set a squad script, or choose an account's own Script to override it (e.g. LoO, AP, SC, DPS)." FontSize="11" Foreground="{DynamicResource SkuaTextBrush}" />
                             <TextBlock Text="4. Hit 'Start Queue': Squad 1 runs -> auto-exits on completion -> Squad 2 starts automatically!" FontSize="11" Foreground="{DynamicResource SkuaTextBrush}" />
                             <TextBlock Text="Tip: You can reuse the same account in multiple squads (e.g., your main buffer as carry in Squad 1 and Squad 2)." FontSize="10" FontStyle="Italic" Foreground="{DynamicResource SkuaMutedTextBrush}" />
                         </StackPanel>
@@ -386,18 +386,18 @@
                                                     <TextBlock Text="{Binding RuntimeStatus}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource SkuaMutedTextBrush}" />
                                                 </Border>
 
-                                                <!-- Role Script Override -->
+                                                <!-- Per-account Script Override -->
                                                 <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                    <!-- Browse Repo for Role -->
+                                                    <!-- Browse Repo for Account Script -->
                                                     <Button Classes="skua-button"
                                                             Height="24"
                                                             Padding="6,0"
-                                                            ToolTip.Tip="Browse scripts repo for this player's role script"
+                                                            ToolTip.Tip="Choose a script for this account (overrides the squad default)"
                                                             Command="{Binding $parent[UserControl].((vm:ArmyQueueViewModel)DataContext).OpenScriptRepoForMemberCommand}"
                                                             CommandParameter="{Binding}">
                                                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                                             <materialIcons:MaterialIcon Kind="Magnify" Width="12" Height="12" />
-                                                            <TextBlock Text="Role" FontSize="10" VerticalAlignment="Center" />
+                                                            <TextBlock Text="Script" FontSize="10" VerticalAlignment="Center" />
                                                         </StackPanel>
                                                     </Button>
 
@@ -406,7 +406,7 @@
                                                             Height="24"
                                                             Width="24"
                                                             Padding="0"
-                                                            ToolTip.Tip="Select role script from disk"
+                                                            ToolTip.Tip="Select a script for this account from disk"
                                                             Command="{Binding BrowseScriptCommand}">
                                                         <materialIcons:MaterialIcon Kind="FolderOpenOutline" Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                                     </Button>
@@ -416,7 +416,7 @@
                                                             Height="24"
                                                             Width="24"
                                                             Padding="0"
-                                                            ToolTip.Tip="Configure options for this player's role script"
+                                                            ToolTip.Tip="Configure options for this account's script"
                                                             IsVisible="{Binding HasCustomScript}"
                                                             Command="{Binding $parent[UserControl].((vm:ArmyQueueViewModel)DataContext).EditMemberScriptConfigCommand}"
                                                             CommandParameter="{Binding}">
@@ -516,7 +516,7 @@
                     <!-- Search & Quick select -->
                     <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
                         <TextBox Grid.Column="0"
-                                 Text="{Binding AccountPickerSearchText}"
+                                 Text="{Binding AccountPickerSearchText, UpdateSourceTrigger=PropertyChanged}"
                                  Watermark="Search accounts..."
                                  FontSize="11"
                                  Height="28" />
