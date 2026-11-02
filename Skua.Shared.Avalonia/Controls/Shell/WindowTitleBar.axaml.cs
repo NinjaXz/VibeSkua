@@ -90,11 +90,16 @@ public partial class WindowTitleBar : UserControl
 
             UpdateMaximizeGlyph(window.WindowState);
             window.PropertyChanged += OnWindowPropertyChanged;
+            if (window.CanResize)
+                MaximizedResizeGuard.Attach(window);
         };
         Unloaded += (_, _) =>
         {
             if (TopLevel.GetTopLevel(this) is Window window)
+            {
                 window.PropertyChanged -= OnWindowPropertyChanged;
+                MaximizedResizeGuard.Detach(window);
+            }
         };
     }
 
@@ -212,6 +217,8 @@ public partial class WindowTitleBar : UserControl
     {
         // Keep shell icon parity with WPF title bar artwork so badge tint behavior matches.
         using var stream = AssetLoader.Open(new Uri("avares://Skua.Shared.Avalonia/Assets/SkuaShellImage.png"));
-        return new Bitmap(stream);
+        // The source is 2000x2000 but drawn at 30 DIP; decoding at full size and letting the renderer
+        // shrink it 60x+ aliases badly, so pre-scale (128 px covers up to 400% DPI).
+        return Bitmap.DecodeToWidth(stream, 128, BitmapInterpolationMode.HighQuality);
     }
 }
