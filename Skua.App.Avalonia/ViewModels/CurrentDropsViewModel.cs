@@ -9,6 +9,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
+using Avalonia.Threading;
 
 namespace Skua.App.Avalonia.ViewModels;
 
@@ -25,6 +27,7 @@ public partial class CurrentDropsViewModel : BotControlViewModelBase
     protected override void OnActivated()
     {
         StrongReferenceMessenger.Default.Register<CurrentDropsViewModel, ItemDroppedMessage, int>(this, (int)MessageChannels.GameEvents, CurrentDropsChanged);
+        StrongReferenceMessenger.Default.Register<CurrentDropsViewModel, DropPickupResultMessage, int>(this, (int)MessageChannels.GameEvents, PickupResultReceived);
         RefreshDrops();
     }
 
@@ -70,7 +73,6 @@ public partial class CurrentDropsViewModel : BotControlViewModelBase
             return;
 
         _drops.Pickup(SelectedDrop.ID);
-        RefreshDrops();
     }
 
     [RelayCommand]
@@ -85,27 +87,31 @@ public partial class CurrentDropsViewModel : BotControlViewModelBase
             if (items[i] is ItemBase ib)
                 dropIds[i] = ib.ID;
         }
-        _drops.Pickup(dropIds);
-        RefreshDrops();
+        // Pickup(int[]) waits for the server's reply, which arrives on the UI thread: don't block it.
+        Task.Run(() => _drops.Pickup(dropIds));
     }
 
     [RelayCommand]
     private void PickupAll()
     {
         _drops.PickupAll(true);
-        RefreshDrops();
     }
 
     [RelayCommand]
     private void PickupAC()
     {
-        _drops.PickupACItems();
-        RefreshDrops();
+        Task.Run(() => _drops.PickupACItems());
     }
 
     private void CurrentDropsChanged(CurrentDropsViewModel recipient, ItemDroppedMessage message)
     {
         recipient.RefreshDrops();
+    }
+
+    private void PickupResultReceived(CurrentDropsViewModel recipient, DropPickupResultMessage message)
+    {
+        // Posted so the list is read after ScriptDrop has handled the same message.
+        Dispatcher.UIThread.Post(recipient.RefreshDrops);
     }
 
     private void RefreshDrops()

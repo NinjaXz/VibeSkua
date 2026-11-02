@@ -29,10 +29,17 @@
       </ListBox.ItemTemplate>
     </ListBox>
 
-    <!-- One list: a tinted header per section (under All), a row per option -->
+    <!-- One list: a tinted header per section (under All), its options in two columns -->
     <Border Grid.Row="2" Classes="option-list" VerticalAlignment="Top">
-      <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <!-- A fixed scrollbar lane, so the right column's fields don't sit under an overlay scrollbar -->
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" AllowAutoHide="False">
         <ItemsControl ItemsSource="{Binding FilteredGroups}" Margin="0,0,0,-1">
+          <ItemsControl.Styles>
+            <!-- A line between the columns -->
+            <Style Selector="ContentPresenter:nth-child(2n+1) > Border.option-row">
+              <Setter Property="BorderThickness" Value="0,0,1,1" />
+            </Style>
+          </ItemsControl.Styles>
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vms:OptionGroupViewModel">
               <StackPanel>
@@ -47,10 +54,15 @@
                   </StackPanel>
                 </Border>
                 <ItemsControl ItemsSource="{Binding Items}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <UniformGrid Columns="2" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
                   <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                      <Border Classes="option-row">
-                        <sharedOptions:OptionItemControl />
+                      <Border Classes="option-row" MinHeight="38" Padding="12,3">
+                        <sharedOptions:OptionItemControl CompactText="True" />
                       </Border>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>

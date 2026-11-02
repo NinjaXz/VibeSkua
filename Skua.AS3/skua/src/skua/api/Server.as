@@ -200,27 +200,34 @@ public class Server {
             if (Main.instance.game == null) return;
 
             // 1. Clear mcLogin.ModalStack
-            if (Main.instance.game.mcLogin != null && Main.instance.game.mcLogin.ModalStack != null) {
-                cleanModalStack(Main.instance.game.mcLogin.ModalStack);
-            }
-
-            // 2. Clear mcO.ModalStack (root overlay modal stack)
-            if (Main.instance.game.mcO != null) {
-                if (Main.instance.game.mcO.ModalStack != null) {
-                    cleanModalStack(Main.instance.game.mcO.ModalStack);
+            try {
+                if (Main.instance.game.mcLogin != null && Main.instance.game.mcLogin.ModalStack != null) {
+                    cleanModalStack(Main.instance.game.mcLogin.ModalStack);
                 }
-                // Disarm invisible blocker hitmask
-                try {
-                    if (Main.instance.game.mcO.cnt != null && Main.instance.game.mcO.cnt.hit != null) {
-                        Main.instance.game.mcO.cnt.hit.visible = false;
+            } catch (e:Error) {}
+
+            // 2. Clear mcO.ModalStack (root overlay modal stack). mcO is a sealed mcOption that does not
+            // declare ModalStack, so reading it unguarded throws ReferenceError #1069.
+            try {
+                if (Main.instance.game.mcO != null) {
+                    if ("ModalStack" in Main.instance.game.mcO && Main.instance.game.mcO.ModalStack != null) {
+                        cleanModalStack(Main.instance.game.mcO.ModalStack);
                     }
-                } catch (e:Error) {}
-            }
+                    // Disarm invisible blocker hitmask
+                    try {
+                        if (Main.instance.game.mcO.cnt != null && Main.instance.game.mcO.cnt.hit != null) {
+                            Main.instance.game.mcO.cnt.hit.visible = false;
+                        }
+                    } catch (e:Error) {}
+                }
+            } catch (e:Error) {}
 
             // 3. Clear ui.ModalStack if present
-            if (Main.instance.game.ui != null && Main.instance.game.ui.ModalStack != null) {
-                cleanModalStack(Main.instance.game.ui.ModalStack);
-            }
+            try {
+                if (Main.instance.game.ui != null && Main.instance.game.ui.ModalStack != null) {
+                    cleanModalStack(Main.instance.game.ui.ModalStack);
+                }
+            } catch (e:Error) {}
 
             // 4. Close any MsgBox popup
             try {
@@ -279,8 +286,8 @@ public class Server {
         try {
             if (Main.instance.game == null) return "";
 
-            // 1. Check mcO.ModalStack (overlay)
-            if (Main.instance.game.mcO != null && Main.instance.game.mcO.ModalStack != null) {
+            // 1. Check mcO.ModalStack (overlay); mcO is sealed, so test "in" before reading
+            if (Main.instance.game.mcO != null && "ModalStack" in Main.instance.game.mcO && Main.instance.game.mcO.ModalStack != null) {
                 var stack:* = Main.instance.game.mcO.ModalStack;
                 if (stack.numChildren > 0) {
                     var m:* = stack.getChildAt(0);

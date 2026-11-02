@@ -31,7 +31,7 @@ public class GameOptionsViewModel : BotControlViewModelBase
     private readonly List<string> _reloginServerNames;
 
     public GameOptionsViewModel(List<DisplayOptionItemViewModelBase> gameOptions, IScriptServers servers, IScriptOption options)
-        : base("Game Options", 612, 720)
+        : base("Game Options", 800, 720)
     {
         _servers = servers;
         _options = options;

@@ -1161,6 +1161,9 @@ public partial class TabbedHostWindow : Window
 
         if (_isGridViewEnabled && InstancesTabControl.SelectedItem != null)
         {
+            // ExitGridView restores _lastSelectedTab, so point it at the tab that was just clicked.
+            if (InstancesTabControl.SelectedItem is TabItem clickedTab)
+                _lastSelectedTab = clickedTab;
             ExitGridView();
             return;
         }
