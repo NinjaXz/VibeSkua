@@ -344,6 +344,8 @@
 
     <!-- Window title bar buttons (unchanged) -->
     <Style Selector="Button.titlebar">
+        <!-- No fade: Transparent is #00FFFFFF, so the base Button Background transition passes through a white tint on pointer-out. -->
+        <Setter Property="Transitions" Value="{x:Null}" />
         <Setter Property="Width" Value="36" />
         <Setter Property="Height" Value="32" />
         <Setter Property="Padding" Value="0" />
