@@ -144,6 +144,7 @@ public partial class ArmyQueueViewModel : ObservableRecipient
     private readonly IFileDialogService _fileService;
     private readonly IWindowService _windowService;
     private readonly IScriptManager _scriptManager;
+    private readonly List<AccountPickerItemViewModel> _allPickerAccounts = new();
     private CancellationTokenSource? _queueCts;
 
     private ArmyQueueStepViewModel? _pendingScriptTargetStep;
@@ -373,6 +374,22 @@ public partial class ArmyQueueViewModel : ObservableRecipient
     [ObservableProperty]
     private string _accountPickerSearchText = string.Empty;
 
+    partial void OnAccountPickerSearchTextChanged(string value) => FilterAvailableAccounts();
+
+    private void FilterAvailableAccounts()
+    {
+        string searchText = AccountPickerSearchText.Trim();
+        AvailableAccounts.Clear();
+
+        foreach (AccountPickerItemViewModel account in _allPickerAccounts)
+        {
+            if (string.IsNullOrEmpty(searchText) ||
+                account.DisplayName.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                account.Username.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                AvailableAccounts.Add(account);
+        }
+    }
+
     public void EnsureSelection()
     {
         if (SelectedStep == null && Steps.Count > 0)
@@ -517,17 +534,18 @@ public partial class ArmyQueueViewModel : ObservableRecipient
             SelectedStep.Members.Select(m => m.Username),
             StringComparer.OrdinalIgnoreCase);
 
-        AvailableAccounts.Clear();
         AccountPickerSearchText = string.Empty;
+        _allPickerAccounts.Clear();
 
         foreach (IAccountItemViewModel acc in _accountManager.Accounts)
         {
-            AvailableAccounts.Add(new AccountPickerItemViewModel(acc)
+            _allPickerAccounts.Add(new AccountPickerItemViewModel(acc)
             {
                 IsSelected = currentMembers.Contains(acc.Username)
             });
         }
 
+        FilterAvailableAccounts();
         ShowAccountPicker = true;
     }
 
@@ -540,7 +558,7 @@ public partial class ArmyQueueViewModel : ObservableRecipient
             return;
         }
 
-        var selected = AvailableAccounts.Where(a => a.IsSelected).ToList();
+        List<AccountPickerItemViewModel> selected = _allPickerAccounts.Where(a => a.IsSelected).ToList();
         var selectedUsernames = new HashSet<string>(selected.Select(s => s.Username), StringComparer.OrdinalIgnoreCase);
 
         // Remove members that were unchecked
