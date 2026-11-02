@@ -1,3 +1,4 @@
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -144,6 +145,8 @@ public partial class ArmyQueueViewModel : ObservableRecipient
     private readonly IFileDialogService _fileService;
     private readonly IWindowService _windowService;
     private readonly IScriptManager _scriptManager;
+    private readonly List<AccountPickerItemViewModel> _allPickerAccounts = new();
+    private CancellationTokenSource? _accountPickerSearchCts;
     private CancellationTokenSource? _queueCts;
 
     private ArmyQueueStepViewModel? _pendingScriptTargetStep;
@@ -265,7 +268,7 @@ public partial class ArmyQueueViewModel : ObservableRecipient
     {
         if (member == null || string.IsNullOrWhiteSpace(member.ScriptPath))
         {
-            _dialogService.ShowMessageBox("Please assign a role script for this player first.", "No Script Selected");
+            _dialogService.ShowMessageBox("Please assign a script to this account first.", "No Script Selected");
             return;
         }
 
@@ -314,7 +317,7 @@ public partial class ArmyQueueViewModel : ObservableRecipient
 
     public ObservableCollection<ArmyQueueStepViewModel> Steps { get; }
     public ObservableCollection<string> Presets { get; }
-    public ObservableCollection<AccountPickerItemViewModel> AvailableAccounts { get; }
+    public ObservableCollection<AccountPickerItemViewModel> AvailableAccounts { get; private set; }
 
     [ObservableProperty]
     private ArmyQueueStepViewModel? _selectedStep;
@@ -372,6 +375,51 @@ public partial class ArmyQueueViewModel : ObservableRecipient
 
     [ObservableProperty]
     private string _accountPickerSearchText = string.Empty;
+
+    partial void OnAccountPickerSearchTextChanged(string value) => _ = FilterAvailableAccountsAsync(value);
+
+    /// <summary>
+    /// Debounces account searches and replaces the bound collection once, avoiding per-item UI notifications.
+    /// </summary>
+    private async Task FilterAvailableAccountsAsync(string searchText)
+    {
+        CancellationTokenSource searchCts = new();
+        CancellationToken searchToken = searchCts.Token;
+        CancellationTokenSource? previousCts = Interlocked.Exchange(ref _accountPickerSearchCts, searchCts);
+        previousCts?.Cancel();
+        previousCts?.Dispose();
+
+        try
+        {
+            await Task.Delay(200, searchToken);
+
+            AccountPickerItemViewModel[] accounts = _allPickerAccounts.ToArray();
+            string normalizedSearchText = searchText.Trim();
+            AccountPickerItemViewModel[] matches = await Task.Run(() => accounts
+                .Where(account => string.IsNullOrEmpty(normalizedSearchText) ||
+                    account.DisplayName.Contains(normalizedSearchText, StringComparison.OrdinalIgnoreCase) ||
+                    account.Username.Contains(normalizedSearchText, StringComparison.OrdinalIgnoreCase))
+                .ToArray(), searchToken);
+
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (searchToken.IsCancellationRequested || !ReferenceEquals(_accountPickerSearchCts, searchCts))
+                    return;
+
+                AvailableAccounts = new ObservableCollection<AccountPickerItemViewModel>(matches);
+                OnPropertyChanged(nameof(AvailableAccounts));
+            });
+        }
+        catch (OperationCanceledException)
+        {
+            // A newer search superseded this request.
+        }
+        finally
+        {
+            if (ReferenceEquals(Interlocked.CompareExchange(ref _accountPickerSearchCts, null, searchCts), searchCts))
+                searchCts.Dispose();
+        }
+    }
 
     public void EnsureSelection()
     {
@@ -517,17 +565,18 @@ public partial class ArmyQueueViewModel : ObservableRecipient
             SelectedStep.Members.Select(m => m.Username),
             StringComparer.OrdinalIgnoreCase);
 
-        AvailableAccounts.Clear();
         AccountPickerSearchText = string.Empty;
+        _allPickerAccounts.Clear();
 
         foreach (IAccountItemViewModel acc in _accountManager.Accounts)
         {
-            AvailableAccounts.Add(new AccountPickerItemViewModel(acc)
+            _allPickerAccounts.Add(new AccountPickerItemViewModel(acc)
             {
                 IsSelected = currentMembers.Contains(acc.Username)
             });
         }
 
+        _ = FilterAvailableAccountsAsync(AccountPickerSearchText);
         ShowAccountPicker = true;
     }
 
@@ -540,7 +589,7 @@ public partial class ArmyQueueViewModel : ObservableRecipient
             return;
         }
 
-        var selected = AvailableAccounts.Where(a => a.IsSelected).ToList();
+        List<AccountPickerItemViewModel> selected = _allPickerAccounts.Where(a => a.IsSelected).ToList();
         var selectedUsernames = new HashSet<string>(selected.Select(s => s.Username), StringComparer.OrdinalIgnoreCase);
 
         // Remove members that were unchecked
@@ -581,7 +630,7 @@ public partial class ArmyQueueViewModel : ObservableRecipient
     [RelayCommand]
     public void DeselectAllPicker()
     {
-        foreach (var item in AvailableAccounts)
+        foreach (AccountPickerItemViewModel item in _allPickerAccounts)
             item.IsSelected = false;
     }
 
