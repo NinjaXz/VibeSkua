@@ -50,9 +50,10 @@
     </Grid>
 
     <!-- Item filters -->
-    <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="8">
+    <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="8">
       <ComboBox Grid.Column="0" ItemsSource="{Binding CategoryOptions}" SelectedItem="{Binding SelectedCategory, Mode=TwoWay}" HorizontalAlignment="Stretch" ToolTip.Tip="Filter by item category" />
       <ComboBox Grid.Column="1" ItemsSource="{Binding AcFilterOptions}" SelectedItem="{Binding AcFilter, Mode=TwoWay}" HorizontalAlignment="Stretch" ToolTip.Tip="Filter AC items or non-AC items" />
+      <ComboBox Grid.Column="2" ItemsSource="{Binding HighlightFilterOptions}" SelectedItem="{Binding HighlightFilter, Mode=TwoWay}" HorizontalAlignment="Stretch" ToolTip.Tip="Filter by inventory intelligence status" />
     </Grid>
 
     <!-- Selection bar: select all / clear, and what to do with the selection -->
