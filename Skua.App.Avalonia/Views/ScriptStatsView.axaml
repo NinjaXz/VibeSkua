@@ -255,6 +255,7 @@
             </StackPanel>
           </Border>
         </Grid>
+      </Grid>
     </Border>
   </Grid>
 </UserControl>
