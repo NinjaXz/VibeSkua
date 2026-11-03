@@ -244,9 +244,6 @@ public class ClientSettings
     [JsonPropertyName("StatsRateUnit")]
     public string StatsRateUnit { get; set; } = "/hr";
 
-    [JsonPropertyName("StatsSessionHistory")]
-    public List<StatsSessionRecord> StatsSessionHistory { get; set; } = new();
-
     [JsonPropertyName("StatsRateHistory")]
     public List<StatsRateSnapshot> StatsRateHistory { get; set; } = new();
 
@@ -342,7 +339,6 @@ public class ClientSettings
         UserOptions ??= new();
         UserPinnedScripts ??= new();
         StatsRateUnit = string.IsNullOrWhiteSpace(StatsRateUnit) ? "/hr" : StatsRateUnit;
-        StatsSessionHistory ??= new();
         StatsRateHistory ??= new();
         InventoryGoals ??= new();
 
