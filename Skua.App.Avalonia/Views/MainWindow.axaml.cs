@@ -229,6 +229,7 @@ public partial class MainWindow : Window
                 "Grabber" => MaterialIconKind.HandBackRightOutline,
                 "Current Drops" => MaterialIconKind.GiftOutline,
                 "Junk Items" => MaterialIconKind.DeleteSweepOutline,
+                "Calendar" => MaterialIconKind.CalendarMonth,
                 "Skills" => MaterialIconKind.LightningBoltOutline,
                 "Stats" => MaterialIconKind.ChartLine,
                 "Notification Center" => MaterialIconKind.BellOutline,
