@@ -649,9 +649,6 @@ public class Follower
                     // keeps issuing it even when we believe we're already in place.
                     // Throttled by the same Goto delay as travel; leech mode is a separate
                     // branch above, so it is unaffected.
-                    if (_settings.AlwaysGoto() && !_settings.CopyWalk() && !m.OffGoto && !_gotoOff)
-                        TryGoto(master);
-
                     // In the master's room: only the CELL matters. Pads are ignored on
                     // purpose - walking within a cell changes a player's pad, and
                     // chasing those changes made the follower stutter-jump on every
@@ -667,6 +664,11 @@ public class Follower
                         targetPad = string.IsNullOrEmpty(info.Pad) ? m.Pad : info.Pad;
                     }
 
+                    bool canCopyWalk = _settings.CopyWalk() && masterInfo is not null &&
+                        _bot.Player!.Cell.Equals(targetCell, StringComparison.OrdinalIgnoreCase);
+                    if (_settings.AlwaysGoto() && !canCopyWalk && !m.OffGoto && !_gotoOff)
+                        TryGoto(master);
+
                     if (!string.Equals(_bot.Player!.Cell, targetCell, StringComparison.OrdinalIgnoreCase) &&
                         (DateTime.UtcNow - _lastJumpTime).TotalMilliseconds >= JumpMinIntervalMs)
                     {
@@ -681,11 +683,8 @@ public class Follower
                         _lastJumpTime = DateTime.UtcNow;
                     }
 
-                    if (_settings.CopyWalk() && masterInfo is not null &&
-                        _bot.Player!.Cell.Equals(targetCell, StringComparison.OrdinalIgnoreCase))
-                    {
-                        CopyMasterWalk(masterInfo);
-                    }
+                    if (canCopyWalk)
+                        CopyMasterWalk(masterInfo!);
                     else if (!_settings.CopyWalk())
                     {
                         _hasWalkTarget = false;
