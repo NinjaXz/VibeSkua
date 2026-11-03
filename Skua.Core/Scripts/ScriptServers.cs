@@ -406,8 +406,10 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         }
         bool autoRelogSwitch = Options.AutoRelogin;
         Options.AutoRelogin = false;
-        ReloginLog($"Relogging using IP {ip}.");
-        StrongReferenceMessenger.Default.Send<LogoutRequestedMessage, int>(new(), (int)MessageChannels.GameEvents);
+        try
+        {
+            ReloginLog($"Relogging using IP {ip}.");
+            StrongReferenceMessenger.Default.Send<LogoutRequestedMessage, int>(new(), (int)MessageChannels.GameEvents);
 
         Thread.Sleep(2000);
         StrongReferenceMessenger.Default.Send<LogoutMessage, int>((int)MessageChannels.GameEvents);
@@ -423,7 +425,6 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         if (!WaitForServerListReady(CancellationToken.None).GetAwaiter().GetResult())
         {
             ReloginLog($"Authentication timed out or froze while connecting to IP {ip}.");
-            Options.AutoRelogin = autoRelogSwitch;
             return false;
         }
 
@@ -433,10 +434,14 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         ConnectIP(ip);
 
         Wait.ForTrue(() => Player.Playing && Flash.IsWorldLoaded, Options.LoginTimeout / 100);
-        Options.AutoRelogin = autoRelogSwitch;
-        bool connected = Player.Playing;
-        ReloginLog(connected ? "Relogin by IP successful." : "Relogin by IP failed.");
-        return connected;
+            bool connected = Player.Playing;
+            ReloginLog(connected ? "Relogin by IP successful." : "Relogin by IP failed.");
+            return connected;
+        }
+        finally
+        {
+            Options.AutoRelogin = autoRelogSwitch;
+        }
     }
 
     public bool Relogin(string serverName)
@@ -459,9 +464,11 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         }
         bool autoRelogSwitch = Options.AutoRelogin;
         Options.AutoRelogin = false;
-        ReloginLog($"Relogging on server {server.Name} [{server.PlayerCount}/{server.MaxPlayers}].");
+        try
+        {
+            ReloginLog($"Relogging on server {server.Name} [{server.PlayerCount}/{server.MaxPlayers}].");
 
-        StrongReferenceMessenger.Default.Send<LogoutRequestedMessage, int>(new(), (int)MessageChannels.GameEvents);
+            StrongReferenceMessenger.Default.Send<LogoutRequestedMessage, int>(new(), (int)MessageChannels.GameEvents);
         StrongReferenceMessenger.Default.Send<LogoutMessage, int>((int)MessageChannels.GameEvents);
         DisconnectForRelogin();
         Stats.Relogins++;
@@ -475,7 +482,6 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         if (!WaitForServerListReady(CancellationToken.None).GetAwaiter().GetResult())
         {
             ReloginLog($"Authentication timed out or froze while connecting to {server.Name}.");
-            Options.AutoRelogin = autoRelogSwitch;
             return false;
         }
 
@@ -486,10 +492,14 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         ConnectToServer(JsonConvert.SerializeObject(server));
 
         Wait.ForTrue(() => Player.Playing && Flash.IsWorldLoaded, Options.LoginTimeout / 100);
-        Options.AutoRelogin = autoRelogSwitch;
-        bool connected = Player.Playing;
-        ReloginLog(connected ? $"Relogin successful on {server.Name}." : $"Relogin failed on {server.Name}.");
-        return connected;
+            bool connected = Player.Playing;
+            ReloginLog(connected ? $"Relogin successful on {server.Name}." : $"Relogin failed on {server.Name}.");
+            return connected;
+        }
+        finally
+        {
+            Options.AutoRelogin = autoRelogSwitch;
+        }
     }
 
     public bool EnsureRelogin(string serverName)
