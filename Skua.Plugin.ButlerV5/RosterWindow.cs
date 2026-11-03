@@ -19,6 +19,8 @@ public sealed class RosterWindow : Window
     private readonly Button _releaseAllButton;
     private readonly Button _summonAllButton;
     private readonly TextBlock _footerText;
+    private readonly TextBox _targetPlayerText;
+    private readonly ComboBox _targetHistory;
     private string _lastSnapshot = "";
 
     public RosterWindow(ButlerV5Plugin plugin)
@@ -35,7 +37,7 @@ public sealed class RosterWindow : Window
         Grid root = new()
         {
             Margin = new Thickness(14),
-            RowDefinitions = new RowDefinitions("Auto,*,Auto"),
+            RowDefinitions = new RowDefinitions("Auto,Auto,*,Auto"),
         };
 
         Grid header = new()
@@ -75,6 +77,51 @@ public sealed class RosterWindow : Window
         header.Children.Add(headerButtons);
         root.Children.Add(header);
 
+        Grid targetBar = new()
+        {
+            Margin = new Thickness(2, 0, 2, 10),
+            ColumnDefinitions = new ColumnDefinitions("*,150,Auto"),
+        };
+        _targetPlayerText = new TextBox
+        {
+            Watermark = "External player name",
+            VerticalContentAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            MinHeight = 32,
+            Margin = new Thickness(0, 0, 6, 0),
+        };
+        AvaloniaUi.SetToolTip(_targetPlayerText, "Enter an in-game player who is not one of your active ButlerV5 clients.");
+        targetBar.Children.Add(_targetPlayerText);
+
+        _targetHistory = new ComboBox
+        {
+            ItemsSource = _plugin.RecentPlayerTargets,
+            MinWidth = 140,
+            MaxDropDownHeight = 240,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 6, 0),
+        };
+        _targetHistory.SelectionChanged += (_, _) =>
+        {
+            if (_targetHistory.SelectedItem is string previousTarget)
+                _targetPlayerText.Text = previousTarget;
+        };
+        AvaloniaUi.SetToolTip(_targetHistory, "Recently used external player names. Select one to reuse it.");
+        Grid.SetColumn(_targetHistory, 1);
+        targetBar.Children.Add(_targetHistory);
+
+        Button sendAllToPlayer = AvaloniaUi.Button("Send all", () =>
+        {
+            _plugin.SendAllToPlayer(_targetPlayerText.Text ?? "");
+            _targetHistory.ItemsSource = _plugin.RecentPlayerTargets;
+            _targetHistory.SelectedItem = null;
+            Refresh(force: true);
+        }, AvaloniaUi.Accent);
+        AvaloniaUi.SetToolTip(sendAllToPlayer, "Send every available online ButlerV5 client to this external player.");
+        Grid.SetColumn(sendAllToPlayer, 2);
+        targetBar.Children.Add(sendAllToPlayer);
+        Grid.SetRow(targetBar, 1);
+        root.Children.Add(targetBar);
+
         _rows = new StackPanel();
         ScrollViewer scroll = new()
         {
@@ -91,7 +138,7 @@ public sealed class RosterWindow : Window
             CornerRadius = new CornerRadius(7),
             Padding = new Thickness(6, 4),
         };
-        Grid.SetRow(listPanel, 1);
+        Grid.SetRow(listPanel, 2);
         root.Children.Add(listPanel);
 
         Grid footer = new()
@@ -116,7 +163,7 @@ public sealed class RosterWindow : Window
         AvaloniaUi.SetToolTip(settings, "Open the ButlerV5 settings and debug log.");
         Grid.SetColumn(settings, 2);
         footer.Children.Add(settings);
-        Grid.SetRow(footer, 2);
+        Grid.SetRow(footer, 3);
         root.Children.Add(footer);
 
         Content = root;
