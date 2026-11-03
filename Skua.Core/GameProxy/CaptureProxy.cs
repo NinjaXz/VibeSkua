@@ -61,15 +61,16 @@ public partial class CaptureProxy : ObservableRecipient, ICaptureProxy
             _listenPort = Destination.Port;
             CancellationTokenSource captureProxyCTS = new();
             _captureProxyCTS = captureProxyCTS;
-            _listener = new TcpListener(IPAddress.Loopback, _listenPort);
+            TcpListener listener = new(IPAddress.Loopback, _listenPort);
+            _listener = listener;
 
             try
             {
-                _listener.Start();
+                listener.Start();
             }
             catch
             {
-                try { _listener.Stop(); } catch { }
+                try { listener.Stop(); } catch { }
                 _listener = null;
                 captureProxyCTS.Dispose();
                 _captureProxyCTS = null;
