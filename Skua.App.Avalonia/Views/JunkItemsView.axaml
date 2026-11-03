@@ -79,7 +79,7 @@
       <ListBox.ItemTemplate>
         <DataTemplate x:DataType="vms:JunkItemEntry">
           <Border Classes="junk-row" Classes.selected="{Binding IsSelected}" Margin="0,0,0,2">
-            <Grid ColumnDefinitions="Auto,52,*,Auto,Auto,Auto" ColumnSpacing="8">
+            <Grid ColumnDefinitions="Auto,52,*,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="6">
               <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Center" />
               <TextBlock Grid.Column="1"
                          Text="{Binding ID}"
@@ -95,7 +95,16 @@
               <Border Grid.Column="3" Classes="chip" IsVisible="{Binding IsAc}">
                 <TextBlock Text="AC" />
               </Border>
-              <TextBlock Grid.Column="4"
+              <Border Grid.Column="4" Classes="chip" IsVisible="{Binding IsEquipped}" ToolTip.Tip="Currently equipped">
+                <TextBlock Text="Equipped" />
+              </Border>
+              <Border Grid.Column="5" Classes="chip" IsVisible="{Binding IsFavorite}" ToolTip.Tip="Favorited in AQW">
+                <TextBlock Text="★" />
+              </Border>
+              <Border Grid.Column="6" Classes="chip warning" IsVisible="{Binding IsNearStackLimit}" ToolTip.Tip="Inventory stack is at least 80% full">
+                <TextBlock Text="Near cap" />
+              </Border>
+              <TextBlock Grid.Column="7"
                          Text="{Binding QuantityDisplay}"
                          FontSize="11"
                          Foreground="{DynamicResource SkuaMutedTextBrush}"
