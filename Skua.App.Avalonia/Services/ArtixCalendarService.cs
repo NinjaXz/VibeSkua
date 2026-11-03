@@ -17,10 +17,10 @@ public sealed class ArtixCalendarService(ILogger<ArtixCalendarService> logger)
     private const string CalendarUrl = "https://www.artix.com/calendar/";
     private static readonly HttpClient HttpClient = new() { Timeout = TimeSpan.FromSeconds(15) };
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(30);
-    private static readonly Regex EventsBlock = new(@"events\\s*:\\s*\\[(?<events>.*?)\\]\\s*[,}]?", RegexOptions.Singleline | RegexOptions.Compiled);
-    private static readonly Regex EventObject = new(@"\\{[^{}]*\\}", RegexOptions.Compiled);
-    private static readonly Regex Field = new(@"(?<key>title|url|start|end)\\s*:\\s*(?<value>'(?:[^'\\\\]|\\\\.)*'(?:\\s*\\+\\s*'(?:[^'\\\\]|\\\\.)*')*)", RegexOptions.Compiled);
-    private static readonly Regex Literal = new(@"'((?:[^'\\\\]|\\\\.)*)'", RegexOptions.Compiled);
+    private static readonly Regex EventsBlock = new(@"events\s*:\s*\[(?<events>.*?)\]\s*[,}]?", RegexOptions.Singleline | RegexOptions.Compiled);
+    private static readonly Regex EventObject = new(@"\{[^{}]*\}", RegexOptions.Compiled);
+    private static readonly Regex Field = new(@"(?<key>title|url|start|end)\s*:\s*(?<value>'(?:[^'\\]|\\.)*'(?:\s*\+\s*'(?:[^'\\]|\\.)*')*)", RegexOptions.Compiled);
+    private static readonly Regex Literal = new(@"'((?:[^'\\]|\\.)*)'", RegexOptions.Compiled);
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
     private IReadOnlyList<CalendarEvent> _officialEvents = [];
@@ -42,7 +42,7 @@ public sealed class ArtixCalendarService(ILogger<ArtixCalendarService> logger)
             string html = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             List<CalendarEvent> parsed = Parse(html);
 
-            // A markup change or blocked response must never replace a valid cache with an empty calendar.
+            // Never replace a valid cache with an empty result after a markup change or blocked response.
             if (parsed.Count == 0)
                 throw new InvalidDataException("The Artix calendar page did not contain any readable AQWorlds events.");
 
@@ -137,12 +137,11 @@ public sealed class ArtixCalendarService(ILogger<ArtixCalendarService> logger)
     }
 
     private static string UnescapeJavaScriptString(string value) =>
-        value.Replace(@"\\'", "'").Replace(@"\\\\", @"\\").Replace(@"\\n", " ").Replace(@"\\r", " ");
+        value.Replace(@"\'", "'").Replace(@"\\", @"\").Replace(@"\n", " ").Replace(@"\r", " ");
 }
 
 public sealed record CalendarEvent(string Id, string Title, DateTime Start, DateTime? End, string? Url, bool IsCustom)
 {
     public string Source => IsCustom ? "CUSTOM" : "AQW";
     public string DateDisplay => Start.ToString("ddd, MMM d, yyyy h:mm tt");
-    public string EndDisplay => End.HasValue ? $" – {End.Value.ToString("MMM d")}" : string.Empty;
 }
