@@ -313,9 +313,8 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- Grid Layout selector temporarily hidden; implementation retained for later. -->
-                    <!--
-                    <!-- Grid layout selector -->
+                    <!-- Grid Layout selector temporarily hidden; implementation retained for later.
+                    
                     <Border x:Name="GridLayoutBorder"
                             Cursor="Hand"
                             Height="28"
