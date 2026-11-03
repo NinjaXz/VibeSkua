@@ -138,14 +138,16 @@ public partial class PacketInterceptorViewModel : BotControlViewModelBase
         {
             Packets.Add(packet);
             if (Packets.Count > 1000)
-                Packets.RemoveAt(0);
-
-            if (MatchesPacket(packet))
             {
-                FilteredPackets.Add(packet);
-                if (FilteredPackets.Count > 1000)
+                // FilteredPackets keeps Packets' order, so the oldest packet can only be its first item
+                InterceptedPacketViewModel evicted = Packets[0];
+                Packets.RemoveAt(0);
+                if (FilteredPackets.Count > 0 && ReferenceEquals(FilteredPackets[0], evicted))
                     FilteredPackets.RemoveAt(0);
             }
+
+            if (MatchesPacket(packet))
+                FilteredPackets.Add(packet);
         });
     }
 
@@ -171,17 +173,15 @@ public partial class PacketInterceptorViewModel : BotControlViewModelBase
             return false;
         }
 
-        string[] parts = new[] { pkt.Packet };
+        // A packet can be in several categories (a ct with auras is Combat and Auras); any ticked one shows it
+        string[] commands = pkt.Commands;
         foreach (PacketLogFilterViewModel filter in _allPacketFilters)
         {
-            if (filter.IsChecked)
-                continue;
-
-            if (filter.Filter.Invoke(parts))
-                return false;
+            if (filter.IsChecked && filter.Filter.Invoke(commands))
+                return true;
         }
 
-        return true;
+        return false;
     }
 
     public void RefreshFilteredPackets()

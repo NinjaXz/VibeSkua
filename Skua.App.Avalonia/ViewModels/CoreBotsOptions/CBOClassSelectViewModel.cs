@@ -451,6 +451,51 @@ public partial class CBOClassSelectViewModel : ObservableObject, IManageCBOption
         SelectedBossUseMode = null;
     }
 
+    // The view is rebuilt each time the Loadout tab is shown, so it must not clear the selections.
+    // SetValues resets the checkbox and mode of a slot with no class and swaps a named preset for the
+    // class's first mode, so those are put back afterwards.
+    [RelayCommand]
+    private void RefreshClasses()
+    {
+        (bool Equip, ClassUseMode? Mode, string? Preset) solo = (UseSoloEquipment, SelectedSoloUseMode, SelectedSoloModeString);
+        (bool Equip, ClassUseMode? Mode, string? Preset) farm = (UseFarmEquipment, SelectedFarmUseMode, SelectedFarmModeString);
+        (bool Equip, ClassUseMode? Mode, string? Preset) dodge = (UseDodgeEquipment, SelectedDodgeUseMode, SelectedDodgeModeString);
+        (bool Equip, ClassUseMode? Mode, string? Preset) boss = (UseBossEquipment, SelectedBossUseMode, SelectedBossModeString);
+
+        Dictionary<string, string> selections = new();
+        AddClassSelection(selections, "Solo", SelectedSoloClass);
+        AddClassSelection(selections, "Farm", SelectedFarmClass);
+        AddClassSelection(selections, "Dodge", SelectedDodgeClass);
+        AddClassSelection(selections, "Boss", SelectedBossClass);
+        SetValues(selections);
+
+        UseSoloEquipment = solo.Equip;
+        SelectedSoloUseMode = solo.Mode;
+        if (solo.Preset is not null)
+            SelectedSoloModeString = solo.Preset;
+
+        UseFarmEquipment = farm.Equip;
+        SelectedFarmUseMode = farm.Mode;
+        if (farm.Preset is not null)
+            SelectedFarmModeString = farm.Preset;
+
+        UseDodgeEquipment = dodge.Equip;
+        SelectedDodgeUseMode = dodge.Mode;
+        if (dodge.Preset is not null)
+            SelectedDodgeModeString = dodge.Preset;
+
+        UseBossEquipment = boss.Equip;
+        SelectedBossUseMode = boss.Mode;
+        if (boss.Preset is not null)
+            SelectedBossModeString = boss.Preset;
+    }
+
+    private static void AddClassSelection(Dictionary<string, string> selections, string slot, string? className)
+    {
+        if (!string.IsNullOrEmpty(className))
+            selections[$"{slot}ClassSelect"] = className;
+    }
+
     public StringBuilder Save(StringBuilder builder)
     {
         string soloClass = SelectedSoloClass == CurrentClassOption ? CurrentClassOption : SelectedSoloClass ?? string.Empty;

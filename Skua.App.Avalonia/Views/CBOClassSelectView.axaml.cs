@@ -12,7 +12,7 @@ public partial class CBOClassSelectView : UserControl
         AttachedToVisualTree += (_, _) =>
         {
             if (DataContext is CBOClassSelectViewModel vm)
-                vm.ReloadClassesCommand.Execute(null);
+                vm.RefreshClassesCommand.Execute(null);
         };
     }
 }
