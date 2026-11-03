@@ -23,6 +23,7 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
     private string _selectedCategory = "All Categories";
     private string _acFilter = "All Items";
     private string _goalQuantityInput = string.Empty;
+    private string _highlightFilter = "All Highlights";
 
     public JunkItemsViewModel(
         IScriptInventory inventory,
@@ -41,6 +42,7 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
         FilteredItems = new ObservableCollection<JunkItemEntry>();
         CategoryOptions = new ObservableCollection<string> { "All Categories" };
         AcFilterOptions = new ObservableCollection<string> { "All Items", "AC Items", "Non-AC Items" };
+        HighlightFilterOptions = new ObservableCollection<string> { "All Highlights", "Goal Items", "Near Stack Limit", "Favorites", "Equipped", "Junk" };
         _skipSellWarning = _settings.Get("JunkSkipSellWarning", false);
     }
 
@@ -48,6 +50,7 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
     public ObservableCollection<JunkItemEntry> FilteredItems { get; }
     public ObservableCollection<string> CategoryOptions { get; }
     public ObservableCollection<string> AcFilterOptions { get; }
+    public ObservableCollection<string> HighlightFilterOptions { get; }
 
     public string SearchText
     {
@@ -65,6 +68,16 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
         set
         {
             if (SetProperty(ref _selectedCategory, value))
+                ApplySearch();
+        }
+    }
+
+    public string HighlightFilter
+    {
+        get => _highlightFilter;
+        set
+        {
+            if (SetProperty(ref _highlightFilter, value))
                 ApplySearch();
         }
     }
@@ -401,8 +414,17 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
             bool matchesAc = AcFilter == "All Items"
                 || (AcFilter == "AC Items" && item.IsAc)
                 || (AcFilter == "Non-AC Items" && !item.IsAc);
+            bool matchesHighlight = HighlightFilter switch
+            {
+                "Goal Items" => item.IsGoalTracked,
+                "Near Stack Limit" => item.IsNearStackLimit,
+                "Favorites" => item.IsFavorite,
+                "Equipped" => item.IsEquipped,
+                "Junk" => item.IsJunk,
+                _ => true
+            };
 
-            if (matchesSearch && matchesCategory && matchesAc)
+            if (matchesSearch && matchesCategory && matchesAc && matchesHighlight)
                 FilteredItems.Add(item);
         }
         OnPropertyChanged(nameof(SelectionState));
