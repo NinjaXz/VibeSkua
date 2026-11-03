@@ -2213,6 +2213,9 @@ public partial class TabbedHostWindow : Window
 
     private void UpdateGridViewBorderColor()
     {
+        if (GameSizeBorder != null)
+            GameSizeBorder.IsVisible = !_isGridViewEnabled;
+
         if (_isGridViewEnabled)
         {
             GridViewBorder[!Border.BackgroundProperty] = new global::Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SkuaSelectionBrush");
