@@ -98,6 +98,14 @@ public sealed partial class NotificationCenterViewModel : BotControlViewModelBas
 public sealed record NotificationEntry(DateTimeOffset Timestamp, NotificationKind Kind, string Message)
 {
     public string TimeDisplay => Timestamp.ToLocalTime().ToString("HH:mm:ss");
+    public string Icon => Kind switch
+    {
+        NotificationKind.Item => "🎁",
+        NotificationKind.Warning => "⚠️",
+        NotificationKind.Error => "❌",
+        NotificationKind.System => "ℹ️",
+        _ => "•"
+    };
 }
 
 public enum NotificationKind
