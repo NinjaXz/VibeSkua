@@ -21,13 +21,13 @@ public sealed partial class CalendarViewModel : BotControlViewModelBase, IDispos
         : base("AQWorlds Calendar", 920, 680)
     {
         _calendarService = calendarService;
-        SelectedDate = DateTime.Today;
+        SelectedDate = DateTimeOffset.Now;
     }
 
     public ObservableCollection<CalendarEvent> Events { get; } = [];
     public ObservableCollection<CalendarEvent> SelectedDateEvents { get; } = [];
 
-    [ObservableProperty] private DateTime _selectedDate;
+    [ObservableProperty] private DateTimeOffset _selectedDate;
     [ObservableProperty] private string _title = string.Empty;
     [ObservableProperty] private string _url = string.Empty;
     [ObservableProperty] private DateTimeOffset? _lastSynced;
@@ -35,7 +35,7 @@ public sealed partial class CalendarViewModel : BotControlViewModelBase, IDispos
     [ObservableProperty] private CalendarEvent? _selectedEvent;
     [ObservableProperty] private bool _isBusy;
 
-    partial void OnSelectedDateChanged(DateTime value) => RefreshSelectedDate();
+    partial void OnSelectedDateChanged(DateTimeOffset value) => RefreshSelectedDate();
 
     partial void OnSelectedEventChanged(CalendarEvent? value)
     {
@@ -44,7 +44,7 @@ public sealed partial class CalendarViewModel : BotControlViewModelBase, IDispos
 
         Title = value.IsCustom ? value.Title : string.Empty;
         Url = value.IsCustom ? value.Url ?? string.Empty : string.Empty;
-        SelectedDate = value.Start.Date;
+        SelectedDate = value.Start;
     }
 
     protected override void OnActivated()
@@ -116,7 +116,7 @@ public sealed partial class CalendarViewModel : BotControlViewModelBase, IDispos
         CalendarEvent entry = new(
             existing?.Id ?? Guid.NewGuid().ToString("N"),
             Title.Trim(),
-            SelectedDate.Date,
+            SelectedDate.DateTime.Date,
             null,
             string.IsNullOrWhiteSpace(Url) ? null : Url.Trim(),
             true);
@@ -182,8 +182,8 @@ public sealed partial class CalendarViewModel : BotControlViewModelBase, IDispos
     {
         SelectedDateEvents.Clear();
         foreach (CalendarEvent calendarEvent in Events.Where(calendarEvent =>
-            calendarEvent.Start.Date <= SelectedDate.Date &&
-            (calendarEvent.End?.Date ?? calendarEvent.Start.Date) >= SelectedDate.Date))
+            calendarEvent.Start.Date <= SelectedDate.DateTime.Date &&
+            (calendarEvent.End?.Date ?? calendarEvent.Start.Date) >= SelectedDate.DateTime.Date))
             SelectedDateEvents.Add(calendarEvent);
     }
 
