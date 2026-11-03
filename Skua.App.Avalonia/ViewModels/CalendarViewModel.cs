@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Skua.App.Avalonia.Services;
 using Skua.Shared.Avalonia.ViewModels;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
@@ -15,7 +16,6 @@ public sealed partial class CalendarViewModel : BotControlViewModelBase, IDispos
     private readonly ArtixCalendarService _calendarService;
     private CancellationTokenSource? _refreshCancellation;
     private Task? _refreshTask;
-    private bool _isEditing;
 
     public CalendarViewModel(ArtixCalendarService calendarService)
         : base("AQWorlds Calendar", 920, 680)
@@ -29,7 +29,6 @@ public sealed partial class CalendarViewModel : BotControlViewModelBase, IDispos
 
     [ObservableProperty] private DateTime _selectedDate;
     [ObservableProperty] private string _title = string.Empty;
-    [ObservableProperty] private string _description = string.Empty;
     [ObservableProperty] private string _url = string.Empty;
     [ObservableProperty] private DateTimeOffset? _lastSynced;
     [ObservableProperty] private string _status = "Calendar has not been synchronized yet.";
@@ -43,10 +42,8 @@ public sealed partial class CalendarViewModel : BotControlViewModelBase, IDispos
         if (value is null)
             return;
 
-        _isEditing = value.IsCustom;
         Title = value.IsCustom ? value.Title : string.Empty;
         Url = value.IsCustom ? value.Url ?? string.Empty : string.Empty;
-        Description = string.Empty;
         SelectedDate = value.Start.Date;
     }
 
@@ -168,7 +165,6 @@ public sealed partial class CalendarViewModel : BotControlViewModelBase, IDispos
     private void NewEvent()
     {
         SelectedEvent = null;
-        _isEditing = false;
         ClearEditor();
     }
 
