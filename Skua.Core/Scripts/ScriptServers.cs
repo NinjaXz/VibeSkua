@@ -46,6 +46,7 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
     private ILogService Logger => _lazyLogger.Value;
 
     private bool _loginInfoSetted = false;
+    private volatile bool _accountLockoutDetected;
     private string _username;
     private string _password;
 
@@ -511,6 +512,7 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
     public async Task<bool> EnsureRelogin(CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
+        _accountLockoutDetected = false;
         IsIntentionalLogout = false;
         await GetServers(true);
         token.ThrowIfCancellationRequested();
@@ -539,6 +541,7 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
     public async Task<bool> EnsureRelogin(string serverName, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
+        _accountLockoutDetected = false;
         IsIntentionalLogout = false;
         await GetServers(true);
         token.ThrowIfCancellationRequested();
@@ -593,6 +596,7 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
                     {
                         ReloginLog($"FATAL: Account lockout detected ('{trimmedModal}'). Halting auto re-login loop.");
                         IsIntentionalLogout = true;
+                        _accountLockoutDetected = true;
                         throw new OperationCanceledException($"Account lockout: {trimmedModal}");
                     }
                     return false;
@@ -641,7 +645,7 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         string? preferredServerName = preferredName;
         try
         {
-            while (!token.IsCancellationRequested && !Manager.ShouldExit && !IsIntentionalLogout && !Player.Playing && tries < Options.ReloginTries)
+            while (!token.IsCancellationRequested && !Manager.ShouldExit && !_accountLockoutDetected && !Player.Playing && tries < Options.ReloginTries)
             {
                 tries++;
                 await GetServers(true);
@@ -751,7 +755,7 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         }
         catch { }
 
-        if (!Player.Playing && !IsIntentionalLogout)
+        if (!Player.Playing && !_accountLockoutDetected)
             ReloginLog("Unable to reconnect within configured retries.");
         return Player.Playing;
     }
