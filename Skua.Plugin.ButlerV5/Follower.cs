@@ -231,7 +231,14 @@ public class Follower
                 {
                     // Track logout (not mere death) so we can re-arm on relogin.
                     if (_bot.Player?.LoggedIn != true)
+                    {
                         _wasLoggedIn = false;
+                        // ScriptQuest clears its registered quests on logout; forget our
+                        // local ownership too so the master's unchanged list is re-applied.
+                        _syncedQuestIds.Clear();
+                        _lastQuestSyncFileTime = DateTime.MinValue;
+                        _lastQuestSyncCheck = DateTime.MinValue;
+                    }
                     Wait(token, 1000);
                     continue;
                 }
