@@ -1,11 +1,10 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Skua.Core.Interfaces;
-using Skua.Core.Models;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace Skua.App.Avalonia.ViewModels;
@@ -13,6 +12,7 @@ namespace Skua.App.Avalonia.ViewModels;
 public class ScriptStatsViewModel : ObservableObject, IManagedWindow
 {
     private static readonly string[] AvailableRateUnits = ["/hr", "/min", "/sec"];
+    private const int MaximumRateSnapshots = 100;
 
     private readonly ISettingsService _settings;
     private readonly IFileDialogService _fileDialogService;
@@ -24,7 +24,8 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
         ScriptStats = scriptStats;
         _settings = settings;
         _fileDialogService = fileDialogService;
-        StatsHistory = new ObservableCollection<StatsSessionRecord>(settings.Get("StatsSessionHistory", new System.Collections.Generic.List<StatsSessionRecord>()).Take(10));
+        RateHistory = new ObservableCollection<StatsRateSnapshot>(
+            settings.Get("StatsRateHistory", new List<StatsRateSnapshot>()).Take(MaximumRateSnapshots));
         _advancedMode = settings.Get("StatsAdvancedMode", false);
 
         string savedRateUnit = settings.Get("StatsRateUnit", "/hr");
@@ -34,14 +35,16 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
 
         ResetStatsCommand = new RelayCommand(ResetStats);
         GetSpaceCommand = new RelayCommand(ScriptStats.GetSpace);
+        SaveRateSnapshotCommand = new RelayCommand(SaveRateSnapshot);
         ExportHistoryCommand = new RelayCommand(ExportHistory);
     }
 
     public IScriptBotStats ScriptStats { get; }
     public IRelayCommand ResetStatsCommand { get; }
     public IRelayCommand GetSpaceCommand { get; }
+    public IRelayCommand SaveRateSnapshotCommand { get; }
     public IRelayCommand ExportHistoryCommand { get; }
-    public ObservableCollection<StatsSessionRecord> StatsHistory { get; }
+    public ObservableCollection<StatsRateSnapshot> RateHistory { get; }
     public IReadOnlyList<string> RateUnits => AvailableRateUnits;
 
     public bool AdvancedMode
@@ -70,41 +73,66 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
         }
     }
 
-    private void ResetStats()
+    private void ResetStats() => ScriptStats.Reset();
+
+    /// <summary>
+    /// Saves the currently displayed gameplay rates as a persistent, user-triggered history row.
+    /// Values are stored in the selected unit so historical rows remain exactly as captured.
+    /// </summary>
+    private void SaveRateSnapshot()
     {
-        ScriptStats.Reset();
-        RefreshHistory();
+        StatsRateSnapshot snapshot = new(
+            DateTimeOffset.Now,
+            ScriptStats.SessionTime,
+            RateUnit,
+            ConvertHourlyRate(ScriptStats.ExperiencePerHour, RateUnit),
+            ConvertHourlyRate(ScriptStats.GoldPerHour, RateUnit),
+            ConvertPerMinuteRate(ScriptStats.KillsPerMinute, RateUnit),
+            ConvertPerMinuteRate(ScriptStats.DeathsPerMinute, RateUnit),
+            ConvertHourlyRate(ScriptStats.ItemsPerHour, RateUnit),
+            ConvertHourlyRate(ScriptStats.ClassPointsPerHour, RateUnit),
+            ScriptStats.CurrentClassRank);
+
+        RateHistory.Insert(0, snapshot);
+        while (RateHistory.Count > MaximumRateSnapshots)
+            RateHistory.RemoveAt(RateHistory.Count - 1);
+
+        _settings.Set("StatsRateHistory", RateHistory.ToList());
     }
 
-    private void RefreshHistory()
+    private static double ConvertHourlyRate(double value, string unit) => unit switch
     {
-        StatsHistory.Clear();
-        foreach (StatsSessionRecord record in _settings.Get("StatsSessionHistory", new System.Collections.Generic.List<StatsSessionRecord>()).Take(10))
-            StatsHistory.Add(record);
-    }
+        "/min" => value / 60d,
+        "/sec" => value / 3600d,
+        _ => value
+    };
+
+    private static double ConvertPerMinuteRate(double value, string unit) => unit switch
+    {
+        "/hr" => value * 60d,
+        "/sec" => value / 60d,
+        _ => value
+    };
 
     private void ExportHistory()
     {
-        System.Collections.Generic.List<StatsSessionRecord> history = _settings.Get("StatsSessionHistory", new System.Collections.Generic.List<StatsSessionRecord>());
-        if (history.Count == 0)
+        if (RateHistory.Count == 0)
             return;
 
         System.Text.StringBuilder csv = new();
-        csv.AppendLine("Ended At,Duration Seconds,Experience Gained,EXP Per Hour,Net Gold Change,Gold Per Hour,Kills,Kills Per Minute,Deaths,Items Collected,Class Points Gained,Class ID");
-        foreach (StatsSessionRecord record in history)
+        csv.AppendLine("Saved At,Session Seconds,Rate Unit,Experience Rate,Gold Rate,Kills Rate,Deaths Rate,Items Rate,Class Points Rate,Class Rank");
+        foreach (StatsRateSnapshot snapshot in RateHistory)
         {
-            csv.Append(record.EndedAt.ToString("O", CultureInfo.InvariantCulture)).Append(',')
-                .Append(record.Duration.TotalSeconds.ToString("F0", CultureInfo.InvariantCulture)).Append(',')
-                .Append(record.ExperienceGained.ToString(CultureInfo.InvariantCulture)).Append(',')
-                .Append(record.ExperiencePerHour.ToString("F0", CultureInfo.InvariantCulture)).Append(',')
-                .Append(record.NetGoldChange.ToString(CultureInfo.InvariantCulture)).Append(',')
-                .Append(record.GoldPerHour.ToString("F0", CultureInfo.InvariantCulture)).Append(',')
-                .Append(record.Kills.ToString(CultureInfo.InvariantCulture)).Append(',')
-                .Append(record.KillsPerMinute.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
-                .Append(record.Deaths.ToString(CultureInfo.InvariantCulture)).Append(',')
-                .Append(record.ItemsCollected.ToString(CultureInfo.InvariantCulture)).Append(',')
-                .Append(record.ClassPointsGained.ToString(CultureInfo.InvariantCulture)).Append(',')
-                .AppendLine(record.ClassId.ToString(CultureInfo.InvariantCulture));
+            csv.Append(snapshot.SavedAt.ToString("O", CultureInfo.InvariantCulture)).Append(',')
+                .Append(snapshot.SessionDuration.TotalSeconds.ToString("F0", CultureInfo.InvariantCulture)).Append(',')
+                .Append(snapshot.RateUnit).Append(',')
+                .Append(snapshot.ExperienceRate.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
+                .Append(snapshot.GoldRate.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
+                .Append(snapshot.KillsRate.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
+                .Append(snapshot.DeathsRate.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
+                .Append(snapshot.ItemsRate.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
+                .Append(snapshot.ClassPointsRate.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
+                .AppendLine(snapshot.ClassRank.ToString(CultureInfo.InvariantCulture));
         }
 
         _fileDialogService.SaveText(csv.ToString());
@@ -119,4 +147,29 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
     public int Width => 480;
     public int Height => 0;
     public bool CanResize => false;
+}
+
+/// <summary>
+/// A manually captured snapshot of the live gameplay rates shown in Advanced Stats.
+/// </summary>
+public sealed record StatsRateSnapshot(
+    DateTimeOffset SavedAt,
+    TimeSpan SessionDuration,
+    string RateUnit,
+    double ExperienceRate,
+    double GoldRate,
+    double KillsRate,
+    double DeathsRate,
+    double ItemsRate,
+    double ClassPointsRate,
+    int ClassRank)
+{
+    public string SavedAtDisplay => SavedAt.ToLocalTime().ToString("MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+    public string SessionDisplay => SessionDuration.ToString(@"d\.hh\:mm\:ss", CultureInfo.InvariantCulture);
+    public string ExperienceDisplay => $"{ExperienceRate:N0} {RateUnit}";
+    public string GoldDisplay => $"{GoldRate:N0} {RateUnit}";
+    public string KillsDisplay => $"{KillsRate:N2} {RateUnit}";
+    public string DeathsDisplay => $"{DeathsRate:N2} {RateUnit}";
+    public string ItemsDisplay => $"{ItemsRate:N1} {RateUnit}";
+    public string ClassPointsDisplay => $"{ClassPointsRate:N0} {RateUnit}";
 }
