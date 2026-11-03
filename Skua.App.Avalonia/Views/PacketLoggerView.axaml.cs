@@ -29,7 +29,7 @@ public partial class PacketLoggerView : UserControl
     private void ApplyGrandpaMode(bool enabled)
     {
         PacketsListBox.FontSize = enabled ? 15 : 11;
-        PacketsListBox.Padding = new Avalonia.Thickness(enabled ? 7 : 4);
+        PacketsListBox.Padding = new global::Avalonia.Thickness(enabled ? 7 : 4);
         CountText.FontSize = enabled ? 13 : 11;
     }
 
