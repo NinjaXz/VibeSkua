@@ -14,7 +14,7 @@
         <TextBlock Text="{Binding Status}" FontSize="11" Foreground="{DynamicResource SkuaMutedTextBrush}" />
       </StackPanel>
       <Button Grid.Column="1" Classes="skua-button" Content="New Event" Command="{Binding NewEventCommand}" />
-      <Button Grid.Column="2" Classes="skua-button skua-primary" Content="Refresh" Command="{Binding RefreshCommand}" IsEnabled="{Binding IsBusy, Converter={x:Static BooleanNegationConverter.Instance}}" />
+      <Button Grid.Column="2" Classes="skua-button skua-primary" Content="Refresh" Command="{Binding RefreshCommand}" />
     </Grid>
 
     <Grid Grid.Row="1" ColumnDefinitions="1.15*,*,1.1*" ColumnSpacing="10">
@@ -51,7 +51,7 @@
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vms:CalendarEvent">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9" Margin="2,5">
-                  <Border Grid.Column="0" Width="4" CornerRadius="2" Background="{DynamicResource SkuaAccentBrush}" />
+                  <Border Grid.Column="0" Width="4" CornerRadius="2" Background="{DynamicResource SkuaBorderBrush}" />
                   <StackPanel Grid.Column="1" Spacing="3">
                     <Grid ColumnDefinitions="*,Auto">
                       <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap" />
