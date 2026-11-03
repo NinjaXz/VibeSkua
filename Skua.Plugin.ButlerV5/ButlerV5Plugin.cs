@@ -47,7 +47,13 @@ public class ButlerV5Plugin : ISkuaPlugin
             "butlers that end up in the wrong cell after dying and never walk back to\n" +
             "the master on their own. Costs extra goto commands - one every 'Goto delay'\n" +
             "milliseconds for as long as the follow lasts - so raise Goto delay if that\n" +
-            "feels like too much. Ignored in leech mode. Default: Off.",
+            "feels like too much. Ignored in leech mode and when Copy master's walking is on. Default: Off.",
+            false),
+        new Option<bool>("copyWalk", "Copy master's walking",
+            "When following in the same room and cell, mirror the master's actual walking\n" +
+            "position instead of standing still after teleporting beside them. Existing\n" +
+            "goto, cell-jump, direct-join and rescue behavior still handles map/room\n" +
+            "changes and recovery. Takes over from Always goto while copying movement. Default: Off.",
             false),
         new Option<ButlerClassType>("classType", "Class type",
             "Which CoreBots class this butler equips when it starts following:\n" +
