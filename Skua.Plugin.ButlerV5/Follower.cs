@@ -17,6 +17,7 @@ public class FollowerSettings
     public required Func<string> CustomBypassIds { get; init; }
     public required Func<bool> LevelFake { get; init; }
     public required Func<bool> QuestClone { get; init; }
+    public required Func<bool> QuestSync { get; init; }
 
     /// <summary>Keep issuing goto even when already in the master's map and cell.</summary>
     public required Func<bool> AlwaysGoto { get; init; }
@@ -89,6 +90,9 @@ public class Follower
     private string? _lastBypassMap;
     private string? _lastPreApplyMap;
     private DateTime _lastCloneFileTime = DateTime.MinValue;
+    private DateTime _lastQuestSyncCheck = DateTime.MinValue;
+    private DateTime _lastQuestSyncFileTime = DateTime.MinValue;
+    private readonly HashSet<int> _syncedQuestIds = new();
     private string? _lastRescueMap;
     private int _rescueRounds;
     private string? _blockedMap;
@@ -141,6 +145,8 @@ public class Follower
         Master = master;
         Source = source;
         _lastReportedOffGoto = null;
+        _lastQuestSyncCheck = DateTime.MinValue;
+        _lastQuestSyncFileTime = DateTime.MinValue;
         _lastWalkCommandTime = DateTime.MinValue;
         _lastWalkTargetX = 0;
         _lastWalkTargetY = 0;
@@ -179,6 +185,7 @@ public class Follower
     {
         if (_cts == null)
         {
+            ClearSyncedQuestRegistrations();
             Source = FollowSource.None;
             return;
         }
@@ -190,6 +197,7 @@ public class Follower
         _cts.Dispose();
         _cts = null;
         _loop = null;
+        ClearSyncedQuestRegistrations();
 
         StopSkills();
         StopAttacking(deaggroJump: true);
@@ -247,6 +255,7 @@ public class Follower
                     if (!_suspended)
                     {
                         _suspended = true;
+                        ClearSyncedQuestRegistrations();
                         StopSkills();
                         StopAttacking(deaggroJump: true);
                         _log($"A script is running - following {master} is suspended until it stops.",
@@ -269,6 +278,8 @@ public class Follower
                 // Keep Skua's Auto Attack/Hunt off for the whole follow (best-effort mirror
                 // of Skua's "no Auto while a script runs"). Cheap bool read per tick.
                 StopUserAuto();
+                if (!_settings.QuestSync())
+                    ClearSyncedQuestRegistrations();
 
                 // Parking is an enforced no-combat state. Keep both Skua aggro modes off
                 // while waiting too, so another component cannot re-enable them after the
@@ -310,6 +321,7 @@ public class Follower
                     _badReads++;
                     if (_badReads >= 3)
                     {
+                        ClearSyncedQuestRegistrations();
                         ParkOnce(m == null
                             ? $"No ButlerV5 file for {master} at {SyncFile.PathFor(master)} - is their plugin installed?"
                             : $"{master} looks offline (loggedin={(m.LoggedIn ? 1 : 0)}, pid={m.Pid}, " +
@@ -340,11 +352,15 @@ public class Follower
 
                 if (!SameServer(m))
                 {
+                    ClearSyncedQuestRegistrations();
                     ParkOnce($"{master} is on a different server (theirs='{m.Server}' mine='{GameServer.CurrentName(_bot)}'). Parked.",
                         "The master is on a different server. Parked.");
                     Wait(token, 2000);
                     continue;
                 }
+
+                if (_settings.QuestSync())
+                    SyncRegisteredQuests(master);
 
                 // Circuit breaker: a map we repeatedly failed to enter (entry gate kept
                 // bouncing us to battleon) is blocked until the master moves elsewhere.
@@ -1290,6 +1306,69 @@ public class Follower
         }
         catch
         {
+        }
+    }
+
+    /// <summary>
+    /// Mirrors the master's active and registered quests. Quests already registered
+    /// locally by another feature are left alone; only registrations added here are removed.
+    /// </summary>
+    private void SyncRegisteredQuests(string master)
+    {
+        DateTime now = DateTime.UtcNow;
+        if ((now - _lastQuestSyncCheck).TotalSeconds < 1)
+            return;
+        _lastQuestSyncCheck = now;
+
+        DateTime fileTime = QuestSync.GetFileTime(master);
+        if (fileTime == DateTime.MinValue || fileTime <= _lastQuestSyncFileTime)
+            return;
+
+        int[]? requestedIds = QuestSync.Read(master);
+        if (requestedIds is null)
+            return;
+
+        HashSet<int> requested = new(requestedIds);
+        int[] removed = _syncedQuestIds.Where(id => !requested.Contains(id)).ToArray();
+        if (removed.Length > 0)
+        {
+            _bot.Quests.UnregisterQuests(removed);
+            _syncedQuestIds.ExceptWith(removed);
+        }
+
+        HashSet<int> alreadyRegistered = new(_bot.Quests.Registered);
+        int[] added = requested.Where(id => !alreadyRegistered.Contains(id)).ToArray();
+        if (added.Length > 0)
+        {
+            _bot.Quests.RegisterQuests(added);
+            _syncedQuestIds.UnionWith(added);
+        }
+
+        _lastQuestSyncFileTime = fileTime;
+        DebugLog.Log("QuestSync",
+            $"{master}: added {added.Length}, removed {removed.Length}, tracking {requested.Count} active/registered quest(s)");
+    }
+
+    /// <summary>Unregisters only the quest IDs this follower added for its current master.</summary>
+    private void ClearSyncedQuestRegistrations()
+    {
+        if (_syncedQuestIds.Count == 0)
+            return;
+
+        try
+        {
+            int[] questIds = _syncedQuestIds.ToArray();
+            _bot.Quests.UnregisterQuests(questIds);
+            DebugLog.Log("QuestSync", $"removed {_syncedQuestIds.Count} mirrored quest registration(s)");
+        }
+        catch (Exception ex)
+        {
+            DebugLog.Log("QuestSync", $"could not remove mirrored quests: {ex.Message}");
+        }
+        finally
+        {
+            _syncedQuestIds.Clear();
+            _lastQuestSyncFileTime = DateTime.MinValue;
         }
     }
 
