@@ -53,7 +53,7 @@ public class ButlerV5Plugin : ISkuaPlugin
             "When following in the same room and cell, mirror the master's actual walking\n" +
             "position instead of standing still after teleporting beside them. Existing\n" +
             "goto, cell-jump, direct-join and rescue behavior still handles map/room\n" +
-            "changes and recovery. Takes over from Always goto while copying movement. Default: Off.",
+            "changes and recovery. Ignored in leech mode and takes over from Always goto. Default: Off.",
             false),
         new Option<ButlerClassType>("classType", "Class type",
             "Which CoreBots class this butler equips when it starts following:\n" +
@@ -109,9 +109,9 @@ public class ButlerV5Plugin : ISkuaPlugin
             true),
         new Option<bool>("syncQuests", "Follow master's quests",
             "While following, mirror the master's active and registered quest IDs.\n" +
-            "The butler registers the same quests locally, so it can accept them,\n" +
-            "collect its own required drops and complete them using its own inventory.\n" +
-            "Both the master and followers must have this enabled. Default: Off.",
+            "The butler registers the same quests locally, including selected rewards,\n" +
+            "so it can accept them, collect its own required drops and complete them using\n" +
+            "its own inventory. Both master and followers must have this enabled. Default: Off.",
             false),
         new Option<bool>("questUnlockAll", "EXPERIMENTAL: unlock all quests",
             "Nuclear bypass: sets EVERY quest slot to max CLIENT-SIDE, so every quest-\n" +
