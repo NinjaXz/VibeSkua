@@ -451,6 +451,28 @@ public partial class CBOClassSelectViewModel : ObservableObject, IManageCBOption
         SelectedBossUseMode = null;
     }
 
+    // The view is rebuilt each time the Loadout tab is shown, so it must not clear the selections.
+    [RelayCommand]
+    private void RefreshClasses()
+    {
+        Dictionary<string, string> selections = new();
+        AddSelection(selections, "Solo", SelectedSoloClass, UseSoloEquipment, SelectedSoloUseMode);
+        AddSelection(selections, "Farm", SelectedFarmClass, UseFarmEquipment, SelectedFarmUseMode);
+        AddSelection(selections, "Dodge", SelectedDodgeClass, UseDodgeEquipment, SelectedDodgeUseMode);
+        AddSelection(selections, "Boss", SelectedBossClass, UseBossEquipment, SelectedBossUseMode);
+        SetValues(selections);
+    }
+
+    private static void AddSelection(Dictionary<string, string> selections, string slot, string? className, bool useEquipment, ClassUseMode? mode)
+    {
+        if (string.IsNullOrEmpty(className))
+            return;
+
+        selections[$"{slot}ClassSelect"] = className;
+        selections[$"{slot}EquipCheck"] = useEquipment.ToString();
+        selections[$"{slot}ModeSelect"] = mode?.ToString() ?? string.Empty;
+    }
+
     public StringBuilder Save(StringBuilder builder)
     {
         string soloClass = SelectedSoloClass == CurrentClassOption ? CurrentClassOption : SelectedSoloClass ?? string.Empty;
