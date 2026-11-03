@@ -155,7 +155,7 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
                     InventoryItem item = group.First();
                     int inventoryQuantity = inventoryItems.Where(candidate => candidate.ID == item.ID).Sum(candidate => candidate.Quantity);
                     int bankQuantity = bankItems.Where(candidate => candidate.ID == item.ID).Sum(candidate => candidate.Quantity);
-                    return new JunkItemEntry(item.ID, item.Name, item.Category.ToString(), item.Coins, inventoryQuantity, bankQuantity, junkIds.Contains(item.ID));
+                    return new JunkItemEntry(item.ID, item.Name, item.Category.ToString(), item.Coins, item.Equipped, item.MaxStack, inventoryQuantity, bankQuantity, junkIds.Contains(item.ID), _inventory.IsFavorited(item.ID));
                 })
                 .OrderBy(item => item.Name)
                 .ToList();
@@ -373,12 +373,15 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
 
 public sealed partial class JunkItemEntry : ObservableObject
 {
-    public JunkItemEntry(int id, string name, string category, bool isAc, int inventoryQuantity, int bankQuantity, bool isJunk)
+    public JunkItemEntry(int id, string name, string category, bool isAc, bool isEquipped, int maxStack, int inventoryQuantity, int bankQuantity, bool isJunk, bool isFavorite)
     {
         ID = id;
         Name = name;
         Category = category;
         IsAc = isAc;
+        IsEquipped = isEquipped;
+        IsFavorite = isFavorite;
+        MaxStack = maxStack;
         InventoryQuantity = inventoryQuantity;
         BankQuantity = bankQuantity;
         _isJunk = isJunk;
@@ -388,6 +391,11 @@ public sealed partial class JunkItemEntry : ObservableObject
     public string Name { get; }
     public string Category { get; }
     public bool IsAc { get; }
+    public bool IsEquipped { get; }
+    public bool IsFavorite { get; }
+    public int MaxStack { get; }
+    public bool IsNearStackLimit => MaxStack > 0 && InventoryQuantity >= MaxStack * 0.8;
+    public string StackDisplay => MaxStack > 0 ? $"{InventoryQuantity:N0} / {MaxStack:N0}" : InventoryQuantity.ToString("N0");
     public int InventoryQuantity { get; }
     public int BankQuantity { get; }
     public string QuantityDisplay => $"Inv: {InventoryQuantity}  |  Bank: {BankQuantity}";
