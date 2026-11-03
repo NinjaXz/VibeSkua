@@ -218,12 +218,12 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         return false;
     }
 
-    private bool IsServerBlacklistedForRelogin(Server server)
+    private static bool IsServerBlacklistedForRelogin(Server server, bool isNonMemberAccount)
     {
         if (!IsValidReloginServerData(server))
             return true;
         string serverName = server.Name ?? string.Empty;
-        bool memberOnly = server.Upgrade && IsNonMemberAccount();
+        bool memberOnly = server.Upgrade && isNonMemberAccount;
         return !server.Online
             || serverName.Contains("Test", StringComparison.OrdinalIgnoreCase)
             || IsServerFull(server)
@@ -248,8 +248,9 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
     private List<Server> BuildReloginCandidates()
     {
         List<Server> candidates = new();
-        AddReloginCandidates(candidates, CachedServers);
-        AddReloginCandidates(candidates, ServerList);
+        bool isNonMemberAccount = IsNonMemberAccount();
+        AddReloginCandidates(candidates, CachedServers, isNonMemberAccount);
+        AddReloginCandidates(candidates, ServerList, isNonMemberAccount);
         return candidates;
     }
 
@@ -269,11 +270,11 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         }
     }
 
-    private void AddReloginCandidates(List<Server> candidates, List<Server> source)
+    private void AddReloginCandidates(List<Server> candidates, List<Server> source, bool isNonMemberAccount)
     {
         foreach (Server server in source)
         {
-            if (IsServerBlacklistedForRelogin(server))
+            if (IsServerBlacklistedForRelogin(server, isNonMemberAccount))
                 continue;
 
             if (candidates.Exists(x => string.Equals(x.Name, server.Name, StringComparison.OrdinalIgnoreCase)))
