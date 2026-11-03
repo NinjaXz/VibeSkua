@@ -9,7 +9,7 @@ namespace Skua.App.Avalonia.Converters;
 /// </summary>
 public sealed class TimeSpanTotalHoursConverter : IValueConverter
 {
-    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is not TimeSpan timeSpan)
             return "—";
@@ -29,7 +29,7 @@ public sealed class TimeSpanTotalHoursConverter : IValueConverter
             timeSpan.Seconds.ToString("D2", CultureInfo.InvariantCulture));
     }
 
-    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         throw new NotSupportedException();
     }
