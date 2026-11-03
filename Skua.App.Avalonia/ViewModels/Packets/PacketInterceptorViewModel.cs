@@ -257,15 +257,31 @@ public partial class PacketInterceptorViewModel : BotControlViewModelBase
         IScriptOption options = Ioc.Default.GetRequiredService<IScriptOption>();
         bool relogin = options.AutoRelogin;
         options.AutoRelogin = false;
-        IPAddress ip = IPAddress.TryParse((string?)SelectedServer.IP, out IPAddress? addr) ? addr : Dns.GetHostEntry((string)SelectedServer.IP).AddressList[0];
-        int port = SelectedServer.Port != 0 ? SelectedServer.Port : 5588;
-        _gameProxy.Destination = new IPEndPoint(ip, port);
-        _gameProxy.Start();
-        _server.Logout();
-        _server.Login();
-        _server.ConnectIP("127.0.0.1", port);
-        OnPropertyChanged(nameof(Running));
-        options.AutoRelogin = relogin;
+
+        try
+        {
+            IPAddress ip = IPAddress.TryParse(SelectedServer.IP, out IPAddress? address)
+                ? address
+                : Dns.GetHostAddresses(SelectedServer.IP).FirstOrDefault()
+                    ?? throw new InvalidOperationException($"Could not resolve server address: {SelectedServer.IP}");
+
+            int port = SelectedServer.Port != 0 ? SelectedServer.Port : 5588;
+            _gameProxy.Destination = new IPEndPoint(ip, port);
+            _gameProxy.Start();
+
+            // Do not disconnect the active game session if the local proxy failed to bind.
+            if (!_gameProxy.Running)
+                return;
+
+            _server.Logout();
+            _server.Login();
+            _server.ConnectIP("127.0.0.1", port);
+            OnPropertyChanged(nameof(Running));
+        }
+        finally
+        {
+            options.AutoRelogin = relogin;
+        }
     }
 
     protected override void OnActivated()
