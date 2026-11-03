@@ -254,7 +254,8 @@ public partial class PacketInterceptorViewModel : BotControlViewModelBase
             return;
         }
 
-        if (SelectedServer is null)
+        Server? selectedServer = SelectedServer;
+        if (selectedServer is null)
             return;
 
         IScriptOption options = Ioc.Default.GetRequiredService<IScriptOption>();
@@ -263,12 +264,12 @@ public partial class PacketInterceptorViewModel : BotControlViewModelBase
 
         try
         {
-            IPAddress ip = IPAddress.TryParse(SelectedServer.IP, out IPAddress? address)
+            IPAddress ip = IPAddress.TryParse(selectedServer.IP, out IPAddress? address)
                 ? address
-                : Dns.GetHostAddresses(SelectedServer.IP).FirstOrDefault()
-                    ?? throw new InvalidOperationException($"Could not resolve server address: {SelectedServer.IP}");
+                : Dns.GetHostAddresses(selectedServer.IP).FirstOrDefault()
+                    ?? throw new InvalidOperationException($"Could not resolve server address: {selectedServer.IP}");
 
-            int port = SelectedServer.Port != 0 ? SelectedServer.Port : 5588;
+            int port = selectedServer.Port != 0 ? selectedServer.Port : 5588;
             _gameProxy.Destination = new IPEndPoint(ip, port);
             _gameProxy.Start();
 
