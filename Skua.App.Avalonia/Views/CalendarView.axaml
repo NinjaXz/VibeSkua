@@ -84,7 +84,7 @@
           <StackPanel Spacing="9">
             <TextBlock Text="CUSTOM EVENT" Classes="section-label" />
             <TextBlock Text="Title" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" />
-            <TextBox Text="{Binding Title, Mode=TwoWay}" Watermark="Event name" />
+            <TextBox Text="{Binding EventTitle, Mode=TwoWay}" Watermark="Event name" />
             <TextBlock Text="Date" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" />
             <DatePicker SelectedDate="{Binding SelectedDate, Mode=TwoWay}" HorizontalAlignment="Stretch" />
             <TextBlock Text="Link (optional)" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" />
