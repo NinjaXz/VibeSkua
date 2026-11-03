@@ -90,17 +90,21 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
             return;
 
         System.Text.StringBuilder csv = new();
-        csv.AppendLine("Ended At,Duration Seconds,Experience Gained,Net Gold Change,Kills,Deaths,Items Collected,Class Points Gained");
+        csv.AppendLine("Ended At,Duration Seconds,Experience Gained,EXP Per Hour,Net Gold Change,Gold Per Hour,Kills,Kills Per Minute,Deaths,Items Collected,Class Points Gained,Class ID");
         foreach (StatsSessionRecord record in history)
         {
             csv.Append(record.EndedAt.ToString("O", CultureInfo.InvariantCulture)).Append(',')
                 .Append(record.Duration.TotalSeconds.ToString("F0", CultureInfo.InvariantCulture)).Append(',')
                 .Append(record.ExperienceGained.ToString(CultureInfo.InvariantCulture)).Append(',')
+                .Append(record.ExperiencePerHour.ToString("F0", CultureInfo.InvariantCulture)).Append(',')
                 .Append(record.NetGoldChange.ToString(CultureInfo.InvariantCulture)).Append(',')
+                .Append(record.GoldPerHour.ToString("F0", CultureInfo.InvariantCulture)).Append(',')
                 .Append(record.Kills.ToString(CultureInfo.InvariantCulture)).Append(',')
+                .Append(record.KillsPerMinute.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
                 .Append(record.Deaths.ToString(CultureInfo.InvariantCulture)).Append(',')
                 .Append(record.ItemsCollected.ToString(CultureInfo.InvariantCulture)).Append(',')
-                .AppendLine(record.ClassPointsGained.ToString(CultureInfo.InvariantCulture));
+                .Append(record.ClassPointsGained.ToString(CultureInfo.InvariantCulture)).Append(',')
+                .AppendLine(record.ClassId.ToString(CultureInfo.InvariantCulture));
         }
 
         _fileDialogService.SaveText(csv.ToString());
