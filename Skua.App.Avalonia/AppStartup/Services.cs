@@ -120,6 +120,7 @@ public static class Services
             new("Fast Travel", () => s.GetRequiredService<FastTravelViewModel>()),
             new("Current Drops", () => s.GetRequiredService<CurrentDropsViewModel>()),
             new("Junk Items", () => s.GetRequiredService<JunkItemsViewModel>()),
+            new("Calendar", () => s.GetRequiredService<CalendarViewModel>()),
             new("Runtime", () => s.GetRequiredService<RuntimeHelpersViewModel>()),
             new("Loader", () => s.GetRequiredService<LoaderViewModel>()),
             new("Grabber", () => s.GetRequiredService<GrabberViewModel>()),
