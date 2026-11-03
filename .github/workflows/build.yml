@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feature/advanced-stats-metrics
+      - feature/client-intelligence-suite
   pull_request:
     branches:
       - main
