@@ -15,13 +15,7 @@ public sealed partial class NotificationCenterViewModel : BotControlViewModelBas
     public NotificationCenterViewModel()
         : base("Notification Center", 560, 480, canResize: true)
     {
-    }
-
-    public ObservableCollection<NotificationEntry> Notifications { get; } = new();
-
-    protected override void OnActivated()
-    {
-        base.OnActivated();
+        // Keep collecting while the window is hidden so the feed reflects the whole app session.
         WeakReferenceMessenger.Default.Register<NotificationCenterViewModel, AddLogMessage>(this, OnLog);
         StrongReferenceMessenger.Default.Register<NotificationCenterViewModel, ItemDroppedMessage, int>(this, (int)MessageChannels.GameEvents, OnItemDropped);
         StrongReferenceMessenger.Default.Register<NotificationCenterViewModel, PlayerDeathMessage, int>(this, (int)MessageChannels.GameEvents, OnPlayerDeath);
@@ -30,11 +24,7 @@ public sealed partial class NotificationCenterViewModel : BotControlViewModelBas
         StrongReferenceMessenger.Default.Register<NotificationCenterViewModel, ScriptErrorMessage, int>(this, (int)MessageChannels.GameEvents, OnScriptError);
     }
 
-    protected override void OnDeactivated()
-    {
-        StrongReferenceMessenger.Default.UnregisterAll(this);\n        WeakReferenceMessenger.Default.UnregisterAll(this);
-        base.OnDeactivated();
-    }
+    public ObservableCollection<NotificationEntry> Notifications { get; } = new();
 
     [CommunityToolkit.Mvvm.Input.RelayCommand]
     private void Clear()
