@@ -151,6 +151,8 @@ public class ButlerV5Plugin : ISkuaPlugin
     private Task? _orderWatcher;
     private DateTime _orderGoneSince = DateTime.MinValue;
     private bool _busyOrderLogged;
+    private readonly HashSet<string> _processedSendAllCommands = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Queue<string> _processedSendAllCommandOrder = new();
     private bool _wasEnabledOrder = true;  // master-switch transition tracking in the order watcher
     private string? _declinedMaster;
     private EventHandler? _processExitHandler;
@@ -168,6 +170,7 @@ public class ButlerV5Plugin : ISkuaPlugin
     /// <summary>Master switch: when false the whole plugin is inert (global option).</summary>
     public bool PluginEnabled => GetOption("enabled", true);
     public IReadOnlyList<string> CurrentFollowers => _broadcaster?.Followers ?? new List<string>();
+    public IReadOnlyList<string> RecentPlayerTargets => PlayerTargetHistory.Load();
     public string? FollowingWho => _follower?.Master;
     public FollowSource FollowingHow => _follower?.Source ?? FollowSource.None;
 
@@ -381,6 +384,75 @@ public class ButlerV5Plugin : ISkuaPlugin
         }
 
         _follower?.Stop();
+    }
+
+    /// <summary>Orders every eligible online ButlerV5 account to /goto an external player.</summary>
+    public void SendAllToPlayer(string playerName)
+    {
+        string target = playerName.Trim();
+        if (target.Length == 0)
+        {
+            Log("Enter a player name first.", "Enter a player name first.");
+            return;
+        }
+
+        if (!PluginEnabled)
+        {
+            Log("Can't send all - ButlerV5 is disabled ('Enable ButlerV5' is off). Turn it on first.");
+            return;
+        }
+
+        string me = OwnUsername ?? "";
+        if (me.Length == 0)
+        {
+            Log("Can't send all - this account is not logged in.");
+            return;
+        }
+
+        List<SyncData> roster = Roster.GetOnline(me);
+        if (target.Equals(me, StringComparison.OrdinalIgnoreCase) ||
+            roster.Any(account => account.Username.Equals(target, StringComparison.OrdinalIgnoreCase)))
+        {
+            Log($"'{target}' is already one of the active ButlerV5 client accounts. Enter an external player name instead.");
+            return;
+        }
+
+        string myServer = MyServerName;
+        bool alreadyManual(SyncData account) =>
+            account.Following.Equals(me, StringComparison.OrdinalIgnoreCase) &&
+            !CurrentFollowers.Any(f => f.Equals(account.Username, StringComparison.OrdinalIgnoreCase));
+        bool isMaster(SyncData account) => account.Followers.Count > 0;
+        bool differentServer(SyncData account) =>
+            !string.IsNullOrEmpty(account.Server) && !string.IsNullOrEmpty(myServer) &&
+            !account.Server.Equals(myServer, StringComparison.OrdinalIgnoreCase);
+        bool followingAnother(SyncData account) =>
+            !string.IsNullOrEmpty(account.Following) &&
+            !account.Following.Equals(me, StringComparison.OrdinalIgnoreCase);
+        bool unavailable(SyncData account) =>
+            account.ScriptOn || alreadyManual(account) || isMaster(account) ||
+            differentServer(account) || account.Parking || followingAnother(account);
+
+        List<string> skipped = roster.Where(unavailable).Select(account => account.Username).ToList();
+        List<string> recipients = roster.Where(account => !unavailable(account))
+            .Select(account => account.Username)
+            .ToList();
+
+        if (recipients.Count == 0)
+        {
+            Log(skipped.Count == 0
+                ? "No other ButlerV5 accounts are online."
+                : $"No available butlers to send to {target}. Skipped: {string.Join(", ", skipped)}");
+            return;
+        }
+
+        _broadcaster?.PublishSendAllGoto(target, recipients);
+        PlayerTargetHistory.Add(target);
+
+        Log($"Sent {recipients.Count} butler(s) to {target}." +
+            (skipped.Count > 0 ? $" Skipped {skipped.Count} unavailable account(s)." : ""),
+            $"Sent {recipients.Count} butler(s) to an external player.");
+        DebugLog.Log("UI", $"Send all to {target}: recipients=[{string.Join(", ", recipients)}], skipped=[{string.Join(", ", skipped)}]");
+        try { SyncFilesChanged?.Invoke(); } catch { }
     }
 
     /// <summary>Master side: publish the list of accounts that should follow this one.</summary>
@@ -741,6 +813,7 @@ public class ButlerV5Plugin : ISkuaPlugin
                     // Read every sync file ONCE per tick and share the snapshot with the
                     // handshake + order-matching steps (was 2-3 ReadAll + pid checks/tick).
                     List<SyncData> online = me != null ? Roster.GetOnline(me) : new();
+                    ProcessSendAllGotoCommands(me, online);
                     ProcessServingHandshakes(me, online);
 
                     if (me != null && _follower != null && _follower.Source != FollowSource.Manual)
@@ -835,6 +908,63 @@ public class ButlerV5Plugin : ISkuaPlugin
                 WaitForOrderTick(token);
             }
         }, token);
+    }
+
+    /// <summary>Executes fresh one-shot goto commands addressed to this account.</summary>
+    private void ProcessSendAllGotoCommands(string? me, List<SyncData> online)
+    {
+        if (string.IsNullOrWhiteSpace(me) || online.Count == 0)
+            return;
+
+        long nowTicks = DateTime.UtcNow.Ticks;
+        long maxAgeTicks = TimeSpan.FromSeconds(60).Ticks;
+        string myServer = MyServerName;
+
+        foreach (SyncData command in online)
+        {
+            if (string.IsNullOrWhiteSpace(command.SendAllCommand) ||
+                string.IsNullOrWhiteSpace(command.SendAllTarget) ||
+                command.SendAllIssuedUtcTicks <= 0 ||
+                !command.SendAllRecipients.Any(name => name.Equals(me, StringComparison.OrdinalIgnoreCase)))
+                continue;
+
+            long ageTicks = nowTicks - command.SendAllIssuedUtcTicks;
+            if (ageTicks < 0 || ageTicks > maxAgeTicks)
+                continue;
+
+            string commandKey = $"{command.Username}:{command.SendAllCommand}";
+            if (!_processedSendAllCommands.Add(commandKey))
+                continue;
+
+            _processedSendAllCommandOrder.Enqueue(commandKey);
+            while (_processedSendAllCommandOrder.Count > 64)
+                _processedSendAllCommands.Remove(_processedSendAllCommandOrder.Dequeue());
+
+            if (IsScriptRunning)
+            {
+                DebugLog.Log("OrderWatcher", $"ignored send-all goto from {command.Username}: a script is running");
+                continue;
+            }
+
+            if (!string.IsNullOrEmpty(command.Server) && !string.IsNullOrEmpty(myServer) &&
+                !command.Server.Equals(myServer, StringComparison.OrdinalIgnoreCase))
+            {
+                DebugLog.Log("OrderWatcher", $"ignored send-all goto from {command.Username}: server mismatch");
+                continue;
+            }
+
+            try
+            {
+                _bot?.Player?.Goto(command.SendAllTarget);
+                DebugLog.Log("OrderWatcher", $"goto {command.SendAllTarget} requested by {command.Username}");
+                Log($"Sent to external player {command.SendAllTarget} on request from {command.Username}.",
+                    "Sent to an external player.");
+            }
+            catch (Exception ex)
+            {
+                DebugLog.Log("OrderWatcher", $"send-all goto failed for {command.SendAllTarget}: {ex.Message}");
+            }
+        }
     }
 
     /// <summary>Sets an option's in-memory value without persisting the shared file.</summary>
