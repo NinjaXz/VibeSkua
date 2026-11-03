@@ -38,6 +38,18 @@ public class SyncData
     /// <summary>Whether this account is mid-park (walking home) - not summonable yet.</summary>
     public bool Parking;
 
+    /// <summary>External player name for the latest one-shot send-all goto command.</summary>
+    public string SendAllTarget = "";
+
+    /// <summary>Unique ID so each recipient executes a broadcast goto command only once.</summary>
+    public string SendAllCommand = "";
+
+    /// <summary>Recipients selected when the broadcast goto command was issued.</summary>
+    public List<string> SendAllRecipients = new();
+
+    /// <summary>UTC ticks when the broadcast goto command was issued.</summary>
+    public long SendAllIssuedUtcTicks;
+
     /// <summary>File last write time (UTC), populated on read to guard against PID recycling.</summary>
     public DateTime LastModified { get; set; } = DateTime.MinValue;
 
@@ -63,6 +75,10 @@ public class SyncData
         sb.Append("scriptname=").Append(ScriptName).Append('\n');
         sb.Append("declined=").Append(Declined).Append('\n');
         sb.Append("parking=").Append(Parking ? '1' : '0').Append('\n');
+        sb.Append("sendalltarget=").Append(SendAllTarget).Append('\n');
+        sb.Append("sendallcommand=").Append(SendAllCommand).Append('\n');
+        sb.Append("sendallrecipients=").Append(string.Join(",", SendAllRecipients)).Append('\n');
+        sb.Append("sendallissued=").Append(SendAllIssuedUtcTicks).Append('\n');
         return sb.ToString();
     }
 
@@ -107,6 +123,14 @@ public class SyncData
                 case "scriptname": data.ScriptName = value; break;
                 case "declined": data.Declined = value; break;
                 case "parking": data.Parking = value == "1"; break;
+                case "sendalltarget": data.SendAllTarget = value; break;
+                case "sendallcommand": data.SendAllCommand = value; break;
+                case "sendallrecipients":
+                    data.SendAllRecipients = value
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                        .ToList();
+                    break;
+                case "sendallissued": _ = long.TryParse(value, out data.SendAllIssuedUtcTicks); break;
             }
         }
 
