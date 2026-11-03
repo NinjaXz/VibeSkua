@@ -11,6 +11,7 @@
              mc:Ignorable="d" d:DesignHeight="320" d:DesignWidth="440">
   <UserControl.Resources>
     <converters:AtLeastOneConverter x:Key="AtLeastOneConverter" />
+    <converters:TimeSpanTotalHoursConverter x:Key="TimeSpanTotalHoursConverter" />
   </UserControl.Resources>
 
   <UserControl.Styles>
@@ -191,7 +192,7 @@
         </StackPanel>
         <StackPanel Grid.Row="3" Grid.Column="0" Spacing="2">
           <TextBlock Classes="section-label" Text="TIME TO LEVEL" />
-          <TextBlock Classes="stat-value" Text="{Binding ScriptStats.TimeToLevel, StringFormat={}{0:g}, TargetNullValue=—}" />
+          <TextBlock Classes="stat-value" Text="{Binding ScriptStats.TimeToLevel, Converter={StaticResource TimeSpanTotalHoursConverter}, TargetNullValue=—}" />
         </StackPanel>
         <StackPanel Grid.Row="3" Grid.Column="1" Spacing="2">
           <TextBlock Classes="section-label" Text="CLASS POINTS / HR" />
@@ -204,7 +205,7 @@
         </StackPanel>
         <StackPanel Grid.Row="4" Grid.Column="1" Spacing="2">
           <TextBlock Classes="section-label" Text="TIME TO RANK 10" />
-          <TextBlock Classes="stat-value" Text="{Binding ScriptStats.TimeToClassRank10, StringFormat={}{0:g}, TargetNullValue=—}" />
+          <TextBlock Classes="stat-value" Text="{Binding ScriptStats.TimeToClassRank10, Converter={StaticResource TimeSpanTotalHoursConverter}, TargetNullValue=—}" />
         </StackPanel>
       </Grid>
     </Border>
