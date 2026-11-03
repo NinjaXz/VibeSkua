@@ -13,8 +13,10 @@ public class Broadcaster
     private readonly IScriptInterface _bot;
     private readonly Func<bool> _enabled;
     private readonly Func<bool> _questClone;
+    private readonly Func<bool> _questSync;
     private readonly Action<string> _log;
     private DateTime _lastQuestPublish = DateTime.MinValue;
+    private DateTime _lastQuestSyncPublish = DateTime.MinValue;
     private DateTime _lastAttackingSeen = DateTime.MinValue;
     private volatile bool _publishing;
     private readonly object _writeLock = new();
@@ -46,13 +48,14 @@ public class Broadcaster
     private readonly Func<string?> _declinedProvider;
     private readonly Func<bool> _parkingProvider;
 
-    public Broadcaster(IScriptInterface bot, Func<bool> enabled, Func<bool> questClone,
+    public Broadcaster(IScriptInterface bot, Func<bool> enabled, Func<bool> questClone, Func<bool> questSync,
         Func<string?> followingProvider, Func<string?> scriptNameProvider,
         Func<string?> declinedProvider, Func<bool> parkingProvider, Action<string> log)
     {
         _bot = bot;
         _enabled = enabled;
         _questClone = questClone;
+        _questSync = questSync;
         _followingProvider = followingProvider;
         _scriptNameProvider = scriptNameProvider;
         _declinedProvider = declinedProvider;
@@ -138,6 +141,16 @@ public class Broadcaster
                     if (loggedIn)
                     {
                         WriteNow(); // no-op unless something actually changed
+                        string publishUser = _bot.Player!.Username;
+
+                        // Publish active/registered quest IDs cheaply and frequently.
+                        // Followers register these quests locally for their own drops and turn-ins.
+                        if (_questSync() &&
+                            (DateTime.UtcNow - _lastQuestSyncPublish).TotalSeconds >= 2)
+                        {
+                            _lastQuestSyncPublish = DateTime.UtcNow;
+                            QuestSync.Publish(_bot, publishUser);
+                        }
 
                         // EXPERIMENTAL quest-state publishing: at login, then every 2
                         // minutes. Runs on a background task - the 800 flash-call read
@@ -149,7 +162,6 @@ public class Broadcaster
                         {
                             _lastQuestPublish = DateTime.UtcNow;
                             _publishing = true;
-                            string publishUser = _bot.Player!.Username;
                             Task.Run(() =>
                             {
                                 try { QuestClone.Publish(_bot, publishUser); }
