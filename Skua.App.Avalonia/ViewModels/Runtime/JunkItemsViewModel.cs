@@ -176,8 +176,10 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
                     InventoryItem item = group.First();
                     int inventoryQuantity = inventoryItems.Where(candidate => candidate.ID == item.ID).Sum(candidate => candidate.Quantity);
                     int bankQuantity = bankItems.Where(candidate => candidate.ID == item.ID).Sum(candidate => candidate.Quantity);
+                    bool isEquipped = inventoryItems.Any(candidate => candidate.ID == item.ID && candidate.Equipped);
+                    int maxStack = group.Max(candidate => candidate.MaxStack);
                     bool nearStackLimit = inventoryItems.Any(candidate => candidate.ID == item.ID && candidate.MaxStack > 0 && candidate.Quantity >= candidate.MaxStack * 0.8);
-                    return new JunkItemEntry(item.ID, item.Name, item.Category.ToString(), item.Coins, item.Equipped, item.MaxStack, nearStackLimit, inventoryQuantity, bankQuantity, junkIds.Contains(item.ID), _inventory.IsFavorited(item.ID), goals.TryGetValue(item.ID, out int goalQuantity) ? goalQuantity : 0);
+                    return new JunkItemEntry(item.ID, item.Name, item.Category.ToString(), item.Coins, isEquipped, maxStack, nearStackLimit, inventoryQuantity, bankQuantity, junkIds.Contains(item.ID), _inventory.IsFavorited(item.ID), goals.TryGetValue(item.ID, out int goalQuantity) ? goalQuantity : 0);
                 })
                 .OrderBy(item => item.Name)
                 .ToList();
