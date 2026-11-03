@@ -244,11 +244,16 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
             ClassPointsPerHour = 0;
             TimeToClassRank10 = classRank >= 10 ? TimeSpan.Zero : null;
         }
+        else if (!_classStopwatch.IsRunning)
+        {
+            // Resume connected-time tracking without counting class points gained while disconnected.
+            _classStopwatch.Start();
+            _lastClassPoints = classPoints;
+            _lastClassPointsToRank = classPointsToRank;
+            _lastClassRank = classRank;
+        }
         else
         {
-            if (!_classStopwatch.IsRunning)
-                _classStopwatch.Start();
-
             if (classRank == _lastClassRank)
             {
                 _earnedClassPoints += Math.Max(0, classPoints - _lastClassPoints);
