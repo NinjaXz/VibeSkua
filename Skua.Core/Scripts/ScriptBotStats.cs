@@ -148,8 +148,8 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
     }
 
     /// <summary>
-    /// Updates live gameplay metrics from the current player snapshot. Positive XP deltas and positive net gold balance changes
-    /// are counted; spending between snapshots can offset gold gains. Game-event counters work without a running script.
+    /// Updates live gameplay metrics from the current player snapshot. Positive XP deltas and net gold balance changes,
+    /// including spending, are counted. Game-event counters work without a running script.
     /// </summary>
     public void UpdateGameplaySnapshot(int experience, int requiredExperience, int level, int gold, int classId, int classPoints, int classPointsToRank, int classRank, bool connected)
     {
@@ -188,8 +188,7 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
             if (experienceGained > 0)
                 _earnedExperience += experienceGained;
     
-            if (gold > _lastGold)
-                _earnedGold += gold - _lastGold;
+            _earnedGold += (long)gold - _lastGold;
     
             _sessionKills += Math.Max(0, Kills - _lastKills);
             _sessionDeaths += Math.Max(0, Deaths - _lastDeaths);
