@@ -254,7 +254,7 @@
               <TextBlock Classes="stat-value" Text="{Binding ScriptStats.TimeToClassRank10, Converter={StaticResource TimeSpanTotalHoursConverter}, TargetNullValue=—}" />
             </StackPanel>
           </Border>
-        </Grid>>
+        </Grid>
     </Border>
   </Grid>
 </UserControl>
