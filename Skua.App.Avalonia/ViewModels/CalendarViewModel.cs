@@ -194,7 +194,7 @@ public sealed partial class CalendarViewModel : BotControlViewModelBase, IDispos
         try
         {
             while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false))
-                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(RefreshAsync);
+                await global::Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(RefreshAsync);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
