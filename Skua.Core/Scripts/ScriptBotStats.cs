@@ -1,5 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Skua.Core.Interfaces;
+using Skua.Core.Models;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Skua.Core.Scripts;
@@ -8,7 +10,9 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
 {
     private readonly Lazy<IScriptInventory> _lazyInventory;
     private readonly Lazy<IScriptBank> _lazyBank;
+    private readonly ISettingsService _settings;
     private readonly object _metricsLock = new();
+    private bool _sessionRecorded;
 
     private IScriptInventory Inventory => _lazyInventory.Value;
     private IScriptBank Bank => _lazyBank.Value;
@@ -43,10 +47,11 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
     private long _earnedExperience;
     private long _earnedGold;
 
-    public ScriptBotStats(Lazy<IScriptInventory> inventory, Lazy<IScriptBank> bank)
+    public ScriptBotStats(Lazy<IScriptInventory> inventory, Lazy<IScriptBank> bank, ISettingsService settings)
     {
         _lazyInventory = inventory;
         _lazyBank = bank;
+        _settings = settings;
         _taskTimer = HandleTimerAsync(_timer, _ctsTimer.Token);
     }
 
@@ -138,6 +143,7 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
     {
         lock (_metricsLock)
         {
+            RecordSession();
             Kills = 0;
             QuestsAccepted = 0;
             QuestsCompleted = 0;
@@ -177,7 +183,11 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
             }
     
             if (!_sessionStopwatch.IsRunning)
+            {
+                if (_sessionStopwatch.Elapsed == TimeSpan.Zero)
+                    _sessionRecorded = false;
                 _sessionStopwatch.Start();
+            }
     
             ExperienceProgress = requiredExperience > 0
                 ? Math.Clamp(experience / (double)requiredExperience * 100d, 0d, 100d)
@@ -353,6 +363,7 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
     private void ResetGameplayMetrics()
     {
         _sessionStopwatch.Reset();
+        _sessionRecorded = false;
         _classStopwatch.Reset();
         _hasGameplaySnapshot = false;
         _lastClassId = 0;
@@ -395,8 +406,33 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
         }
     }
 
+    private void RecordSession()
+    {
+        if (_sessionRecorded || _sessionStopwatch.Elapsed.TotalSeconds < 5)
+            return;
+
+        List<StatsSessionRecord> history = _settings.Get("StatsSessionHistory", new List<StatsSessionRecord>());
+        history.Insert(0, new StatsSessionRecord(
+            DateTimeOffset.Now,
+            _sessionStopwatch.Elapsed,
+            _earnedExperience,
+            _earnedGold,
+            _sessionKills,
+            _sessionDeaths,
+            _sessionItems,
+            _earnedClassPoints));
+        if (history.Count > 50)
+            history.RemoveRange(50, history.Count - 50);
+
+        _settings.Set("StatsSessionHistory", history);
+        _sessionRecorded = true;
+    }
+
     public async ValueTask DisposeAsync()
     {
+        lock (_metricsLock)
+            RecordSession();
+
         _ctsTimer.Cancel();
         await _taskTimer;
         _timer.Dispose();
