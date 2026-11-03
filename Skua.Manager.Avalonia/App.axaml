@@ -32,7 +32,7 @@
     </Application.Styles>
     <TrayIcon.Icons>
         <TrayIcons>
-            <TrayIcon Icon="avares://Skua.Manager.Avalonia/Assets/Skua-Manager-Icon.ico"
+            <TrayIcon Icon="avares://VibeSkua.Manager/Assets/Skua-Manager-Icon.ico"
                       ToolTipText="VibeSkua Manager"
                       Clicked="TrayIcon_Clicked">
                 <TrayIcon.Menu>
