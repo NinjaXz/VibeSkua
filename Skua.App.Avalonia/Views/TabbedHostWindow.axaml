@@ -295,6 +295,26 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- Game size presets inspired by Aeoniian's VibeSkuffle; implemented independently. -->
+                    <Border x:Name="GameSizeBorder"
+                            Cursor="Hand"
+                            Height="28"
+                            BorderThickness="1"
+                            BorderBrush="{DynamicResource SkuaBorderBrush}"
+                            Background="{DynamicResource SkuaSurfaceAltBrush}"
+                            CornerRadius="6"
+                            Padding="9,0"
+                            VerticalAlignment="Center"
+                            PointerPressed="GameSizeBorder_PointerPressed">
+                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="ResizeBottomRight" Width="14" Height="14" Foreground="{DynamicResource SkuaTextBrush}" />
+                            <TextBlock x:Name="GameSizeText" Text="Size: Auto" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SkuaTextBrush}" VerticalAlignment="Center" />
+                            <materialIcons:MaterialIcon Kind="ChevronDown" Width="11" Height="11" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Grid Layout selector temporarily hidden; implementation retained for later. -->
+                    <!--
                     <!-- Grid layout selector -->
                     <Border x:Name="GridLayoutBorder"
                             Cursor="Hand"
@@ -310,7 +330,8 @@
                             <materialIcons:MaterialIcon Kind="ViewGridOutline" Width="14" Height="14" Foreground="{DynamicResource SkuaTextBrush}" />
                             <TextBlock Text="Layout" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SkuaTextBrush}" VerticalAlignment="Center" />
                             <materialIcons:MaterialIcon Kind="ChevronDown" Width="11" Height="11" Foreground="{DynamicResource SkuaMutedTextBrush}" />
-                        </StackPanel>
+                            -->
+                </StackPanel>
                         <FlyoutBase.AttachedFlyout>
                             <MenuFlyout Placement="Bottom">
                                 <MenuItem Header="Auto (balanced)" Click="MenuItem_GridLayoutAuto_Click" />
