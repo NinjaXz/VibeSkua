@@ -242,6 +242,72 @@ public partial class TabbedHostWindow : Window
     private GridLayoutMode _gridLayoutMode = GridLayoutMode.Auto;
     private TabItem? _lastSelectedTab;
 
+    // Game size presets inspired by Aeoniian's VibeSkuffle; this implementation is original.
+    private static readonly (int Width, int Height)[] GameSizes =
+    {
+        (640, 367),
+        (960, 550),
+        (1280, 720),
+        (1600, 900),
+        (1920, 1080)
+    };
+
+    private (int Width, int Height)? _gameSize;
+
+    private static (int Width, int Height)? ParseGameSize(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.Equals("auto", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        string[] parts = value.Split('x', StringSplitOptions.TrimEntries);
+        if (parts.Length == 2
+            && int.TryParse(parts[0], out int width)
+            && int.TryParse(parts[1], out int height)
+            && width is >= 320 and <= 7680
+            && height is >= 180 and <= 4320)
+            return (width, height);
+
+        return null;
+    }
+
+    private static (int X, int Y, int Width, int Height) FitGameSize(int x, int y, int width, int height, (int Width, int Height)? size)
+    {
+        if (size is not { } target || width <= 0 || height <= 0)
+            return (x, y, width, height);
+
+        double scale = Math.Min(1d, Math.Min((double)width / target.Width, (double)height / target.Height));
+        int gameWidth = Math.Max((int)(target.Width * scale), 1);
+        int gameHeight = Math.Max((int)(target.Height * scale), 1);
+        return (x + (width - gameWidth) / 2, y + (height - gameHeight) / 2, gameWidth, gameHeight);
+    }
+
+    private void UpdateGameSizeButton()
+    {
+        GameSizeText.Text = _gameSize is { } size ? $"Size: {size.Width}x{size.Height}" : "Size: Auto";
+        ToolTip.SetTip(GameSizeBorder, _gameSize is { } selected
+            ? $"Game size: {selected.Width} x {selected.Height}. Click to cycle to the next preset."
+            : "Game size: fills the available client area. Click to choose a fixed size.");
+    }
+
+    private void GameSizeBorder_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        e.Handled = true;
+
+        int nextIndex = _gameSize is { } current ? Array.IndexOf(GameSizes, current) + 1 : 0;
+        _gameSize = nextIndex < GameSizes.Length ? GameSizes[nextIndex] : null;
+
+        Ioc.Default.GetService<ISettingsService>()?.Set("VibeSkuaGameSize", _gameSize is { } selected
+            ? $"{selected.Width}x{selected.Height}"
+            : "auto");
+
+        UpdateGameSizeButton();
+        _lastX = int.MinValue;
+        _lastY = int.MinValue;
+        _lastW = int.MinValue;
+        _lastH = int.MinValue;
+        ScheduleReposition();
+    }
+
     private enum GridLayoutMode
     {
         Auto,
@@ -340,6 +406,8 @@ public partial class TabbedHostWindow : Window
     {
         _initialArgs = initialArgs ?? Array.Empty<string>();
         InitializeComponent();
+        _gameSize = ParseGameSize(Ioc.Default.GetService<ISettingsService>()?.Get("VibeSkuaGameSize", "auto"));
+        UpdateGameSizeButton();
         LoadArmyJumpSettings();
         Title = $"VibeSkua V{Skua.Core.Models.ClientFileSources.DisplayVersion}";
         MainTitleBar.TitleText = Title;
@@ -1082,12 +1150,7 @@ public partial class TabbedHostWindow : Window
         }
     }
 
-    private void GridLayoutBorder_PointerPressed(object? sender, PointerPressedEventArgs e)
-    {
-        e.Handled = true;
-        global::Avalonia.Controls.Primitives.FlyoutBase.ShowAttachedFlyout(GridLayoutBorder);
-    }
-
+    // Grid Layout toolbar is temporarily hidden; restore its handler with the XAML control when re-enabled.
     private void MenuItem_GridLayoutAuto_Click(object? sender, RoutedEventArgs e) => SetGridLayoutMode(GridLayoutMode.Auto);
 
     private void MenuItem_GridLayoutHorizontal_Click(object? sender, RoutedEventArgs e) => SetGridLayoutMode(GridLayoutMode.Horizontal);
@@ -2356,10 +2419,11 @@ public partial class TabbedHostWindow : Window
 
             if (w <= 1 || h <= 1) return;
 
-            _childOffsetX = x - Position.X;
-            _childOffsetY = y - Position.Y;
-            _childWidth = w;
-            _childHeight = h;
+            (int gameX, int gameY, int gameWidth, int gameHeight) = FitGameSize(x, y, w, h, _gameSize);
+            _childOffsetX = (_isGridViewEnabled ? x : gameX) - Position.X;
+            _childOffsetY = (_isGridViewEnabled ? y : gameY) - Position.Y;
+            _childWidth = _isGridViewEnabled ? w : gameWidth;
+            _childHeight = _isGridViewEnabled ? h : gameHeight;
             _lastFastX = Position.X;
             _lastFastY = Position.Y;
 
@@ -2442,22 +2506,22 @@ public partial class TabbedHostWindow : Window
                 }
                 HotKeys.ActiveChildHwnd = activeChildHwnd;
 
-                if (x == _lastX && y == _lastY && w == _lastW && h == _lastH &&
+                if (gameX == _lastX && gameY == _lastY && gameWidth == _lastW && gameHeight == _lastH &&
                     activeChildHwnd == _lastActiveHwnd && _lastGridViewState == _isGridViewEnabled)
                 {
                     return;
                 }
 
-                _lastX = x;
-                _lastY = y;
-                _lastW = w;
-                _lastH = h;
+                _lastX = gameX;
+                _lastY = gameY;
+                _lastW = gameWidth;
+                _lastH = gameHeight;
                 _lastActiveHwnd = activeChildHwnd;
                 _lastGridViewState = false;
 
                 if (activeChildHwnd != IntPtr.Zero)
                 {
-                    SetWindowPos(activeChildHwnd, IntPtr.Zero, x, y, w, h, baseFlags);
+                    SetWindowPos(activeChildHwnd, IntPtr.Zero, gameX, gameY, gameWidth, gameHeight, baseFlags);
                     ShowWindow(activeChildHwnd, SW_SHOW);
                     if (activeInfo != null && activeInfo.IsThrottled)
                     {
