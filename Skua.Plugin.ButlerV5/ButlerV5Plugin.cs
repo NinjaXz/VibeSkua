@@ -445,7 +445,14 @@ public class ButlerV5Plugin : ISkuaPlugin
             return;
         }
 
-        _broadcaster?.PublishSendAllGoto(target, recipients);
+        Broadcaster? broadcaster = _broadcaster;
+        if (broadcaster is null)
+        {
+            Log("Can't send all - ButlerV5 is still initializing. Try again shortly.");
+            return;
+        }
+
+        broadcaster.PublishSendAllGoto(target, recipients);
         PlayerTargetHistory.Add(target);
 
         Log($"Sent {recipients.Count} butler(s) to {target}." +
@@ -913,7 +920,7 @@ public class ButlerV5Plugin : ISkuaPlugin
     /// <summary>Executes fresh one-shot goto commands addressed to this account.</summary>
     private void ProcessSendAllGotoCommands(string? me, List<SyncData> online)
     {
-        if (string.IsNullOrWhiteSpace(me) || online.Count == 0)
+        if (string.IsNullOrWhiteSpace(me) || online.Count == 0 || !GetOption("obeySummons", true))
             return;
 
         long nowTicks = DateTime.UtcNow.Ticks;
