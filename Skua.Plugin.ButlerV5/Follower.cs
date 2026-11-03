@@ -174,7 +174,8 @@ public class Follower
         _packetStreamLogged = false;
         DebugLog.Log("Follower",
             $"options in THIS client: passiveAttack={_settings.PassiveAttack()} leech={_settings.LeechMode()} " +
-            $"park={_settings.Park()} gotoDelay={_settings.GotoDelayMs()}ms alwaysGoto={_settings.AlwaysGoto()} rescue={_settings.RescueThreshold()} " +
+            $"park={_settings.Park()} gotoDelay={_settings.GotoDelayMs()}ms alwaysGoto={_settings.AlwaysGoto()} copyWalk={_settings.CopyWalk()} " +
+            $"questSync={_settings.QuestSync()} rescue={_settings.RescueThreshold()} " +
             $"instantWarnings={_settings.InstantWarnings()} questBypass={_settings.QuestBypasses()} questClone={_settings.QuestClone()}");
         _log($"Following {master} ({source}).", $"Following the master ({source}).");
 
@@ -1353,7 +1354,11 @@ public class Follower
     private void ClearSyncedQuestRegistrations()
     {
         if (_syncedQuestIds.Count == 0)
+        {
+            _lastQuestSyncFileTime = DateTime.MinValue;
+            _lastQuestSyncCheck = DateTime.MinValue;
             return;
+        }
 
         try
         {
@@ -1369,6 +1374,7 @@ public class Follower
         {
             _syncedQuestIds.Clear();
             _lastQuestSyncFileTime = DateTime.MinValue;
+            _lastQuestSyncCheck = DateTime.MinValue;
         }
     }
 
