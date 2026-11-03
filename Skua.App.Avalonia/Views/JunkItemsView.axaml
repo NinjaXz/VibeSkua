@@ -29,7 +29,7 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid Margin="12" RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="10">
+  <Grid Margin="12" RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" RowSpacing="10">
     <!-- Search and refresh -->
     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="8">
       <TextBox Grid.Column="0"
@@ -71,15 +71,24 @@
       <Button Grid.Column="3" Classes="skua-button small w84" Content="Unmark" Command="{Binding UnmarkAsJunkCommand}" />
     </Grid>
 
+    <!-- Quantity goals for the selected item rows -->
+    <Grid Grid.Row="3" ColumnDefinitions="Auto,90,Auto,Auto,*" ColumnSpacing="7">
+      <TextBlock Grid.Column="0" Text="🎯 Goal quantity" FontSize="11" VerticalAlignment="Center" />
+      <TextBox Grid.Column="1" Text="{Binding GoalQuantityInput, Mode=TwoWay}" Watermark="Target" />
+      <Button Grid.Column="2" Classes="skua-button small" Content="Set goal" Command="{Binding SetGoalForSelectedCommand}" />
+      <Button Grid.Column="3" Classes="skua-button small" Content="Clear goal" Command="{Binding ClearGoalForSelectedCommand}" />
+      <TextBlock Grid.Column="4" Text="Counts inventory + bank" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" VerticalAlignment="Center" />
+    </Grid>
+
     <!-- Inventory and bank items -->
-    <ListBox Grid.Row="3"
+    <ListBox Grid.Row="4"
              Classes="card-list"
              ItemsSource="{Binding FilteredItems}"
              Padding="4">
       <ListBox.ItemTemplate>
         <DataTemplate x:DataType="vms:JunkItemEntry">
           <Border Classes="junk-row" Classes.selected="{Binding IsSelected}" Margin="0,0,0,2">
-            <Grid ColumnDefinitions="Auto,52,*,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="6">
+            <Grid ColumnDefinitions="Auto,52,*,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="5">
               <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Center" />
               <TextBlock Grid.Column="1"
                          Text="{Binding ID}"
@@ -104,7 +113,10 @@
               <Border Grid.Column="6" Classes="chip warning" IsVisible="{Binding IsNearStackLimit}" ToolTip.Tip="Inventory stack is at least 80% full">
                 <TextBlock Text="Near cap" />
               </Border>
-              <TextBlock Grid.Column="7"
+              <Border Grid.Column="7" Classes="chip" IsVisible="{Binding IsGoalTracked}" ToolTip.Tip="Progress toward your tracked quantity goal; inventory and bank combined">
+                <TextBlock Text="{Binding GoalProgressDisplay}" />
+              </Border>
+              <TextBlock Grid.Column="8"
                          Text="{Binding QuantityDisplay}"
                          FontSize="11"
                          Foreground="{DynamicResource SkuaMutedTextBrush}"
@@ -119,7 +131,7 @@
     </ListBox>
 
     <!-- Selling -->
-    <Grid Grid.Row="4" ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8">
+    <Grid Grid.Row="5" ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8">
       <CheckBox Grid.Column="0"
                 Content="Skip sell warning"
                 IsChecked="{Binding SkipSellWarning, Mode=TwoWay}"
