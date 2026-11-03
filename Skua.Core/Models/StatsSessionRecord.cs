@@ -11,4 +11,10 @@ public sealed record StatsSessionRecord(
     long Kills,
     long Deaths,
     long ItemsCollected,
-    long ClassPointsGained);
+    long ClassPointsGained,
+    int ClassId)
+{
+    public double ExperiencePerHour => Duration.TotalHours > 0 ? ExperienceGained / Duration.TotalHours : 0;
+    public double GoldPerHour => Duration.TotalHours > 0 ? NetGoldChange / Duration.TotalHours : 0;
+    public double KillsPerMinute => Duration.TotalMinutes > 0 ? Kills / Duration.TotalMinutes : 0;
+}
