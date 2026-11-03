@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -12,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Skua.App.Avalonia.Services;
 
-public sealed class ArtixCalendarService(ILogger<ArtixCalendarService> logger)
+public sealed class ArtixCalendarService
 {
     private const string CalendarUrl = "https://www.artix.com/calendar/";
     private static readonly HttpClient HttpClient = new() { Timeout = TimeSpan.FromSeconds(15) };
@@ -51,7 +50,7 @@ public sealed class ArtixCalendarService(ILogger<ArtixCalendarService> logger)
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            logger.LogError(exception, "Could not refresh the Artix AQWorlds calendar. Keeping the last successful result.");
+            Console.Error.WriteLine($"Could not refresh the Artix AQWorlds calendar. Keeping the last successful result: {exception}");
             if (_officialEvents.Count == 0)
                 throw;
         }
@@ -71,7 +70,7 @@ public sealed class ArtixCalendarService(ILogger<ArtixCalendarService> logger)
         }
         catch (Exception exception) when (exception is IOException or JsonException)
         {
-            logger.LogError(exception, "Could not read custom AQWorlds calendar events.");
+            Console.Error.WriteLine($"Could not read custom AQWorlds calendar events: {exception}");
             return [];
         }
     }
