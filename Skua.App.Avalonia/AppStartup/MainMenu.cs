@@ -26,6 +26,8 @@ internal class MainMenu
 {
     public static void RegisterManagedWindows(IWindowService windowService)
     {
+        // Initialize the singleton event collector before the user opens its window.
+        Ioc.Default.GetRequiredService<NotificationCenterViewModel>();
         windowService.RegisterManagedWindow<ScriptLoaderViewModel>("Scripts");
         windowService.RegisterManagedWindow<ScriptLoaderViewModel>("Script Loader");
         windowService.RegisterManagedWindow<ScriptSchedulerViewModel>("Scheduler");
