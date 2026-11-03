@@ -8,17 +8,18 @@
              Background="{DynamicResource SkuaPageBrush}"
              mc:Ignorable="d">
   <Grid RowDefinitions="Auto,*" Margin="12" RowSpacing="10">
-    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto">
       <StackPanel Spacing="2">
         <TextBlock Text="ACTIVITY FEED" Classes="section-label" />
         <TextBlock Text="{Binding Notifications.Count, StringFormat='{}{0} recent events'}"
                    Foreground="{DynamicResource SkuaMutedTextBrush}" FontSize="11" />
       </StackPanel>
-      <Button Grid.Column="1" Classes="skua-button small" Content="Clear" Command="{Binding ClearCommand}" />
+      <ComboBox Grid.Column="1" Width="112" Height="28" ItemsSource="{Binding FilterOptions}" SelectedItem="{Binding SelectedFilter, Mode=TwoWay}" ToolTip.Tip="Filter notification types" />
+      <Button Grid.Column="3" Classes="skua-button small" Content="Clear" Command="{Binding ClearCommand}" />
     </Grid>
     <Border Grid.Row="1" Background="{DynamicResource SkuaSurfaceBrush}"
             BorderBrush="{DynamicResource SkuaBorderBrush}" BorderThickness="1" CornerRadius="8">
-      <ListBox ItemsSource="{Binding Notifications}" Background="Transparent"
+      <ListBox ItemsSource="{Binding FilteredNotifications}" Background="Transparent"
                BorderThickness="0" Padding="4">
         <ListBox.ItemTemplate>
           <DataTemplate x:DataType="vms:NotificationEntry">
