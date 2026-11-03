@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
@@ -285,16 +286,29 @@ public partial class TabbedHostWindow : Window
     {
         GameSizeText.Text = _gameSize is { } size ? $"Size: {size.Width}x{size.Height}" : "Size: Auto";
         ToolTip.SetTip(GameSizeBorder, _gameSize is { } selected
-            ? $"Game size: {selected.Width} x {selected.Height}. Click to cycle to the next preset."
-            : "Game size: fills the available client area. Click to choose a fixed size.");
+            ? $"Game size: {selected.Width} x {selected.Height}."
+            : "Game size: fills the available client area.");
+
+        GameSizeAutoMenuItem.IsChecked = _gameSize == null;
+        GameSize640MenuItem.IsChecked = _gameSize == GameSizes[0];
+        GameSize960MenuItem.IsChecked = _gameSize == GameSizes[1];
+        GameSize1280MenuItem.IsChecked = _gameSize == GameSizes[2];
+        GameSize1600MenuItem.IsChecked = _gameSize == GameSizes[3];
+        GameSize1920MenuItem.IsChecked = _gameSize == GameSizes[4];
     }
 
     private void GameSizeBorder_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
         e.Handled = true;
+        FlyoutBase.ShowAttachedFlyout(GameSizeBorder);
+    }
 
-        int nextIndex = _gameSize is { } current ? Array.IndexOf(GameSizes, current) + 1 : 0;
-        _gameSize = nextIndex < GameSizes.Length ? GameSizes[nextIndex] : null;
+    private void GameSizeMenuItem_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not string value)
+            return;
+
+        _gameSize = ParseGameSize(value);
 
         Ioc.Default.GetService<ISettingsService>()?.Set("VibeSkuaGameSize", _gameSize is { } selected
             ? $"{selected.Width}x{selected.Height}"
