@@ -22,7 +22,7 @@ public sealed partial class NotificationCenterViewModel : BotControlViewModelBas
     protected override void OnActivated()
     {
         base.OnActivated();
-        StrongReferenceMessenger.Default.Register<NotificationCenterViewModel, AddLogMessage, int>(this, (int)MessageChannels.GameEvents, OnLog);
+        WeakReferenceMessenger.Default.Register<NotificationCenterViewModel, AddLogMessage>(this, OnLog);
         StrongReferenceMessenger.Default.Register<NotificationCenterViewModel, ItemDroppedMessage, int>(this, (int)MessageChannels.GameEvents, OnItemDropped);
         StrongReferenceMessenger.Default.Register<NotificationCenterViewModel, PlayerDeathMessage, int>(this, (int)MessageChannels.GameEvents, OnPlayerDeath);
         StrongReferenceMessenger.Default.Register<NotificationCenterViewModel, ScriptStartedMessage, int>(this, (int)MessageChannels.GameEvents, OnScriptStarted);
@@ -32,7 +32,7 @@ public sealed partial class NotificationCenterViewModel : BotControlViewModelBas
 
     protected override void OnDeactivated()
     {
-        StrongReferenceMessenger.Default.UnregisterAll(this);
+        StrongReferenceMessenger.Default.UnregisterAll(this);\n        WeakReferenceMessenger.Default.UnregisterAll(this);
         base.OnDeactivated();
     }
 
