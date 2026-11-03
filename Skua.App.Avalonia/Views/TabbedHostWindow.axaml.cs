@@ -239,7 +239,15 @@ public partial class TabbedHostWindow : Window
     private bool _isClosing = false;
     private readonly CancellationTokenSource _pipeCts = new();
     private bool _isGridViewEnabled = false;
+    private GridLayoutMode _gridLayoutMode = GridLayoutMode.Auto;
     private TabItem? _lastSelectedTab;
+
+    private enum GridLayoutMode
+    {
+        Auto,
+        Horizontal,
+        Vertical
+    }
     private IntPtr _hostHwnd = IntPtr.Zero;
     private int _lastX = -99999, _lastY = -99999, _lastW = -99999, _lastH = -99999;
     private IntPtr _lastActiveHwnd = IntPtr.Zero;
@@ -1072,6 +1080,25 @@ public partial class TabbedHostWindow : Window
             }
             EnterGridView();
         }
+    }
+
+    private void GridLayoutBorder_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        e.Handled = true;
+        global::Avalonia.Controls.Primitives.FlyoutBase.ShowAttachedFlyout(GridLayoutBorder);
+    }
+
+    private void MenuItem_GridLayoutAuto_Click(object? sender, RoutedEventArgs e) => SetGridLayoutMode(GridLayoutMode.Auto);
+
+    private void MenuItem_GridLayoutHorizontal_Click(object? sender, RoutedEventArgs e) => SetGridLayoutMode(GridLayoutMode.Horizontal);
+
+    private void MenuItem_GridLayoutVertical_Click(object? sender, RoutedEventArgs e) => SetGridLayoutMode(GridLayoutMode.Vertical);
+
+    private void SetGridLayoutMode(GridLayoutMode mode)
+    {
+        _gridLayoutMode = mode;
+        if (_isGridViewEnabled)
+            ScheduleReposition();
     }
 
     private void GridViewBorder_PointerEntered(object? sender, PointerEventArgs e)
@@ -2363,7 +2390,12 @@ public partial class TabbedHostWindow : Window
             if (_isGridViewEnabled)
             {
                 int n = activeWindows.Count;
-                int cols = (int)Math.Ceiling(Math.Sqrt(n));
+                int cols = _gridLayoutMode switch
+                {
+                    GridLayoutMode.Horizontal => n,
+                    GridLayoutMode.Vertical => 1,
+                    _ => (int)Math.Ceiling(Math.Sqrt(n))
+                };
                 int rows = (int)Math.Ceiling((double)n / cols);
                 int cellW = w / cols;
                 int cellH = h / rows;
