@@ -1,115 +1,191 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vms="clr-namespace:Skua.App.Avalonia.ViewModels"
-             xmlns:services="clr-namespace:Skua.App.Avalonia.Services"
              x:Class="Skua.App.Avalonia.Views.CalendarView"
              x:DataType="vms:CalendarViewModel"
              Background="{DynamicResource SkuaPageBrush}"
-             mc:Ignorable="d">
-  <Grid Margin="14" RowDefinitions="Auto,*,Auto" RowSpacing="12">
-    <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-      <StackPanel Spacing="3">
-        <TextBlock Text="AQW RELEASE CALENDAR" Classes="section-label" />
-        <TextBlock Text="{Binding Status}" FontSize="11" Foreground="{DynamicResource SkuaMutedTextBrush}" />
-      </StackPanel>
-      <Button Grid.Column="1" Classes="skua-button" Content="New Event" Command="{Binding NewEventCommand}" />
-      <Button Grid.Column="2" Classes="skua-button skua-primary" Content="Refresh" Command="{Binding RefreshCommand}" />
-    </Grid>
+             mc:Ignorable="d" d:DesignHeight="640" d:DesignWidth="520">
 
-    <Grid Grid.Row="1" ColumnDefinitions="1.15*,*,1.1*" ColumnSpacing="10">
-      <!-- Keep each list in a star-sized Grid row. A ListBox inside a StackPanel is measured
-           with infinite height and can expand beyond the available client area. -->
-      <Border Grid.Column="0" Classes="card" Padding="12">
-        <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="8">
-          <TextBlock Text="DATE" Classes="section-label" />
-          <DatePicker Grid.Row="1" SelectedDate="{Binding SelectedDate, Mode=TwoWay}" HorizontalAlignment="Stretch" />
-          <ListBox Grid.Row="2"
-                   ItemsSource="{Binding SelectedDateEvents}"
-                   SelectedItem="{Binding SelectedEvent, Mode=TwoWay}"
-                   Background="Transparent"
-                   BorderThickness="0">
-            <ListBox.ItemTemplate>
-              <DataTemplate x:DataType="services:CalendarEvent">
-                <Border Padding="8" Margin="0,2" CornerRadius="6" Background="{DynamicResource SkuaSurfaceAltBrush}">
-                  <StackPanel Spacing="4">
-                    <Grid ColumnDefinitions="*,Auto">
-                      <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                      <Border Grid.Column="1" Classes="chip">
-                        <TextBlock Text="{Binding Source}" FontSize="9" />
-                      </Border>
-                    </Grid>
-                    <TextBlock Text="{Binding DateDisplay}" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" />
-                  </StackPanel>
+  <UserControl.Styles>
+    <Style Selector="Border.cal-card">
+      <Setter Property="Background" Value="{DynamicResource SkuaSurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SkuaBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="12,10" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="TextBlock.cal-heading">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource SkuaAccentBrush}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBlock.cal-big">
+      <Setter Property="FontSize" Value="28" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource SkuaTextBrush}" />
+    </Style>
+    <Style Selector="TextBlock.cal-big.urgent">
+      <Setter Property="Foreground" Value="{DynamicResource SkuaWarningBrush}" />
+    </Style>
+
+    <!-- Rounded tile behind a heading icon -->
+    <Style Selector="Border.cal-tile">
+      <Setter Property="Width" Value="26" />
+      <Setter Property="Height" Value="26" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- Progress bars: thin and round, the fill colour set per use -->
+    <Style Selector="ProgressBar.cal-bar">
+      <Setter Property="Height" Value="7" />
+      <Setter Property="MinHeight" Value="7" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="CornerRadius" Value="3.5" />
+      <Setter Property="Background" Value="{DynamicResource SkuaSurfaceAltBrush}" />
+    </Style>
+    <Style Selector="ProgressBar.cal-bar.blue"><Setter Property="Foreground" Value="#4C8DFF" /></Style>
+    <Style Selector="ProgressBar.cal-bar.green"><Setter Property="Foreground" Value="{DynamicResource SkuaSuccessBrush}" /></Style>
+    <Style Selector="ProgressBar.cal-bar.ending"><Setter Property="Foreground" Value="{DynamicResource SkuaWarningBrush}" /></Style>
+
+    <!-- A boost row: an icon tile, the name, the time and a bar -->
+    <Style Selector="Border.boost-row">
+      <Setter Property="Background" Value="{DynamicResource SkuaSurfaceAltBrush}" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="10,8,10,8" />
+      <Setter Property="Margin" Value="0,3" />
+    </Style>
+    <Style Selector="TextBlock.boost-time">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBlock.boost-time.on"><Setter Property="Foreground" Value="{DynamicResource SkuaSuccessBrush}" /></Style>
+    <Style Selector="TextBlock.boost-time.ending"><Setter Property="Foreground" Value="{DynamicResource SkuaWarningBrush}" /></Style>
+    <Style Selector="TextBlock.boost-time.soon"><Setter Property="Foreground" Value="{DynamicResource SkuaWarningBrush}" /></Style>
+  </UserControl.Styles>
+
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="12" Spacing="10">
+      <!-- Server time (US Eastern) -->
+      <Border Classes="cal-card">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+          <Border Classes="cal-tile" Background="#334C8DFF">
+            <materialIcons:MaterialIcon Kind="ClockOutline" Width="15" Height="15" Foreground="#4C8DFF" />
+          </Border>
+          <StackPanel Grid.Column="1" Spacing="2">
+            <TextBlock Classes="cal-heading" Text="SERVER TIME" HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding ServerTime}" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center"
+                       FontFamily="Cascadia Mono,Consolas,Courier New,monospace" Foreground="{DynamicResource SkuaTextBrush}" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- The two resets side by side; icons and bars have fixed colours; only the headings follow the Application Theme (accent); green / yellow mean ON and coming up -->
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+        <Border Grid.Column="0" Classes="cal-card">
+          <StackPanel Spacing="7">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Border Classes="cal-tile" Background="#33F5A524">
+                <materialIcons:MaterialIcon Kind="WhiteBalanceSunny" Width="15" Height="15" Foreground="#F5A524" />
+              </Border>
+              <TextBlock Classes="cal-heading" Text="DAILY RESET" />
+            </StackPanel>
+            <TextBlock Classes="cal-big" Classes.urgent="{Binding DailyUrgent}" Text="{Binding DailyText}" />
+            <ProgressBar Classes="cal-bar blue" Minimum="0" Maximum="1" Value="{Binding DailyProgress}" />
+          </StackPanel>
+        </Border>
+        <Border Grid.Column="1" Classes="cal-card">
+          <StackPanel Spacing="7">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Border Classes="cal-tile" Background="#339F7AEA">
+                <materialIcons:MaterialIcon Kind="CalendarWeek" Width="15" Height="15" Foreground="#9F7AEA" />
+              </Border>
+              <TextBlock Classes="cal-heading" Text="WEEKLY RESET" />
+            </StackPanel>
+            <TextBlock Classes="cal-big" Classes.urgent="{Binding WeeklyUrgent}" Text="{Binding WeeklyText}" />
+            <ProgressBar Classes="cal-bar blue" Minimum="0" Maximum="1" Value="{Binding WeeklyProgress}" />
+          </StackPanel>
+        </Border>
+      </Grid>
+
+      <!-- Boosts -->
+      <Border Classes="cal-card">
+        <StackPanel Spacing="6">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Border Classes="cal-tile" Background="#3334C759">
+                <materialIcons:MaterialIcon Kind="LightningBolt" Width="15" Height="15" Foreground="#34C759" />
+              </Border>
+              <TextBlock Classes="cal-heading" Text="BOOSTS" />
+            </StackPanel>
+            <Button Grid.Column="1" Classes="skua-button small" Command="{Binding RefreshCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="5">
+                <materialIcons:MaterialIcon Kind="Refresh" Width="14" Height="14" />
+                <TextBlock Text="Refresh" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </Grid>
+          <TextBlock Text="{Binding UpdatedText}" FontSize="11" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+          <TextBlock Text="{Binding Note}" IsVisible="{Binding HasNote}" TextWrapping="Wrap" Foreground="{DynamicResource SkuaWarningBrush}" FontSize="12" />
+          <TextBlock Text="No boosts listed." IsVisible="{Binding HasNoBoosts}" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+
+          <!-- Running now: green -->
+          <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,8,0,0" IsVisible="{Binding HasActive}">
+            <materialIcons:MaterialIcon Kind="PlayCircle" Width="15" Height="15" Foreground="{DynamicResource SkuaSuccessBrush}" />
+            <TextBlock Classes="cal-heading" Text="ACTIVE NOW" Foreground="{DynamicResource SkuaSuccessBrush}" />
+          </StackPanel>
+          <ItemsControl ItemsSource="{Binding ActiveBoosts}" IsVisible="{Binding HasActive}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vms:CalendarBoost">
+                <Border Classes="boost-row on">
+                  <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="10">
+                    <Border Grid.RowSpan="2" Classes="cal-tile" Background="#3334C759">
+                      <materialIcons:MaterialIcon Kind="LightningBolt" Width="15" Height="15" Foreground="#34C759" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="7">
+                      <TextBlock Text="{Binding Name}" VerticalAlignment="Center" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource SkuaTextBrush}" />
+                      <Border Classes="chip success"><TextBlock Text="ON" /></Border>
+                    </StackPanel>
+                    <TextBlock Grid.Column="2" Classes="boost-time on" Classes.ending="{Binding EndingSoon}" Text="{Binding Status}" />
+                    <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Detail}" FontSize="11" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+                    <ProgressBar Grid.Row="2" Grid.ColumnSpan="3" Margin="0,7,0,0" Classes="cal-bar green" Classes.ending="{Binding EndingSoon}" Minimum="0" Maximum="1" Value="{Binding Progress}" />
+                  </Grid>
                 </Border>
               </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-          <TextBlock Grid.Row="3"
-                     Text="Select an event to edit your custom entries."
-                     FontSize="10"
-                     Foreground="{DynamicResource SkuaMutedTextBrush}"
-                     TextWrapping="Wrap" />
-        </Grid>
-      </Border>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
 
-      <Border Grid.Column="1" Classes="card" Padding="12">
-        <Grid RowDefinitions="Auto,*" RowSpacing="8">
-          <TextBlock Text="UPCOMING AQW RELEASES" Classes="section-label" />
-          <ListBox Grid.Row="1"
-                   ItemsSource="{Binding Events}"
-                   SelectedItem="{Binding SelectedEvent, Mode=TwoWay}"
-                   Background="Transparent"
-                   BorderThickness="0">
-            <ListBox.ItemTemplate>
-              <DataTemplate x:DataType="services:CalendarEvent">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9" Margin="2,5">
-                  <Border Grid.Column="0" Width="4" CornerRadius="2" Background="{DynamicResource SkuaBorderBrush}" />
-                  <StackPanel Grid.Column="1" Spacing="3">
-                    <Grid ColumnDefinitions="*,Auto">
-                      <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap" />
-                      <TextBlock Grid.Column="1" Text="{Binding Source}" FontSize="9" Foreground="{DynamicResource SkuaMutedTextBrush}" />
-                    </Grid>
-                    <TextBlock Text="{Binding DateDisplay}" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" />
-                  </StackPanel>
-                </Grid>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-        </Grid>
-      </Border>
-
-      <Border Grid.Column="2" Classes="card" Padding="12">
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
-          <StackPanel Spacing="9">
-            <TextBlock Text="CUSTOM EVENT" Classes="section-label" />
-            <TextBlock Text="Title" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" />
-            <TextBox Text="{Binding EventTitle, Mode=TwoWay}" Watermark="Event name" />
-            <TextBlock Text="Date" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" />
-            <DatePicker SelectedDate="{Binding SelectedDate, Mode=TwoWay}" HorizontalAlignment="Stretch" />
-            <TextBlock Text="Link (optional)" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" />
-            <TextBox Text="{Binding Url, Mode=TwoWay}" Watermark="https://..." />
-            <TextBlock Text="Custom events are saved locally and are never changed by Artix sync."
-                       FontSize="10"
-                       Foreground="{DynamicResource SkuaMutedTextBrush}"
-                       TextWrapping="Wrap" />
-            <Button Content="Save Event" Classes="skua-button skua-primary" Command="{Binding SaveEventCommand}" />
-            <Button Content="Delete Selected Custom Event" Classes="skua-button" Command="{Binding DeleteEventCommand}" />
+          <!-- Coming: amber -->
+          <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,8,0,0" IsVisible="{Binding HasUpcoming}">
+            <materialIcons:MaterialIcon Kind="ClockFast" Width="15" Height="15" Foreground="{DynamicResource SkuaWarningBrush}" />
+            <TextBlock Classes="cal-heading" Text="COMING UP" Foreground="{DynamicResource SkuaWarningBrush}" />
           </StackPanel>
-        </ScrollViewer>
+          <ItemsControl ItemsSource="{Binding UpcomingBoosts}" IsVisible="{Binding HasUpcoming}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vms:CalendarBoost">
+                <Border Classes="boost-row soon">
+                  <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="10">
+                    <Border Grid.RowSpan="2" Classes="cal-tile" Background="#334C8DFF">
+                      <materialIcons:MaterialIcon Kind="ClockOutline" Width="15" Height="15" Foreground="#4C8DFF" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="7">
+                      <TextBlock Text="{Binding Name}" VerticalAlignment="Center" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource SkuaTextBrush}" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="2" Classes="boost-time soon" Text="{Binding Status}" />
+                    <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Detail}" FontSize="11" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
       </Border>
-    </Grid>
-
-    <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
-      <TextBlock Text="{Binding LastSynced, StringFormat='Last successful sync: {0:MMM d, yyyy h:mm tt}'}"
-                 FontSize="10"
-                 Foreground="{DynamicResource SkuaMutedTextBrush}"
-                 VerticalAlignment="Center" />
-      <TextBlock Grid.Column="1"
-                 Text="Source: artix.com/calendar"
-                 FontSize="10"
-                 Foreground="{DynamicResource SkuaMutedTextBrush}"
-                 VerticalAlignment="Center" />
-    </Grid>
-  </Grid>
+    </StackPanel>
+  </ScrollViewer>
 </UserControl>
