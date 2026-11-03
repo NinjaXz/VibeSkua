@@ -11,14 +11,19 @@ using System.Threading.Tasks;
 
 namespace Skua.App.Avalonia.ViewModels;
 
-public sealed partial class CalendarViewModel : BotControlViewModelBase, IDisposable
+public sealed partial class CalendarViewModel : ObservableRecipient, Skua.Core.Interfaces.IManagedWindow, IDisposable
 {
+    public string Title => "AQWorlds Calendar";
+    public int Width => 920;
+    public int Height => 680;
+    public bool CanResize => true;
+    public int? X { get; set; }
+    public int? Y { get; set; }
     private readonly ArtixCalendarService _calendarService;
     private CancellationTokenSource? _refreshCancellation;
     private Task? _refreshTask;
 
     public CalendarViewModel(ArtixCalendarService calendarService)
-        : base("AQWorlds Calendar", 920, 680)
     {
         _calendarService = calendarService;
         SelectedDate = DateTimeOffset.Now;
