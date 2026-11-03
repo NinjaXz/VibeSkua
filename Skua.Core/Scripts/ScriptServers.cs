@@ -404,6 +404,7 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
             ReloginLog("Cannot relogin: empty server IP.");
             return false;
         }
+
         bool autoRelogSwitch = Options.AutoRelogin;
         Options.AutoRelogin = false;
         try
@@ -412,28 +413,28 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
             StrongReferenceMessenger.Default.Send<LogoutRequestedMessage, int>(new(), (int)MessageChannels.GameEvents);
 
             Thread.Sleep(2000);
-                StrongReferenceMessenger.Default.Send<LogoutMessage, int>((int)MessageChannels.GameEvents);
-                DisconnectForRelogin();
+            StrongReferenceMessenger.Default.Send<LogoutMessage, int>((int)MessageChannels.GameEvents);
+            DisconnectForRelogin();
 
-                Stats.Relogins++;
-                if (_loginInfoSetted)
-                    Login(_username, _password);
-                else
-                    Login(Player.Username, Player.Password);
+            Stats.Relogins++;
+            if (_loginInfoSetted)
+                Login(_username, _password);
+            else
+                Login(Player.Username, Player.Password);
 
-                ReloginLog($"Waiting for server list screen before connecting to IP {ip}...");
-                if (!WaitForServerListReady(CancellationToken.None).GetAwaiter().GetResult())
-                {
-                    ReloginLog($"Authentication timed out or froze while connecting to IP {ip}.");
-                    return false;
-                }
+            ReloginLog($"Waiting for server list screen before connecting to IP {ip}...");
+            if (!WaitForServerListReady(CancellationToken.None).GetAwaiter().GetResult())
+            {
+                ReloginLog($"Authentication timed out or froze while connecting to IP {ip}.");
+                return false;
+            }
 
-                Thread.Sleep(100);
-                try { Flash.Call("loadPolicyFile", ip, 5588); } catch { }
-                try { Flash.Call("killLoginModals"); } catch { }
-                ConnectIP(ip);
+            Thread.Sleep(100);
+            try { Flash.Call("loadPolicyFile", ip, 5588); } catch { }
+            try { Flash.Call("killLoginModals"); } catch { }
+            ConnectIP(ip);
 
-                Wait.ForTrue(() => Player.Playing && Flash.IsWorldLoaded, Options.LoginTimeout / 100);
+            Wait.ForTrue(() => Player.Playing && Flash.IsWorldLoaded, Options.LoginTimeout / 100);
             bool connected = Player.Playing;
             ReloginLog(connected ? "Relogin by IP successful." : "Relogin by IP failed.");
             return connected;
@@ -462,36 +463,36 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
             ReloginLog("No eligible relogin server found.");
             return false;
         }
+
         bool autoRelogSwitch = Options.AutoRelogin;
         Options.AutoRelogin = false;
         try
         {
             ReloginLog($"Relogging on server {server.Name} [{server.PlayerCount}/{server.MaxPlayers}].");
-
             StrongReferenceMessenger.Default.Send<LogoutRequestedMessage, int>(new(), (int)MessageChannels.GameEvents);
-        StrongReferenceMessenger.Default.Send<LogoutMessage, int>((int)MessageChannels.GameEvents);
-        DisconnectForRelogin();
-        Stats.Relogins++;
+            StrongReferenceMessenger.Default.Send<LogoutMessage, int>((int)MessageChannels.GameEvents);
+            DisconnectForRelogin();
+            Stats.Relogins++;
 
-        if (_loginInfoSetted)
-            Login(_username, _password);
-        else
-            Login(Player.Username, Player.Password);
+            if (_loginInfoSetted)
+                Login(_username, _password);
+            else
+                Login(Player.Username, Player.Password);
 
-        ReloginLog($"Waiting for server list screen before connecting to {server.Name}...");
-        if (!WaitForServerListReady(CancellationToken.None).GetAwaiter().GetResult())
-        {
-            ReloginLog($"Authentication timed out or froze while connecting to {server.Name}.");
-            return false;
-        }
+            ReloginLog($"Waiting for server list screen before connecting to {server.Name}...");
+            if (!WaitForServerListReady(CancellationToken.None).GetAwaiter().GetResult())
+            {
+                ReloginLog($"Authentication timed out or froze while connecting to {server.Name}.");
+                return false;
+            }
 
-        Thread.Sleep(100);
-        int port = server.Port > 0 ? server.Port : 5588;
-        try { Flash.Call("loadPolicyFile", server.IP, port); } catch { }
-        try { Flash.Call("killLoginModals"); } catch { }
-        ConnectToServer(JsonConvert.SerializeObject(server));
+            Thread.Sleep(100);
+            int port = server.Port > 0 ? server.Port : 5588;
+            try { Flash.Call("loadPolicyFile", server.IP, port); } catch { }
+            try { Flash.Call("killLoginModals"); } catch { }
+            ConnectToServer(JsonConvert.SerializeObject(server));
 
-        Wait.ForTrue(() => Player.Playing && Flash.IsWorldLoaded, Options.LoginTimeout / 100);
+            Wait.ForTrue(() => Player.Playing && Flash.IsWorldLoaded, Options.LoginTimeout / 100);
             bool connected = Player.Playing;
             ReloginLog(connected ? $"Relogin successful on {server.Name}." : $"Relogin failed on {server.Name}.");
             return connected;
