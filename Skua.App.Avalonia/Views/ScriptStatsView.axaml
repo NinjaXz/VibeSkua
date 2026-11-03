@@ -271,15 +271,17 @@
         <ItemsControl ItemsSource="{Binding StatsHistory}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="models:StatsSessionRecord">
-              <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,2" ColumnSpacing="8">
+              <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,2" ColumnSpacing="8">
                 <TextBlock Text="{Binding EndedAt, StringFormat={}{0:MM-dd HH:mm}}"
                            FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" VerticalAlignment="Center" />
                 <TextBlock Grid.Column="1"
-                           Text="{Binding ExperienceGained, StringFormat='{}{0:N0} XP'}"
+                           Text="{Binding ExperiencePerHour, StringFormat='{}{0:N0} XP/hr'}"
                            FontSize="10" VerticalAlignment="Center" />
                 <TextBlock Grid.Column="2"
-                           Text="{Binding Kills, StringFormat='{}{0:N0} kills'}"
+                           Text="{Binding KillsPerMinute, StringFormat='{}{0:N1} kills/min'}"
                            FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="3" Text="{Binding ClassId, StringFormat='Class #{0}'}" FontSize="10"
+                           Foreground="{DynamicResource SkuaMutedTextBrush}" VerticalAlignment="Center" />
               </Grid>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
