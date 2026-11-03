@@ -294,6 +294,31 @@
                             <TextBlock x:Name="GridViewText" Text="Grid View" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SkuaTextBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Border>
+
+                    <!-- Grid layout selector -->
+                    <Border x:Name="GridLayoutBorder"
+                            Cursor="Hand"
+                            Height="28"
+                            BorderThickness="1"
+                            BorderBrush="{DynamicResource SkuaBorderBrush}"
+                            Background="{DynamicResource SkuaSurfaceAltBrush}"
+                            CornerRadius="6"
+                            Padding="9,0"
+                            VerticalAlignment="Center"
+                            PointerPressed="GridLayoutBorder_PointerPressed">
+                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="ViewGridPlusOutline" Width="14" Height="14" Foreground="{DynamicResource SkuaTextBrush}" />
+                            <TextBlock Text="Layout" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SkuaTextBrush}" VerticalAlignment="Center" />
+                            <materialIcons:MaterialIcon Kind="ChevronDown" Width="11" Height="11" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+                        </StackPanel>
+                        <FlyoutBase.AttachedFlyout>
+                            <MenuFlyout Placement="Bottom">
+                                <MenuItem Header="Auto (balanced)" Click="MenuItem_GridLayoutAuto_Click" />
+                                <MenuItem Header="Side-by-side" Click="MenuItem_GridLayoutHorizontal_Click" />
+                                <MenuItem Header="Stacked" Click="MenuItem_GridLayoutVertical_Click" />
+                            </MenuFlyout>
+                        </FlyoutBase.AttachedFlyout>
+                    </Border>
                 </StackPanel>
             </Grid>
         </Border>
