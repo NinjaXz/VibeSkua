@@ -22,6 +22,7 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
     private string _searchText = string.Empty;
     private string _selectedCategory = "All Categories";
     private string _acFilter = "All Items";
+    private string _goalQuantityInput = string.Empty;
 
     public JunkItemsViewModel(
         IScriptInventory inventory,
@@ -66,6 +67,12 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
             if (SetProperty(ref _selectedCategory, value))
                 ApplySearch();
         }
+    }
+
+    public string GoalQuantityInput
+    {
+        get => _goalQuantityInput;
+        set => SetProperty(ref _goalQuantityInput, value);
     }
 
     public string AcFilter
@@ -129,6 +136,7 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
     {
         _junkService.Load();
 
+        Dictionary<int, int> goals = _settings.Get("InventoryGoals", new Dictionary<int, int>());
         var junkIds = _junkService.JunkItems
             .GroupBy(j => j.ID)
             .Select(g => g.Key)
@@ -155,7 +163,7 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
                     InventoryItem item = group.First();
                     int inventoryQuantity = inventoryItems.Where(candidate => candidate.ID == item.ID).Sum(candidate => candidate.Quantity);
                     int bankQuantity = bankItems.Where(candidate => candidate.ID == item.ID).Sum(candidate => candidate.Quantity);
-                    return new JunkItemEntry(item.ID, item.Name, item.Category.ToString(), item.Coins, item.Equipped, item.MaxStack, inventoryQuantity, bankQuantity, junkIds.Contains(item.ID), _inventory.IsFavorited(item.ID));
+                    return new JunkItemEntry(item.ID, item.Name, item.Category.ToString(), item.Coins, item.Equipped, item.MaxStack, inventoryQuantity, bankQuantity, junkIds.Contains(item.ID), _inventory.IsFavorited(item.ID), goals.TryGetValue(item.ID, out int goalQuantity) ? goalQuantity : 0);
                 })
                 .OrderBy(item => item.Name)
                 .ToList();
@@ -183,6 +191,36 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
         OnPropertyChanged(nameof(TotalJunk));
         OnPropertyChanged(nameof(SelectedCount));
         OnPropertyChanged(nameof(SelectionState));
+    }
+
+    [RelayCommand]
+    private void SetGoalForSelected()
+    {
+        if (!int.TryParse(GoalQuantityInput, out int quantity) || quantity <= 0)
+            return;
+
+        Dictionary<int, int> goals = _settings.Get("InventoryGoals", new Dictionary<int, int>());
+        foreach (JunkItemEntry entry in Items.Where(item => item.IsSelected))
+        {
+            goals[entry.ID] = quantity;
+            entry.GoalQuantity = quantity;
+        }
+
+        _settings.Set("InventoryGoals", goals);
+        GoalQuantityInput = string.Empty;
+    }
+
+    [RelayCommand]
+    private void ClearGoalForSelected()
+    {
+        Dictionary<int, int> goals = _settings.Get("InventoryGoals", new Dictionary<int, int>());
+        foreach (JunkItemEntry entry in Items.Where(item => item.IsSelected))
+        {
+            goals.Remove(entry.ID);
+            entry.GoalQuantity = 0;
+        }
+
+        _settings.Set("InventoryGoals", goals);
     }
 
     [RelayCommand]
@@ -373,7 +411,7 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
 
 public sealed partial class JunkItemEntry : ObservableObject
 {
-    public JunkItemEntry(int id, string name, string category, bool isAc, bool isEquipped, int maxStack, int inventoryQuantity, int bankQuantity, bool isJunk, bool isFavorite)
+    public JunkItemEntry(int id, string name, string category, bool isAc, bool isEquipped, int maxStack, int inventoryQuantity, int bankQuantity, bool isJunk, bool isFavorite, int goalQuantity)
     {
         ID = id;
         Name = name;
@@ -382,6 +420,7 @@ public sealed partial class JunkItemEntry : ObservableObject
         IsEquipped = isEquipped;
         IsFavorite = isFavorite;
         MaxStack = maxStack;
+        _goalQuantity = goalQuantity;
         InventoryQuantity = inventoryQuantity;
         BankQuantity = bankQuantity;
         _isJunk = isJunk;
@@ -394,11 +433,22 @@ public sealed partial class JunkItemEntry : ObservableObject
     public bool IsEquipped { get; }
     public bool IsFavorite { get; }
     public int MaxStack { get; }
+    public bool IsGoalTracked => GoalQuantity > 0;
+    public string GoalProgressDisplay => $"{Math.Min(InventoryQuantity + BankQuantity, GoalQuantity):N0} / {GoalQuantity:N0}";
     public bool IsNearStackLimit => MaxStack > 0 && InventoryQuantity >= MaxStack * 0.8;
     public string StackDisplay => MaxStack > 0 ? $"{InventoryQuantity:N0} / {MaxStack:N0}" : InventoryQuantity.ToString("N0");
     public int InventoryQuantity { get; }
     public int BankQuantity { get; }
     public string QuantityDisplay => $"Inv: {InventoryQuantity}  |  Bank: {BankQuantity}";
+
+    [ObservableProperty]
+    private int _goalQuantity;
+
+    partial void OnGoalQuantityChanged(int value)
+    {
+        OnPropertyChanged(nameof(IsGoalTracked));
+        OnPropertyChanged(nameof(GoalProgressDisplay));
+    }
 
     [ObservableProperty]
     private bool _isSelected;
