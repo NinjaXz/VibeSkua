@@ -22,15 +22,16 @@
                BorderThickness="0" Padding="4">
         <ListBox.ItemTemplate>
           <DataTemplate x:DataType="vms:NotificationEntry">
-            <Grid ColumnDefinitions="62,Auto,*" Margin="5,6" ColumnSpacing="9">
+            <Grid ColumnDefinitions="62,Auto,Auto,*" Margin="5,6" ColumnSpacing="8">
               <TextBlock Grid.Column="0" Text="{Binding TimeDisplay}" FontSize="10"
                          FontFamily="Cascadia Mono,Consolas,Courier New,monospace"
                          Foreground="{DynamicResource SkuaMutedTextBrush}" VerticalAlignment="Center" />
-              <Border Grid.Column="1" CornerRadius="4" Padding="5,2"
+              <TextBlock Grid.Column="1" Text="{Binding Icon}" FontSize="12" VerticalAlignment="Center" />
+              <Border Grid.Column="2" CornerRadius="4" Padding="5,2"
                       Background="{DynamicResource SkuaSurfaceAltBrush}" VerticalAlignment="Center">
                 <TextBlock Text="{Binding Kind}" FontSize="9" FontWeight="SemiBold" />
               </Border>
-              <TextBlock Grid.Column="2" Text="{Binding Message}" FontSize="11"
+              <TextBlock Grid.Column="3" Text="{Binding Message}" FontSize="11"
                          TextWrapping="Wrap" VerticalAlignment="Center" />
             </Grid>
           </DataTemplate>
