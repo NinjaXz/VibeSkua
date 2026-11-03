@@ -89,56 +89,68 @@ public partial class ScriptBoost : ObservableObject, IScriptBoost, IAsyncDisposa
 
     public int GetBoostID(BoostType boostType, bool searchBank = true)
     {
-        return boostType switch
-        {
-            BoostType.Gold => SearchBoost("gold", searchBank),
-            BoostType.Class => SearchBoost("class", searchBank),
-            BoostType.Reputation => SearchBoost("rep", searchBank),
-            BoostType.Experience => SearchBoost("xp", searchBank),
-            _ => 0,
-        };
+        return SearchBoost(boostType, searchBank);
     }
 
-    private int SearchBoost(string name, bool searchBank = false)
+    private static readonly Dictionary<BoostType, string[]> BoostSearchTerms = new()
     {
-        if (!_lazyPlayer.Value.LoggedIn)
+        { BoostType.Gold, ["gold"] },
+        { BoostType.Class, ["class"] },
+        { BoostType.Reputation, ["rep", "reputation"] },
+        { BoostType.Experience, ["xp", "exp", "experience"] }
+    };
+
+    private int SearchBoost(BoostType boostType, bool searchBank = false)
+    {
+        if (!_lazyPlayer.Value.LoggedIn || !BoostSearchTerms.TryGetValue(boostType, out string[]? searchTerms))
             return 0;
-        int id = 0;
+
         List<InventoryItem>? items = Inventory.Items;
-        if (items != null)
+        if (items is not null)
         {
             foreach (InventoryItem item in items)
             {
-                if (item.Category == ItemCategory.ServerUse && item.Name.Contains(name))
-                {
-                    id = item.ID;
-                    break;
-                }
+                if (IsMatchingBoost(item, searchTerms))
+                    return item.ID;
             }
         }
 
-        if (id == 0 && searchBank)
+        if (!searchBank)
+            return 0;
+
+        if (!Bank.Loaded)
+            Bank.Load();
+
+        List<InventoryItem>? bankItems = Bank.Items;
+        if (bankItems is null)
+            return 0;
+
+        foreach (InventoryItem item in bankItems)
         {
-            if (!Bank.Loaded)
-                Bank.Load();
+            if (!IsMatchingBoost(item, searchTerms))
+                continue;
 
-            List<InventoryItem>? bankItems = Bank.Items;
-            if (bankItems != null)
-            {
-                foreach (InventoryItem item in bankItems)
-                {
-                    if (item.Category == ItemCategory.ServerUse && item.Name.Contains(name))
-                    {
-                        id = item.ID;
-                        break;
-                    }
-                }
-            }
-
-            if (id > 0)
-                Bank.EnsureToInventory(id, false);
+            // Boost consumables are misc items, not exclusively ServerUse items.
+            // Only return the ID when the bank transfer succeeds so the helper
+            // never configures a boost that cannot be used from the inventory.
+            return Bank.EnsureToInventory(item.ID, false) ? item.ID : 0;
         }
-        return id;
+
+        return 0;
+    }
+
+    private static bool IsMatchingBoost(InventoryItem item, string[] searchTerms)
+    {
+        if (string.IsNullOrWhiteSpace(item.Name) || !item.Name.Contains("boost", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        foreach (string term in searchTerms)
+        {
+            if (item.Name.Contains(term, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
     }
 
     public void Start()
