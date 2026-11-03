@@ -226,6 +226,8 @@ public partial class TabbedHostWindow : Window
         public bool IsCustomNamed { get; set; } = false;
     }
 
+    private static readonly object ChildProcessExitLogLock = new();
+
     private readonly string[] _initialArgs;
     private bool _initialInstanceStarted = false;
     private readonly Dictionary<TabItem, TabInfo> _tabs = new();
@@ -2763,12 +2765,36 @@ public partial class TabbedHostWindow : Window
             p.EnableRaisingEvents = true;
             p.Exited += (s, e) =>
             {
+                string exitCode;
+                try
+                {
+                    exitCode = p.ExitCode.ToString();
+                }
+                catch (Exception exception)
+                {
+                    exitCode = $"unavailable ({exception.GetType().Name}: {exception.Message})";
+                }
+
                 Dispatcher.UIThread.Post(() =>
                 {
-                    if (!_isClosing)
+                    bool tabStillRegistered = _tabs.ContainsKey(newTab);
+                    string logEntry = $"{DateTimeOffset.UtcNow:O} | Tab='{tabName}' | PID={p.Id} | ExitCode={exitCode} | HostClosing={_isClosing} | TabRegistered={tabStillRegistered} | ChildHwnd=0x{info.ChildHwnd.ToInt64():X}";
+                    try
                     {
-                        CloseTab(newTab);
+                        string logDirectory = Path.Combine(Path.GetTempPath(), "VibeSkuaTabs");
+                        Directory.CreateDirectory(logDirectory);
+                        lock (ChildProcessExitLogLock)
+                            File.AppendAllText(Path.Combine(logDirectory, "process-exits.log"), logEntry + Environment.NewLine);
                     }
+                    catch (Exception exception)
+                    {
+                        Trace.WriteLine($"VibeSkua child process exit log failed: {exception}");
+                    }
+
+                    Trace.WriteLine($"VibeSkua child process exited: {logEntry}");
+
+                    if (!_isClosing && tabStillRegistered)
+                        CloseTab(newTab);
                 });
             };
 
