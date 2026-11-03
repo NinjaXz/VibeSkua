@@ -700,6 +700,10 @@ public class Follower
             _log($"Follow loop error: {ex.Message}",
                 "Follow loop error. See ButlerV5's debug log for details.");
         }
+        finally
+        {
+            ClearSyncedQuestRegistrations();
+        }
     }
 
     /// <summary>
