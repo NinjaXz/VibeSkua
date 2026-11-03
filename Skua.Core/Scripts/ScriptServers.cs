@@ -617,6 +617,9 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         }
         catch { }
         token.ThrowIfCancellationRequested();
+        if (_accountLockoutDetected)
+            return false;
+
         bool finalLoginVisible = Flash.GetGameObject<bool>("mcLogin.visible", false);
         bool finalServerListExists = !Flash.IsNull("mcLogin.sl.iList");
         int finalServerEntries = Flash.GetGameObject<int>("mcLogin.sl.iList.numChildren", 0);
