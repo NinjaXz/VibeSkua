@@ -589,8 +589,6 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
                 if (!string.IsNullOrWhiteSpace(modalText) && modalText != "null")
                 {
                     string trimmedModal = modalText.Trim();
-                    ReloginLog($"Login modal warning detected: '{trimmedModal}'. Clearing dialog.");
-                    try { Flash.Call("killLoginModals"); } catch { }
                     if (trimmedModal.Contains("banned", StringComparison.OrdinalIgnoreCase) ||
                         trimmedModal.Contains("disabled", StringComparison.OrdinalIgnoreCase))
                     {
@@ -599,6 +597,9 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
                         _accountLockoutDetected = true;
                         throw new OperationCanceledException($"Account lockout: {trimmedModal}");
                     }
+
+                    ReloginLog($"Login modal warning detected: '{trimmedModal}'. Clearing dialog.");
+                    try { Flash.Call("killLoginModals"); } catch { }
                     return false;
                 }
 
@@ -624,7 +625,7 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         {
             try { Flash.Call("loadPolicyFiles"); } catch { }
         }
-        else
+        else if (!_accountLockoutDetected)
         {
             ReloginLog("Server list screen failed to load (authentication timeout or modal lock). Resetting login UI.");
             try
