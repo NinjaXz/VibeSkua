@@ -55,7 +55,7 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid Margin="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
+  <Grid Margin="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" RowSpacing="10">
     <!-- Script time + reset -->
     <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto" ColumnSpacing="8">
       <materialIcons:MaterialIcon Grid.Column="0" Kind="ClockOutline" Width="16" Height="16" Foreground="#9CA3AF" VerticalAlignment="Center" />
@@ -261,8 +261,8 @@
 
     <!-- Manually saved rate snapshots -->
     <Border Grid.Row="5" Classes="stat-tile" IsVisible="{Binding AdvancedMode}" Padding="10">
-      <StackPanel Spacing="7">
-        <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="7">
+      <Grid RowDefinitions="Auto,*" RowSpacing="7">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="7">
           <StackPanel Spacing="1" VerticalAlignment="Center">
             <TextBlock Classes="section-label" Text="📊 RATE HISTORY" />
             <TextBlock Text="Capture the current rates whenever you want a checkpoint."
@@ -274,9 +274,18 @@
                   Command="{Binding SaveRateSnapshotCommand}" ToolTip.Tip="Save the current gameplay rates to history" />
           <Button Grid.Column="3" Classes="skua-button small" Content="Export CSV"
                   Command="{Binding ExportHistoryCommand}" />
+          <Button Grid.Column="4" Classes="skua-button small"
+                  Command="{Binding ClearRateHistoryCommand}" ToolTip.Tip="Delete all saved rate snapshots">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <materialIcons:MaterialIcon Kind="DeleteSweepOutline" Width="14" Height="14" />
+              <TextBlock Text="Clear History" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
         </Grid>
-        <DataGrid ItemsSource="{Binding RateHistory}"
-                  Height="190"
+        <DataGrid Grid.Row="1"
+                  ItemsSource="{Binding RateHistory}"
+                  MinHeight="120"
+                  VerticalAlignment="Stretch"
                   AutoGenerateColumns="False"
                   IsReadOnly="True"
                   CanUserResizeColumns="True"
@@ -296,7 +305,7 @@
             <DataGridTextColumn Header="Rank" Binding="{Binding ClassRank}" Width="60" />
           </DataGrid.Columns>
         </DataGrid>
-      </StackPanel>
+      </Grid>
     </Border>
   </Grid>
 </UserControl>
