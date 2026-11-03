@@ -103,6 +103,7 @@ public partial class App : Application
         Skua.App.Avalonia.AppStartup.Services.AddSkuaMainAppViewModels(services);
 
         Ioc.Default.ConfigureServices(services.BuildServiceProvider());
+        GrandpaModeState.Set(Ioc.Default.GetRequiredService<Skua.Core.Interfaces.ISettingsService>().Get<bool>("GrandpaMode"));
 
         Task.Run(() =>
         {

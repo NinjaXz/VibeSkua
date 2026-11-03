@@ -3,6 +3,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Skua.App.Avalonia.ViewModels.Packets;
+using Skua.App.Avalonia.Services;
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -20,7 +21,16 @@ public partial class PacketLoggerView : UserControl
     public PacketLoggerView()
     {
         InitializeComponent();
+        GrandpaModeState.Changed += ApplyGrandpaMode;
+        ApplyGrandpaMode(GrandpaModeState.Enabled);
         DataContextChanged += (_, _) => Subscribe(DataContext as PacketLoggerViewModel);
+    }
+
+    private void ApplyGrandpaMode(bool enabled)
+    {
+        PacketsListBox.FontSize = enabled ? 15 : 11;
+        PacketsListBox.Padding = new Avalonia.Thickness(enabled ? 7 : 4);
+        CountText.FontSize = enabled ? 13 : 11;
     }
 
     private void Subscribe(PacketLoggerViewModel? vm)
