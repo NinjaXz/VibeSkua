@@ -137,7 +137,7 @@ public partial class CaptureProxy : ObservableRecipient, ICaptureProxy
                 {
                     NoDelay = true
                 };
-                localForwarder.Connect(Destination!);
+                localForwarder.ConnectAsync(Destination!).WaitAsync(token).GetAwaiter().GetResult();
 
                 _client = localClient;
                 _forwarder = localForwarder;
