@@ -96,6 +96,9 @@
     <DataTemplate DataType="vms:ScriptStatsViewModel">
       <views:ScriptStatsView />
     </DataTemplate>
+    <DataTemplate DataType="vms:NotificationCenterViewModel">
+      <views:NotificationCenterView />
+    </DataTemplate>
     <DataTemplate DataType="advancedSkills:AdvancedSkillsViewModel">
       <views:AdvancedSkillsView />
     </DataTemplate>
