@@ -179,6 +179,11 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
             if (!_sessionStopwatch.IsRunning)
                 _sessionStopwatch.Start();
     
+            ExperienceProgress = requiredExperience > 0
+                ? Math.Clamp(experience / (double)requiredExperience * 100d, 0d, 100d)
+                : 0d;
+            ExperienceProgressText = $"{Math.Max(0, experience):N0} / {Math.Max(0, requiredExperience):N0} XP";
+
             if (!_hasGameplaySnapshot)
             {
                 SetGameplayBaseline(experience, requiredExperience, level, gold);
