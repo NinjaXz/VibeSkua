@@ -170,7 +170,7 @@
           <TextBlock Classes="stat-value" Text="{Binding ScriptStats.ExperiencePerHour, StringFormat={}{0:N0}}" />
         </StackPanel>
         <StackPanel Grid.Row="0" Grid.Column="1" Spacing="2">
-          <TextBlock Classes="section-label" Text="GOLD / HR" ToolTip.Tip="Net gold balance change per hour; spending reduces the measured rate." />
+          <TextBlock Classes="section-label" Text="NET GOLD / HR" ToolTip.Tip="Net gold balance change per hour; spending reduces the measured rate." />
           <TextBlock Classes="stat-value" Text="{Binding ScriptStats.GoldPerHour, StringFormat={}{0:N0}}" />
         </StackPanel>
         <StackPanel Grid.Row="1" Grid.Column="0" Spacing="2">
