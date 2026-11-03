@@ -50,6 +50,7 @@ internal class MainMenu
         windowService.RegisterManagedWindow<ScriptStatsViewModel>("Stats");
         windowService.RegisterManagedWindow<ConsoleViewModel>("Console");
         windowService.RegisterManagedWindow<DiagnosticsViewModel>("Diagnostics");
+        windowService.RegisterManagedWindow<NotificationCenterViewModel>("Notification Center");
 
         windowService.RegisterManagedWindow<AdvancedSkillsViewModel>("Skills");
 
@@ -99,6 +100,7 @@ internal class MainMenu
             new("Bank", new RelayCommand(Ioc.Default.GetRequiredService<IScriptBank>().Open)),
             new("Diagnostics", new List<MainMenuItemViewModel>()
             {
+                new("Notification Center"),
                 new("Logs"),
                 new("Console"),
                 new("Spammer"),
