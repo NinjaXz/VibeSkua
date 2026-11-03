@@ -57,7 +57,7 @@ public static class QuestSync
 
             Directory.CreateDirectory(SyncFile.Directory);
             File.WriteAllText(path, content);
-            DebugLog.Log("QuestSync", $"published {questIds.Length} active/registered quest(s) for {username}");
+            DebugLog.Log("QuestSync", $"published {entries.Length} active/registered quest(s) for {username}");
             return true;
         }
         catch (Exception ex)
