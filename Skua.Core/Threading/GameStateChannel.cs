@@ -29,7 +29,7 @@ public class GameStateChannel : IDisposable
         _cts = new();
         _stateChannel = Channel.CreateUnbounded<GameStateChange>(new UnboundedChannelOptions
         {
-            SingleReader = false,
+            SingleReader = true,
             SingleWriter = false
         });
     }
@@ -94,17 +94,19 @@ public class GameStateChannel : IDisposable
 
     public async Task StopAsync()
     {
-        _stateChannel.Writer.Complete();
-        _cts.Cancel();
-        if (_processingTask != null)
-        {
-            await _processingTask;
-        }
+        _stateChannel.Writer.TryComplete();
+
+        if (_processingTask is not null)
+            await _processingTask.ConfigureAwait(false);
+
+        _cts.Dispose();
     }
 
     public void Dispose()
     {
-        _cts?.Dispose();
+        _stateChannel.Writer.TryComplete();
+        _cts.Cancel();
+        _cts.Dispose();
     }
 }
 
