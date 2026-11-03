@@ -13,7 +13,7 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
     private IScriptInventory Inventory => _lazyInventory.Value;
     private IScriptBank Bank => _lazyBank.Value;
 
-    private const int ClassPointsForRankTen = 325_000;
+    private const int ClassPointsForRankTen = 302_500;
 
     private readonly Stopwatch _sw = Stopwatch.StartNew();
     private readonly Stopwatch _sessionStopwatch = new();
@@ -35,8 +35,8 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
     private int _lastClassRank;
     private long _earnedClassPoints;
 
-    // Cumulative point thresholds for class ranks 1-10, with rank 10 capped at the requested 325,000 CP.
-    private static readonly int[] ClassRankCumulativePoints = [0, 900, 3_600, 10_000, 22_500, 44_100, 78_400, 129_600, 202_500, 325_000];
+    // Cumulative point thresholds for class ranks 1-10, with rank 10 at 302,500 CP.
+    private static readonly int[] ClassRankCumulativePoints = [0, 900, 3_600, 10_000, 22_500, 44_100, 78_400, 129_600, 202_500, 302_500];
     private long _sessionKills;
     private long _sessionDeaths;
     private long _sessionItems;
