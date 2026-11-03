@@ -316,10 +316,6 @@ public partial class MainWindow : Window
         {
             _flash.InitializeFlash();
 
-            // Start the client-wide timer only after Flash has been initialized.
-            // Gameplay statistics then sample manual play without requiring a script.
-            ((IScriptInterfaceManager)Ioc.Default.GetRequiredService<IScriptInterface>()).Initialize();
-
 #if IS_WINDOWS
             if (this.TryGetPlatformHandle()?.Handle is IntPtr hwnd && hwnd != IntPtr.Zero)
             {
