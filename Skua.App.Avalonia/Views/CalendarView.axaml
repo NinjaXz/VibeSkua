@@ -50,7 +50,7 @@
           <TextBlock Text="UPCOMING AQW RELEASES" Classes="section-label" />
           <ListBox ItemsSource="{Binding Events}" SelectedItem="{Binding SelectedEvent, Mode=TwoWay}" Background="Transparent" BorderThickness="0">
             <ListBox.ItemTemplate>
-              <DataTemplate x:DataType="vms:CalendarEvent">
+              <DataTemplate x:DataType="services:CalendarEvent">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9" Margin="2,5">
                   <Border Grid.Column="0" Width="4" CornerRadius="2" Background="{DynamicResource SkuaBorderBrush}" />
                   <StackPanel Grid.Column="1" Spacing="3">
