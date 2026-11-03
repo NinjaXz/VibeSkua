@@ -107,6 +107,12 @@ public class ButlerV5Plugin : ISkuaPlugin
             "outdated bypass list. Both sides must have this enabled. Fast: one game\n" +
             "read per sync, timing shown in the debug log. Default: On.",
             true),
+        new Option<bool>("syncQuests", "Follow master's quests",
+            "While following, mirror the master's active and registered quest IDs.\n" +
+            "The butler registers the same quests locally, so it can accept them,\n" +
+            "collect its own required drops and complete them using its own inventory.\n" +
+            "Both the master and followers must have this enabled. Default: Off.",
+            false),
         new Option<bool>("questUnlockAll", "EXPERIMENTAL: unlock all quests",
             "Nuclear bypass: sets EVERY quest slot to max CLIENT-SIDE, so every quest-\n" +
             "locked cell/mob/map opens without cloning or a bypass list - a blunter\n" +
@@ -213,6 +219,7 @@ public class ButlerV5Plugin : ISkuaPlugin
             // Suppress quest publishing when "unlock all" is on: a maxed butler would
             // otherwise publish an all-max fake state that other accounts could clone.
             () => GetOption("questClone", true) && !GetOption("questUnlockAll", true),
+            () => GetOption("syncQuests", false),
             // Only report "following" while actively following. Parked (master offline
             // or on a different server) keeps the order but idles at home, so the master
             // sees a "summoned" chip instead of "following me".
@@ -233,6 +240,7 @@ public class ButlerV5Plugin : ISkuaPlugin
             CustomBypassIds = () => GetOptionString("questBypassCustom", ""),
             LevelFake = () => GetOption("fakeLevel", false),
             QuestClone = () => GetOption("questClone", true),
+            QuestSync = () => GetOption("syncQuests", false),
             AlwaysGoto = () => GetOption("alwaysGoto", false),
             CopyWalk = () => GetOption("copyWalk", false),
             UnlockAllQuests = () => GetOption("questUnlockAll", true),
