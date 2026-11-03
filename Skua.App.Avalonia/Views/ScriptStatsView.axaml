@@ -29,6 +29,14 @@
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="Foreground" Value="{DynamicResource SkuaTextBrush}" />
     </Style>
+    <Style Selector="ProgressBar.metric-progress">
+      <Setter Property="Height" Value="7" />
+      <Setter Property="MinHeight" Value="7" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="CornerRadius" Value="3" />
+      <Setter Property="Background" Value="{DynamicResource SkuaSurfaceAltBrush}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
     <Style Selector="ProgressBar.storage">
       <Setter Property="Height" Value="6" />
       <Setter Property="MinHeight" Value="6" />
@@ -175,9 +183,11 @@
                     ToolTip.Tip="Change the rate display unit" />
         </Grid>
         <Grid Grid.Row="1" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="14" RowSpacing="9">
-        <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2">
+        <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4">
           <TextBlock Classes="section-label" Text="{Binding ExperienceRateLabel}" />
           <TextBlock Classes="stat-value"><TextBlock.Text><MultiBinding Converter="{StaticResource RatePerUnitConverter}"><Binding Path="ScriptStats.ExperiencePerHour" /><Binding Path="RateUnit" /></MultiBinding></TextBlock.Text></TextBlock>
+          <ProgressBar Classes="metric-progress" Maximum="100" Value="{Binding ScriptStats.ExperienceProgress}" Foreground="{DynamicResource SkuaSuccessBrush}" />
+          <TextBlock FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" Text="{Binding ScriptStats.ExperienceProgressText}" />
         </StackPanel>
         <StackPanel Grid.Row="0" Grid.Column="1" Spacing="2">
           <TextBlock Classes="section-label" Text="{Binding GoldRateLabel}" ToolTip.Tip="Net gold balance change; spending reduces the measured rate." />
@@ -207,10 +217,11 @@
           <TextBlock Classes="section-label" Text="{Binding ClassPointsRateLabel}" />
           <TextBlock Classes="stat-value"><TextBlock.Text><MultiBinding Converter="{StaticResource RatePerUnitConverter}"><Binding Path="ScriptStats.ClassPointsPerHour" /><Binding Path="RateUnit" /></MultiBinding></TextBlock.Text></TextBlock>
         </StackPanel>
-        <StackPanel Grid.Row="4" Grid.Column="0" Spacing="2">
-          <TextBlock Classes="section-label" Text="CLASS RANK" />
-          <TextBlock Classes="stat-value" Text="{Binding ScriptStats.CurrentClassRank, StringFormat={}{0}}" />
-          <TextBlock FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" Text="{Binding ScriptStats.CurrentClassPoints, StringFormat={}{0:N0} CP}" />
+        <StackPanel Grid.Row="4" Grid.Column="0" Spacing="4">
+          <TextBlock Classes="section-label" Text="CLASS RANK → 10" />
+          <TextBlock Classes="stat-value" Text="{Binding ScriptStats.CurrentClassRank, StringFormat=Rank {0}}" />
+          <ProgressBar Classes="metric-progress" Maximum="100" Value="{Binding ScriptStats.ClassRank10Progress}" Foreground="{DynamicResource SkuaWarningBrush}" />
+          <TextBlock FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" Text="{Binding ScriptStats.ClassRank10ProgressText}" />
         </StackPanel>
         <StackPanel Grid.Row="4" Grid.Column="1" Spacing="2">
           <TextBlock Classes="section-label" Text="TIME TO RANK 10" />
