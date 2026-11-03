@@ -93,6 +93,7 @@ public class Follower
     private DateTime _lastQuestSyncCheck = DateTime.MinValue;
     private DateTime _lastQuestSyncFileTime = DateTime.MinValue;
     private readonly HashSet<int> _syncedQuestIds = new();
+    private readonly Dictionary<int, int> _syncedQuestRewards = new();
     private string? _lastRescueMap;
     private int _rescueRounds;
     private string? _blockedMap;
@@ -1336,29 +1337,41 @@ public class Follower
         if (fileTime == DateTime.MinValue || fileTime <= _lastQuestSyncFileTime)
             return;
 
-        int[]? requestedIds = QuestSync.Read(master);
-        if (requestedIds is null)
+        QuestSync.QuestSyncEntry[]? requestedEntries = QuestSync.Read(master);
+        if (requestedEntries is null)
             return;
 
-        HashSet<int> requested = new(requestedIds);
-        int[] removed = _syncedQuestIds.Where(id => !requested.Contains(id)).ToArray();
+        Dictionary<int, int> requested = requestedEntries.ToDictionary(entry => entry.QuestId, entry => entry.RewardId);
+        int[] removed = _syncedQuestIds
+            .Where(id => !requested.TryGetValue(id, out int rewardId) ||
+                (_syncedQuestRewards.TryGetValue(id, out int previousReward) && previousReward != rewardId))
+            .ToArray();
         if (removed.Length > 0)
         {
             _bot.Quests.UnregisterQuests(removed);
             _syncedQuestIds.ExceptWith(removed);
+            foreach (int questId in removed)
+                _syncedQuestRewards.Remove(questId);
         }
 
         HashSet<int> alreadyRegistered = new(_bot.Quests.Registered);
-        int[] added = requested.Where(id => !alreadyRegistered.Contains(id)).ToArray();
+        (int questId, int rewardId)[] added = requested
+            .Where(pair => !alreadyRegistered.Contains(pair.Key))
+            .Select(pair => (pair.Key, pair.Value))
+            .ToArray();
         if (added.Length > 0)
         {
             _bot.Quests.RegisterQuests(added);
-            _syncedQuestIds.UnionWith(added);
+            foreach ((int questId, int rewardId) in added)
+            {
+                _syncedQuestIds.Add(questId);
+                _syncedQuestRewards[questId] = rewardId;
+            }
         }
 
         _lastQuestSyncFileTime = fileTime;
         DebugLog.Log("QuestSync",
-            $"{master}: added {added.Length}, removed {removed.Length}, tracking {requested.Count} active/registered quest(s)");
+            $"{master}: added/updated {added.Length}, removed {removed.Length}, tracking {requested.Count} active/registered quest(s)");
     }
 
     /// <summary>Unregisters only the quest IDs this follower added for its current master.</summary>
@@ -1384,6 +1397,7 @@ public class Follower
         finally
         {
             _syncedQuestIds.Clear();
+            _syncedQuestRewards.Clear();
             _lastQuestSyncFileTime = DateTime.MinValue;
             _lastQuestSyncCheck = DateTime.MinValue;
         }
