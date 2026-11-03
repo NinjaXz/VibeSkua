@@ -29,4 +29,36 @@ public interface IScriptInventory : ICanEquip
 
     /// <summary>Checks the current character's local favorite mark.</summary>
     bool IsFavorited(int itemId);
+
+    /// <summary>Checks whether the specified inventory item is favorited.</summary>
+    bool IsFavorited(InventoryItem item) => IsFavorited(item.ID);
+
+    /// <summary>Gets the current inventory items marked as favorites.</summary>
+    IEnumerable<InventoryItem> FavoritedItems => Items.Where(item => IsFavorited(item.ID)).ToArray();
+
+    /// <summary>Gets the current inventory items that are not marked as favorites.</summary>
+    IEnumerable<InventoryItem> UnfavoritedItems => Items.Where(item => !IsFavorited(item.ID)).ToArray();
+
+    /// <summary>
+    /// Transfers eligible inventory items to the bank.
+    /// </summary>
+    /// <param name="skipFavorited">Whether favorited items should be left in the inventory.</param>
+    /// <param name="skipEquipped">Whether equipped items should be left in the inventory.</param>
+    /// <returns>The number of items successfully transferred.</returns>
+    int BankAllItems(bool skipFavorited = true, bool skipEquipped = true)
+    {
+        int banked = 0;
+        InventoryItem[] items = Items.ToArray();
+
+        foreach (InventoryItem item in items)
+        {
+            if (!CanBank(item) || (skipEquipped && item.Equipped) || (skipFavorited && IsFavorited(item.ID)))
+                continue;
+
+            if (ToBank(item))
+                banked++;
+        }
+
+        return banked;
+    }
 }

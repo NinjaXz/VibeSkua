@@ -112,6 +112,7 @@ public static class Services
             new("Script Repo", () => s.GetRequiredService<ScriptRepoViewModel>()),
             new("Scheduler", () => s.GetRequiredService<ScriptSchedulerViewModel>()),
             new("Logs", () => s.GetRequiredService<LogsViewModel>()),
+            new("Notification Center", () => s.GetRequiredService<NotificationCenterViewModel>()),
             new("Auto", () => s.GetRequiredService<AutoViewModel>()),
             new("Jump", () => s.GetRequiredService<JumpViewModel>()),
             new("Fast Travel", () => s.GetRequiredService<FastTravelViewModel>()),
@@ -158,6 +159,7 @@ public static class Services
 
         services.AddTransient<ConsoleViewModel>();
         services.AddTransient<DiagnosticsViewModel>();
+        services.AddSingleton<NotificationCenterViewModel>();
 
         services.AddSingleton<ScriptRepoViewModel>();
         services.AddSingleton<ScriptLoaderViewModel>();

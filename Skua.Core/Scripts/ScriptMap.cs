@@ -195,11 +195,23 @@ public partial class ScriptMap : IScriptMap
         Thread.Sleep(Options.ActionDelay);
     }
 
-    private Dictionary<string, List<MapItem>>? LoadSavedMapItems()
+    private Dictionary<string, List<MapItem>> LoadSavedMapItems()
     {
-        return !File.Exists(_savedCacheFilePath)
-            ? null
-            : (_savedMapItems = JsonConvert.DeserializeObject<Dictionary<string, List<MapItem>>>(File.ReadAllText(_savedCacheFilePath))!);
+        if (!File.Exists(_savedCacheFilePath))
+            return _savedMapItems;
+
+        try
+        {
+            _savedMapItems = JsonConvert.DeserializeObject<Dictionary<string, List<MapItem>>>(File.ReadAllText(_savedCacheFilePath))
+                ?? new Dictionary<string, List<MapItem>>();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        {
+            // A damaged cache must not prevent the client from starting or map features from working.
+            _savedMapItems = new();
+        }
+
+        return _savedMapItems;
     }
 
     private readonly string _cachePath = Path.Combine(ClientFileSources.SkuaDIR, "cache");

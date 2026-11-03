@@ -49,7 +49,7 @@ public class OptionGroupViewModel
 public partial class ApplicationOptionsViewModel : BotControlViewModelBase
 {
     // Sections by settings key (the option's Tag); everything else is a webhook option
-    private static readonly string[] GeneralKeys = { "ShowUsernameInTitle", "ClientAnim", "ReloginTryDelay", "ReloginWatchdog", "ClearFlashCache" };
+    private static readonly string[] GeneralKeys = { "ShowUsernameInTitle", "GrandpaMode", "ClientAnim", "ReloginTryDelay", "ReloginWatchdog", "ClearFlashCache" };
     private static readonly string[] UpdateKeys =
     {
         "CheckBotScriptsUpdates", "AutoUpdateBotScripts", "CheckAdvanceSkillSetsUpdates", "AutoUpdateAdvanceSkillSetsUpdates",

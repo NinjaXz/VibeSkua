@@ -1,0 +1,43 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vms="clr-namespace:Skua.App.Avalonia.ViewModels"
+             x:Class="Skua.App.Avalonia.Views.NotificationCenterView"
+             x:DataType="vms:NotificationCenterViewModel"
+             Background="{DynamicResource SkuaPageBrush}"
+             mc:Ignorable="d">
+  <Grid RowDefinitions="Auto,*" Margin="12" RowSpacing="10">
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto">
+      <StackPanel Spacing="2">
+        <TextBlock Text="ACTIVITY FEED" Classes="section-label" />
+        <TextBlock Text="{Binding Notifications.Count, StringFormat='{}{0} recent events'}"
+                   Foreground="{DynamicResource SkuaMutedTextBrush}" FontSize="11" />
+      </StackPanel>
+      <ComboBox Grid.Column="1" Width="112" Height="28" ItemsSource="{Binding FilterOptions}" SelectedItem="{Binding SelectedFilter, Mode=TwoWay}" ToolTip.Tip="Filter notification types" />
+      <Button Grid.Column="2" Classes="skua-button small" Content="Clear" Command="{Binding ClearCommand}" />
+    </Grid>
+    <Border Grid.Row="1" Background="{DynamicResource SkuaSurfaceBrush}"
+            BorderBrush="{DynamicResource SkuaBorderBrush}" BorderThickness="1" CornerRadius="8">
+      <ListBox ItemsSource="{Binding FilteredNotifications}" Background="Transparent"
+               BorderThickness="0" Padding="4">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vms:NotificationEntry">
+            <Grid ColumnDefinitions="62,Auto,Auto,*" Margin="5,6" ColumnSpacing="8">
+              <TextBlock Grid.Column="0" Text="{Binding TimeDisplay}" FontSize="10"
+                         FontFamily="Cascadia Mono,Consolas,Courier New,monospace"
+                         Foreground="{DynamicResource SkuaMutedTextBrush}" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{Binding Icon}" FontSize="12" VerticalAlignment="Center" />
+              <Border Grid.Column="2" CornerRadius="4" Padding="5,2"
+                      Background="{DynamicResource SkuaSurfaceAltBrush}" VerticalAlignment="Center">
+                <TextBlock Text="{Binding Kind}" FontSize="9" FontWeight="SemiBold" />
+              </Border>
+              <TextBlock Grid.Column="3" Text="{Binding Message}" FontSize="11"
+                         TextWrapping="Wrap" VerticalAlignment="Center" />
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </Border>
+  </Grid>
+</UserControl>

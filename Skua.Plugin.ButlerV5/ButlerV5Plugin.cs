@@ -47,7 +47,13 @@ public class ButlerV5Plugin : ISkuaPlugin
             "butlers that end up in the wrong cell after dying and never walk back to\n" +
             "the master on their own. Costs extra goto commands - one every 'Goto delay'\n" +
             "milliseconds for as long as the follow lasts - so raise Goto delay if that\n" +
-            "feels like too much. Ignored in leech mode. Default: Off.",
+            "feels like too much. Ignored in leech mode and when Copy master's walking is on. Default: Off.",
+            false),
+        new Option<bool>("copyWalk", "Copy master's walking",
+            "When following in the same room and cell, mirror the master's actual walking\n" +
+            "position instead of standing still after teleporting beside them. Existing\n" +
+            "goto, cell-jump, direct-join and rescue behavior still handles map/room\n" +
+            "changes and recovery. Ignored in leech mode and takes over from Always goto. Default: Off.",
             false),
         new Option<ButlerClassType>("classType", "Class type",
             "Which CoreBots class this butler equips when it starts following:\n" +
@@ -101,6 +107,12 @@ public class ButlerV5Plugin : ISkuaPlugin
             "outdated bypass list. Both sides must have this enabled. Fast: one game\n" +
             "read per sync, timing shown in the debug log. Default: On.",
             true),
+        new Option<bool>("syncQuests", "Follow master's quests",
+            "While following, mirror the master's active and registered quest IDs.\n" +
+            "The butler registers the same quests locally, including selected rewards,\n" +
+            "so it can accept them, collect its own required drops and complete them using\n" +
+            "its own inventory. Both master and followers must have this enabled. Default: Off.",
+            false),
         new Option<bool>("questUnlockAll", "EXPERIMENTAL: unlock all quests",
             "Nuclear bypass: sets EVERY quest slot to max CLIENT-SIDE, so every quest-\n" +
             "locked cell/mob/map opens without cloning or a bypass list - a blunter\n" +
@@ -151,6 +163,8 @@ public class ButlerV5Plugin : ISkuaPlugin
     private Task? _orderWatcher;
     private DateTime _orderGoneSince = DateTime.MinValue;
     private bool _busyOrderLogged;
+    private readonly HashSet<string> _processedSendAllCommands = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Queue<string> _processedSendAllCommandOrder = new();
     private bool _wasEnabledOrder = true;  // master-switch transition tracking in the order watcher
     private string? _declinedMaster;
     private EventHandler? _processExitHandler;
@@ -168,6 +182,7 @@ public class ButlerV5Plugin : ISkuaPlugin
     /// <summary>Master switch: when false the whole plugin is inert (global option).</summary>
     public bool PluginEnabled => GetOption("enabled", true);
     public IReadOnlyList<string> CurrentFollowers => _broadcaster?.Followers ?? new List<string>();
+    public IReadOnlyList<string> RecentPlayerTargets => PlayerTargetHistory.Load();
     public string? FollowingWho => _follower?.Master;
     public FollowSource FollowingHow => _follower?.Source ?? FollowSource.None;
 
@@ -204,6 +219,7 @@ public class ButlerV5Plugin : ISkuaPlugin
             // Suppress quest publishing when "unlock all" is on: a maxed butler would
             // otherwise publish an all-max fake state that other accounts could clone.
             () => GetOption("questClone", true) && !GetOption("questUnlockAll", true),
+            () => GetOption("syncQuests", false),
             // Only report "following" while actively following. Parked (master offline
             // or on a different server) keeps the order but idles at home, so the master
             // sees a "summoned" chip instead of "following me".
@@ -224,7 +240,9 @@ public class ButlerV5Plugin : ISkuaPlugin
             CustomBypassIds = () => GetOptionString("questBypassCustom", ""),
             LevelFake = () => GetOption("fakeLevel", false),
             QuestClone = () => GetOption("questClone", true),
+            QuestSync = () => GetOption("syncQuests", false),
             AlwaysGoto = () => GetOption("alwaysGoto", false),
+            CopyWalk = () => GetOption("copyWalk", false),
             UnlockAllQuests = () => GetOption("questUnlockAll", true),
             ScriptRunning = () => IsScriptRunning,
             AntiLagSummoned = () => GetOption("antiLagSummoned", true),
@@ -381,6 +399,82 @@ public class ButlerV5Plugin : ISkuaPlugin
         }
 
         _follower?.Stop();
+    }
+
+    /// <summary>Orders every eligible online ButlerV5 account to /goto an external player.</summary>
+    public void SendAllToPlayer(string playerName)
+    {
+        string target = playerName.Trim();
+        if (target.Length == 0)
+        {
+            Log("Enter a player name first.", "Enter a player name first.");
+            return;
+        }
+
+        if (!PluginEnabled)
+        {
+            Log("Can't send all - ButlerV5 is disabled ('Enable ButlerV5' is off). Turn it on first.");
+            return;
+        }
+
+        string me = OwnUsername ?? "";
+        if (me.Length == 0)
+        {
+            Log("Can't send all - this account is not logged in.");
+            return;
+        }
+
+        List<SyncData> roster = Roster.GetOnline(me);
+        if (target.Equals(me, StringComparison.OrdinalIgnoreCase) ||
+            roster.Any(account => account.Username.Equals(target, StringComparison.OrdinalIgnoreCase)))
+        {
+            Log($"'{target}' is already one of the active ButlerV5 client accounts. Enter an external player name instead.");
+            return;
+        }
+
+        string myServer = MyServerName;
+        bool alreadyManual(SyncData account) =>
+            account.Following.Equals(me, StringComparison.OrdinalIgnoreCase) &&
+            !CurrentFollowers.Any(f => f.Equals(account.Username, StringComparison.OrdinalIgnoreCase));
+        bool isMaster(SyncData account) => account.Followers.Count > 0;
+        bool differentServer(SyncData account) =>
+            !string.IsNullOrEmpty(account.Server) && !string.IsNullOrEmpty(myServer) &&
+            !account.Server.Equals(myServer, StringComparison.OrdinalIgnoreCase);
+        bool followingAnother(SyncData account) =>
+            !string.IsNullOrEmpty(account.Following) &&
+            !account.Following.Equals(me, StringComparison.OrdinalIgnoreCase);
+        bool unavailable(SyncData account) =>
+            account.ScriptOn || alreadyManual(account) || isMaster(account) ||
+            differentServer(account) || account.Parking || followingAnother(account);
+
+        List<string> skipped = roster.Where(unavailable).Select(account => account.Username).ToList();
+        List<string> recipients = roster.Where(account => !unavailable(account))
+            .Select(account => account.Username)
+            .ToList();
+
+        if (recipients.Count == 0)
+        {
+            Log(skipped.Count == 0
+                ? "No other ButlerV5 accounts are online."
+                : $"No available butlers to send to {target}. Skipped: {string.Join(", ", skipped)}");
+            return;
+        }
+
+        Broadcaster? broadcaster = _broadcaster;
+        if (broadcaster is null)
+        {
+            Log("Can't send all - ButlerV5 is still initializing. Try again shortly.");
+            return;
+        }
+
+        broadcaster.PublishSendAllGoto(target, recipients);
+        PlayerTargetHistory.Add(target);
+
+        Log($"Sent {recipients.Count} butler(s) to {target}." +
+            (skipped.Count > 0 ? $" Skipped {skipped.Count} unavailable account(s)." : ""),
+            $"Sent {recipients.Count} butler(s) to an external player.");
+        DebugLog.Log("UI", $"Send all to {target}: recipients=[{string.Join(", ", recipients)}], skipped=[{string.Join(", ", skipped)}]");
+        try { SyncFilesChanged?.Invoke(); } catch { }
     }
 
     /// <summary>Master side: publish the list of accounts that should follow this one.</summary>
@@ -741,6 +835,7 @@ public class ButlerV5Plugin : ISkuaPlugin
                     // Read every sync file ONCE per tick and share the snapshot with the
                     // handshake + order-matching steps (was 2-3 ReadAll + pid checks/tick).
                     List<SyncData> online = me != null ? Roster.GetOnline(me) : new();
+                    ProcessSendAllGotoCommands(me, online);
                     ProcessServingHandshakes(me, online);
 
                     if (me != null && _follower != null && _follower.Source != FollowSource.Manual)
@@ -835,6 +930,63 @@ public class ButlerV5Plugin : ISkuaPlugin
                 WaitForOrderTick(token);
             }
         }, token);
+    }
+
+    /// <summary>Executes fresh one-shot goto commands addressed to this account.</summary>
+    private void ProcessSendAllGotoCommands(string? me, List<SyncData> online)
+    {
+        if (string.IsNullOrWhiteSpace(me) || online.Count == 0 || !GetOption("obeySummons", true))
+            return;
+
+        long nowTicks = DateTime.UtcNow.Ticks;
+        long maxAgeTicks = TimeSpan.FromSeconds(60).Ticks;
+        string myServer = MyServerName;
+
+        foreach (SyncData command in online)
+        {
+            if (string.IsNullOrWhiteSpace(command.SendAllCommand) ||
+                string.IsNullOrWhiteSpace(command.SendAllTarget) ||
+                command.SendAllIssuedUtcTicks <= 0 ||
+                !command.SendAllRecipients.Any(name => name.Equals(me, StringComparison.OrdinalIgnoreCase)))
+                continue;
+
+            long ageTicks = nowTicks - command.SendAllIssuedUtcTicks;
+            if (ageTicks < 0 || ageTicks > maxAgeTicks)
+                continue;
+
+            string commandKey = $"{command.Username}:{command.SendAllCommand}";
+            if (!_processedSendAllCommands.Add(commandKey))
+                continue;
+
+            _processedSendAllCommandOrder.Enqueue(commandKey);
+            while (_processedSendAllCommandOrder.Count > 64)
+                _processedSendAllCommands.Remove(_processedSendAllCommandOrder.Dequeue());
+
+            if (IsScriptRunning)
+            {
+                DebugLog.Log("OrderWatcher", $"ignored send-all goto from {command.Username}: a script is running");
+                continue;
+            }
+
+            if (!string.IsNullOrEmpty(command.Server) && !string.IsNullOrEmpty(myServer) &&
+                !command.Server.Equals(myServer, StringComparison.OrdinalIgnoreCase))
+            {
+                DebugLog.Log("OrderWatcher", $"ignored send-all goto from {command.Username}: server mismatch");
+                continue;
+            }
+
+            try
+            {
+                _bot?.Player?.Goto(command.SendAllTarget);
+                DebugLog.Log("OrderWatcher", $"goto {command.SendAllTarget} requested by {command.Username}");
+                Log($"Sent to external player {command.SendAllTarget} on request from {command.Username}.",
+                    "Sent to an external player.");
+            }
+            catch (Exception ex)
+            {
+                DebugLog.Log("OrderWatcher", $"send-all goto failed for {command.SendAllTarget}: {ex.Message}");
+            }
+        }
     }
 
     /// <summary>Sets an option's in-memory value without persisting the shared file.</summary>

@@ -231,6 +231,7 @@ public partial class MainWindow : Window
                 "Junk Items" => MaterialIconKind.DeleteSweepOutline,
                 "Skills" => MaterialIconKind.LightningBoltOutline,
                 "Stats" => MaterialIconKind.ChartLine,
+                "Notification Center" => MaterialIconKind.BellOutline,
                 "Runtime" => MaterialIconKind.PlayNetworkOutline,
                 "Logs" => MaterialIconKind.FileDocumentOutline,
                 "Console" => MaterialIconKind.Console,
@@ -315,7 +316,7 @@ public partial class MainWindow : Window
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) 
         {
             _flash.InitializeFlash();
-            
+
 #if IS_WINDOWS
             if (this.TryGetPlatformHandle()?.Handle is IntPtr hwnd && hwnd != IntPtr.Zero)
             {

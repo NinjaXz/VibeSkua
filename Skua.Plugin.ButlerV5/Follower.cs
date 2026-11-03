@@ -17,9 +17,13 @@ public class FollowerSettings
     public required Func<string> CustomBypassIds { get; init; }
     public required Func<bool> LevelFake { get; init; }
     public required Func<bool> QuestClone { get; init; }
+    public required Func<bool> QuestSync { get; init; }
 
     /// <summary>Keep issuing goto even when already in the master's map and cell.</summary>
     public required Func<bool> AlwaysGoto { get; init; }
+
+    /// <summary>Mirror the master's movement while already in the same room and cell.</summary>
+    public required Func<bool> CopyWalk { get; init; }
 
     /// <summary>Nuclear bypass: max every quest slot client-side. Supersedes QuestClone and QuestBypasses.</summary>
     public required Func<bool> UnlockAllQuests { get; init; }
@@ -68,6 +72,10 @@ public class Follower
     private DateTime _lastGoto = DateTime.MinValue;
     private DateTime _lastSnapshot = DateTime.MinValue;
     private DateTime _lastJumpTime = DateTime.MinValue;
+    private DateTime _lastWalkCommandTime = DateTime.MinValue;
+    private int _lastWalkTargetX;
+    private int _lastWalkTargetY;
+    private bool _hasWalkTarget;
     private DateTime _lastJoinTime = DateTime.MinValue;
     private string? _lastJoinTarget;
     private int _gotoAttempts;
@@ -82,6 +90,10 @@ public class Follower
     private string? _lastBypassMap;
     private string? _lastPreApplyMap;
     private DateTime _lastCloneFileTime = DateTime.MinValue;
+    private DateTime _lastQuestSyncCheck = DateTime.MinValue;
+    private DateTime _lastQuestSyncFileTime = DateTime.MinValue;
+    private readonly HashSet<int> _syncedQuestIds = new();
+    private readonly Dictionary<int, int> _syncedQuestRewards = new();
     private string? _lastRescueMap;
     private int _rescueRounds;
     private string? _blockedMap;
@@ -134,6 +146,12 @@ public class Follower
         Master = master;
         Source = source;
         _lastReportedOffGoto = null;
+        _lastQuestSyncCheck = DateTime.MinValue;
+        _lastQuestSyncFileTime = DateTime.MinValue;
+        _lastWalkCommandTime = DateTime.MinValue;
+        _lastWalkTargetX = 0;
+        _lastWalkTargetY = 0;
+        _hasWalkTarget = false;
         _directJoinTarget = null;
         _directJoinAttempts = 0;
         _suspended = false;
@@ -157,7 +175,8 @@ public class Follower
         _packetStreamLogged = false;
         DebugLog.Log("Follower",
             $"options in THIS client: passiveAttack={_settings.PassiveAttack()} leech={_settings.LeechMode()} " +
-            $"park={_settings.Park()} gotoDelay={_settings.GotoDelayMs()}ms alwaysGoto={_settings.AlwaysGoto()} rescue={_settings.RescueThreshold()} " +
+            $"park={_settings.Park()} gotoDelay={_settings.GotoDelayMs()}ms alwaysGoto={_settings.AlwaysGoto()} copyWalk={_settings.CopyWalk()} " +
+            $"questSync={_settings.QuestSync()} rescue={_settings.RescueThreshold()} " +
             $"instantWarnings={_settings.InstantWarnings()} questBypass={_settings.QuestBypasses()} questClone={_settings.QuestClone()}");
         _log($"Following {master} ({source}).", $"Following the master ({source}).");
 
@@ -168,6 +187,7 @@ public class Follower
     {
         if (_cts == null)
         {
+            ClearSyncedQuestRegistrations();
             Source = FollowSource.None;
             return;
         }
@@ -179,6 +199,7 @@ public class Follower
         _cts.Dispose();
         _cts = null;
         _loop = null;
+        ClearSyncedQuestRegistrations();
 
         StopSkills();
         StopAttacking(deaggroJump: true);
@@ -211,7 +232,15 @@ public class Follower
                 {
                     // Track logout (not mere death) so we can re-arm on relogin.
                     if (_bot.Player?.LoggedIn != true)
+                    {
                         _wasLoggedIn = false;
+                        // ScriptQuest clears its registered quests on logout; forget our
+                        // local ownership too so the master's unchanged list is re-applied.
+                        _syncedQuestIds.Clear();
+                        _syncedQuestRewards.Clear();
+                        _lastQuestSyncFileTime = DateTime.MinValue;
+                        _lastQuestSyncCheck = DateTime.MinValue;
+                    }
                     Wait(token, 1000);
                     continue;
                 }
@@ -236,6 +265,7 @@ public class Follower
                     if (!_suspended)
                     {
                         _suspended = true;
+                        ClearSyncedQuestRegistrations();
                         StopSkills();
                         StopAttacking(deaggroJump: true);
                         _log($"A script is running - following {master} is suspended until it stops.",
@@ -258,6 +288,8 @@ public class Follower
                 // Keep Skua's Auto Attack/Hunt off for the whole follow (best-effort mirror
                 // of Skua's "no Auto while a script runs"). Cheap bool read per tick.
                 StopUserAuto();
+                if (!_settings.QuestSync())
+                    ClearSyncedQuestRegistrations();
 
                 // Parking is an enforced no-combat state. Keep both Skua aggro modes off
                 // while waiting too, so another component cannot re-enable them after the
@@ -299,6 +331,7 @@ public class Follower
                     _badReads++;
                     if (_badReads >= 3)
                     {
+                        ClearSyncedQuestRegistrations();
                         ParkOnce(m == null
                             ? $"No ButlerV5 file for {master} at {SyncFile.PathFor(master)} - is their plugin installed?"
                             : $"{master} looks offline (loggedin={(m.LoggedIn ? 1 : 0)}, pid={m.Pid}, " +
@@ -329,11 +362,15 @@ public class Follower
 
                 if (!SameServer(m))
                 {
+                    ClearSyncedQuestRegistrations();
                     ParkOnce($"{master} is on a different server (theirs='{m.Server}' mine='{GameServer.CurrentName(_bot)}'). Parked.",
                         "The master is on a different server. Parked.");
                     Wait(token, 2000);
                     continue;
                 }
+
+                if (_settings.QuestSync())
+                    SyncRegisteredQuests(master);
 
                 // Circuit breaker: a map we repeatedly failed to enter (entry gate kept
                 // bouncing us to battleon) is blocked until the master moves elsewhere.
@@ -612,21 +649,25 @@ public class Follower
                     // keeps issuing it even when we believe we're already in place.
                     // Throttled by the same Goto delay as travel; leech mode is a separate
                     // branch above, so it is unaffected.
-                    if (_settings.AlwaysGoto() && !m.OffGoto && !_gotoOff)
-                        TryGoto(master);
-
                     // In the master's room: only the CELL matters. Pads are ignored on
                     // purpose - walking within a cell changes a player's pad, and
                     // chasing those changes made the follower stutter-jump on every
                     // move command. The master's pad is only used as the arrival pad.
                     string targetCell = m.Cell;
                     string targetPad = m.Pad;
+                    PlayerInfo? masterInfo = null;
                     if (_bot.Map!.TryGetPlayer(master, out PlayerInfo? info) &&
                         !string.IsNullOrEmpty(info?.Cell))
                     {
+                        masterInfo = info;
                         targetCell = info.Cell;
                         targetPad = string.IsNullOrEmpty(info.Pad) ? m.Pad : info.Pad;
                     }
+
+                    bool canCopyWalk = _settings.CopyWalk() && masterInfo is not null &&
+                        _bot.Player!.Cell.Equals(targetCell, StringComparison.OrdinalIgnoreCase);
+                    if (_settings.AlwaysGoto() && !canCopyWalk && !m.OffGoto && !_gotoOff)
+                        TryGoto(master);
 
                     if (!string.Equals(_bot.Player!.Cell, targetCell, StringComparison.OrdinalIgnoreCase) &&
                         (DateTime.UtcNow - _lastJumpTime).TotalMilliseconds >= JumpMinIntervalMs)
@@ -642,6 +683,13 @@ public class Follower
                         _lastJumpTime = DateTime.UtcNow;
                     }
 
+                    if (canCopyWalk)
+                        CopyMasterWalk(masterInfo!);
+                    else if (!_settings.CopyWalk())
+                    {
+                        _hasWalkTarget = false;
+                    }
+
                     HandleCombat(m);
                 }
 
@@ -652,6 +700,10 @@ public class Follower
         {
             _log($"Follow loop error: {ex.Message}",
                 "Follow loop error. See ButlerV5's debug log for details.");
+        }
+        finally
+        {
+            ClearSyncedQuestRegistrations();
         }
     }
 
@@ -1267,6 +1319,139 @@ public class Follower
         }
         catch
         {
+        }
+    }
+
+    /// <summary>
+    /// Mirrors the master's active and registered quests. Quests already registered
+    /// locally by another feature are left alone; only registrations added here are removed.
+    /// </summary>
+    private void SyncRegisteredQuests(string master)
+    {
+        DateTime now = DateTime.UtcNow;
+        if ((now - _lastQuestSyncCheck).TotalSeconds < 1)
+            return;
+        _lastQuestSyncCheck = now;
+
+        DateTime fileTime = QuestSync.GetFileTime(master);
+        if (fileTime == DateTime.MinValue || fileTime <= _lastQuestSyncFileTime)
+            return;
+
+        QuestSync.QuestSyncEntry[]? requestedEntries = QuestSync.Read(master);
+        if (requestedEntries is null)
+            return;
+
+        Dictionary<int, int> requested = requestedEntries.ToDictionary(entry => entry.QuestId, entry => entry.RewardId);
+        int[] removed = _syncedQuestIds
+            .Where(id => !requested.TryGetValue(id, out int rewardId) ||
+                (_syncedQuestRewards.TryGetValue(id, out int previousReward) && previousReward != rewardId))
+            .ToArray();
+        if (removed.Length > 0)
+        {
+            _bot.Quests.UnregisterQuests(removed);
+            _syncedQuestIds.ExceptWith(removed);
+            foreach (int questId in removed)
+                _syncedQuestRewards.Remove(questId);
+        }
+
+        HashSet<int> alreadyRegistered = new(_bot.Quests.Registered);
+        (int questId, int rewardId)[] added = requested
+            .Where(pair => !alreadyRegistered.Contains(pair.Key))
+            .Select(pair => (pair.Key, pair.Value))
+            .ToArray();
+        if (added.Length > 0)
+        {
+            _bot.Quests.RegisterQuests(added);
+            foreach ((int questId, int rewardId) in added)
+            {
+                _syncedQuestIds.Add(questId);
+                _syncedQuestRewards[questId] = rewardId;
+            }
+        }
+
+        _lastQuestSyncFileTime = fileTime;
+        DebugLog.Log("QuestSync",
+            $"{master}: added/updated {added.Length}, removed {removed.Length}, tracking {requested.Count} active/registered quest(s)");
+    }
+
+    /// <summary>Unregisters only the quest IDs this follower added for its current master.</summary>
+    private void ClearSyncedQuestRegistrations()
+    {
+        if (_syncedQuestIds.Count == 0)
+        {
+            _syncedQuestRewards.Clear();
+            _lastQuestSyncFileTime = DateTime.MinValue;
+            _lastQuestSyncCheck = DateTime.MinValue;
+            return;
+        }
+
+        try
+        {
+            int[] questIds = _syncedQuestIds.ToArray();
+            _bot.Quests.UnregisterQuests(questIds);
+            DebugLog.Log("QuestSync", $"removed {_syncedQuestIds.Count} mirrored quest registration(s)");
+        }
+        catch (Exception ex)
+        {
+            DebugLog.Log("QuestSync", $"could not remove mirrored quests: {ex.Message}");
+        }
+        finally
+        {
+            _syncedQuestIds.Clear();
+            _syncedQuestRewards.Clear();
+            _lastQuestSyncFileTime = DateTime.MinValue;
+            _lastQuestSyncCheck = DateTime.MinValue;
+        }
+    }
+
+    /// <summary>
+    /// Mirrors the master's live in-room position without waiting for the walk to finish.
+    /// Room and cell transitions remain controlled by the existing goto/jump/rescue logic.
+    /// </summary>
+    private void CopyMasterWalk(PlayerInfo master)
+    {
+        IScriptPlayer? player = _bot.Player;
+        if (player is null)
+            return;
+
+        int targetX = (int)Math.Round(master.X);
+        int targetY = (int)Math.Round(master.Y);
+        double deltaX = targetX - player.X;
+        double deltaY = targetY - player.Y;
+
+        // Avoid issuing tiny correction walks when both characters are already together.
+        if (deltaX * deltaX + deltaY * deltaY <= 100)
+        {
+            _hasWalkTarget = false;
+            return;
+        }
+
+        DateTime now = DateTime.UtcNow;
+        bool targetChanged = !_hasWalkTarget ||
+            Math.Abs(targetX - _lastWalkTargetX) >= 4 ||
+            Math.Abs(targetY - _lastWalkTargetY) >= 4;
+        double elapsedMs = (now - _lastWalkCommandTime).TotalMilliseconds;
+        if (!targetChanged && elapsedMs < 1500)
+            return;
+
+        // Reuse Goto delay as the movement command throttle, with a safe 250ms floor.
+        int throttleMs = Math.Clamp(_settings.GotoDelayMs(), LoopDelayMs, 2000);
+        if (elapsedMs < throttleMs)
+            return;
+
+        try
+        {
+            int speed = player.WalkSpeed > 0 ? Math.Clamp(player.WalkSpeed, 1, 20) : 8;
+            _bot.Flash.Call("walkTo", targetX, targetY, speed);
+
+            _lastWalkTargetX = targetX;
+            _lastWalkTargetY = targetY;
+            _lastWalkCommandTime = now;
+            _hasWalkTarget = true;
+        }
+        catch (Exception ex)
+        {
+            DebugLog.Log("Follower", $"copy walk failed: {ex.Message}");
         }
     }
 

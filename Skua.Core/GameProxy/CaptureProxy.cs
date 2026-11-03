@@ -25,6 +25,7 @@ public partial class CaptureProxy : ObservableRecipient, ICaptureProxy
     private long _forwardingExceptions;
     private long _activeStreams;
     private CancellationTokenSource? _captureProxyCTS;
+    private readonly object _lifecycleLock = new();
 
     /// <summary>
     /// The default port for the capture proxy to run on.
@@ -51,51 +52,80 @@ public partial class CaptureProxy : ObservableRecipient, ICaptureProxy
 
     public void Start()
     {
-        ResetDiagnosticsCounters();
-        if (Destination == null)
-            return;
-        Running = true;
-        _listenPort = Destination.Port;
-        _thread = new(() =>
+        lock (_lifecycleLock)
         {
-            _captureProxyCTS = new();
-            _listener = new TcpListener(IPAddress.Loopback, _listenPort);
-            _Listen(_captureProxyCTS.Token);
-            _captureProxyCTS.Dispose();
-            _captureProxyCTS = null;
-        })
-        { Name = "Capture Proxy" };
-        _thread.Start();
+            if (Running || Destination is null)
+                return;
+
+            ResetDiagnosticsCounters();
+            _listenPort = Destination.Port;
+            CancellationTokenSource captureProxyCTS = new();
+            _captureProxyCTS = captureProxyCTS;
+            TcpListener listener = new(IPAddress.Loopback, _listenPort);
+            _listener = listener;
+
+            try
+            {
+                listener.Start();
+            }
+            catch
+            {
+                try { listener.Stop(); } catch { }
+                _listener = null;
+                captureProxyCTS.Dispose();
+                _captureProxyCTS = null;
+                return;
+            }
+
+            Running = true;
+            CancellationToken token = captureProxyCTS.Token;
+            _thread = new(() =>
+            {
+                try
+                {
+                    _Listen(token);
+                }
+                finally
+                {
+                    lock (_lifecycleLock)
+                    {
+                        _captureProxyCTS?.Dispose();
+                        _captureProxyCTS = null;
+                        _listener = null;
+                        _thread = null;
+                        Running = false;
+                    }
+                    RecordDiagnosticsSummary();
+                }
+            })
+            { Name = "Capture Proxy" };
+            _thread.Start();
+        }
     }
+
     public void Stop()
     {
-        _captureProxyCTS?.Cancel();
-        try { _listener?.Stop(); } catch { }
-        if (_forwarder?.Connected ?? false)
+        Thread? listenerThread;
+        lock (_lifecycleLock)
         {
-            _forwarder.Close();
-            _forwarder.Dispose();
+            _captureProxyCTS?.Cancel();
+            try { _listener?.Stop(); } catch { }
+
+            // TcpClient.Connected is only a snapshot; always close sockets to interrupt pending reads/writes.
+            try { _forwarder?.Close(); } catch { }
+            try { _forwarder?.Dispose(); } catch { }
+            try { _client?.Close(); } catch { }
+            try { _client?.Dispose(); } catch { }
+
+            listenerThread = _thread;
         }
-        if (_client?.Connected ?? false)
-        {
-            _client.Close();
-            _client.Dispose();
-        }
-        RecordDiagnosticsSummary();
-        Running = false;
+
+        if (listenerThread is not null && listenerThread != Thread.CurrentThread)
+            listenerThread.Join(TimeSpan.FromSeconds(2));
     }
 
     private void _Listen(CancellationToken token)
     {
-        try
-        {
-            _listener?.Start();
-        }
-        catch
-        {
-            return;
-        }
-
         while (!token.IsCancellationRequested)
         {
             TcpClient? localClient = null;
@@ -110,7 +140,7 @@ public partial class CaptureProxy : ObservableRecipient, ICaptureProxy
                 {
                     NoDelay = true
                 };
-                localForwarder.Connect(Destination!);
+                localForwarder.ConnectAsync(Destination!).WaitAsync(token).GetAwaiter().GetResult();
 
                 _client = localClient;
                 _forwarder = localForwarder;
@@ -118,8 +148,10 @@ public partial class CaptureProxy : ObservableRecipient, ICaptureProxy
                 TcpClient forwarder = localForwarder;
 
                 Interlocked.Add(ref _activeStreams, 2);
-                Task.Factory.StartNew(() => _DataInterceptor(client, forwarder, true, token), token);
-                Task.Factory.StartNew(() => _DataInterceptor(forwarder, client, false, token), token);
+                // Do not pass the cancellation token to StartNew: a pre-cancelled task would
+                // never enter _DataInterceptor and would leave ActiveStreams permanently elevated.
+                Task.Factory.StartNew(() => _DataInterceptor(client, forwarder, true, token));
+                Task.Factory.StartNew(() => _DataInterceptor(forwarder, client, false, token));
             }
             catch
             {
@@ -130,17 +162,22 @@ public partial class CaptureProxy : ObservableRecipient, ICaptureProxy
             }
         }
 
-        _listener?.Stop();
+        try { _listener?.Stop(); } catch { }
     }
     private async Task _DataInterceptor(TcpClient target, TcpClient destination, bool outbound, CancellationToken token)
     {
         byte[] messageBuffer = new byte[4096];
         List<byte> cpacket = new();
-        NetworkStream targetStream = target.GetStream();
-        NetworkStream destStream = destination.GetStream();
+        NetworkStream? targetStream = null;
+        NetworkStream? destStream = null;
 
         try
         {
+            // Socket shutdown can race task startup; acquire streams inside the guarded block
+            // so every started interceptor reaches the cleanup path and decrements ActiveStreams.
+            targetStream = target.GetStream();
+            destStream = destination.GetStream();
+
             while (!token.IsCancellationRequested && target.Connected && destination.Connected)
             {
                 int read = await targetStream.ReadAsync(messageBuffer, token).ConfigureAwait(false);
@@ -183,9 +220,16 @@ public partial class CaptureProxy : ObservableRecipient, ICaptureProxy
                         Interlocked.Add(ref _inboundBytes, data.Length);
                     }
 
-                    if (Interceptors.Count > 0)
+                    IInterceptor[] currentInterceptors;
+                    lock (Interceptors)
                     {
-                        IInterceptor[] currentInterceptors = Interceptors.OrderBy(i => i.Priority).ToArray();
+                        currentInterceptors = Interceptors.Count == 0
+                            ? Array.Empty<IInterceptor>()
+                            : Interceptors.OrderBy(i => i.Priority).ToArray();
+                    }
+
+                    if (currentInterceptors.Length > 0)
+                    {
                         long interceptorStart = Stopwatch.GetTimestamp();
                         foreach (IInterceptor interceptor in currentInterceptors)
                         {

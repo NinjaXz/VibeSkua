@@ -49,10 +49,13 @@ public partial class PacketInterceptorViewModel : BotControlViewModelBase
         {
             if (SetProperty(ref _isLogging, value))
             {
-                if (value)
-                    _gameProxy.Interceptors.Add(_logger);
-                else
-                    _gameProxy.Interceptors.Remove(_logger);
+                lock (_gameProxy.Interceptors)
+                {
+                    if (value)
+                        _gameProxy.Interceptors.Add(_logger);
+                    else
+                        _gameProxy.Interceptors.Remove(_logger);
+                }
             }
         }
     }
@@ -251,21 +254,44 @@ public partial class PacketInterceptorViewModel : BotControlViewModelBase
             return;
         }
 
-        if (SelectedServer is null)
+        Server? selectedServer = SelectedServer;
+        if (selectedServer is null)
             return;
 
         IScriptOption options = Ioc.Default.GetRequiredService<IScriptOption>();
         bool relogin = options.AutoRelogin;
         options.AutoRelogin = false;
-        IPAddress ip = IPAddress.TryParse((string?)SelectedServer.IP, out IPAddress? addr) ? addr : Dns.GetHostEntry((string)SelectedServer.IP).AddressList[0];
-        int port = SelectedServer.Port != 0 ? SelectedServer.Port : 5588;
-        _gameProxy.Destination = new IPEndPoint(ip, port);
-        _gameProxy.Start();
-        _server.Logout();
-        _server.Login();
-        _server.ConnectIP("127.0.0.1", port);
-        OnPropertyChanged(nameof(Running));
-        options.AutoRelogin = relogin;
+
+        try
+        {
+            IPAddress ip = IPAddress.TryParse(selectedServer.IP, out IPAddress? address)
+                ? address
+                : Dns.GetHostAddresses(selectedServer.IP).FirstOrDefault()
+                    ?? throw new InvalidOperationException($"Could not resolve server address: {selectedServer.IP}");
+
+            int port = selectedServer.Port != 0 ? selectedServer.Port : 5588;
+            _gameProxy.Destination = new IPEndPoint(ip, port);
+            _gameProxy.Start();
+
+            // Do not disconnect the active game session if the local proxy failed to bind.
+            if (!_gameProxy.Running)
+                return;
+
+            _server.Logout();
+            _server.Login();
+            _server.ConnectIP("127.0.0.1", port);
+            OnPropertyChanged(nameof(Running));
+        }
+        catch
+        {
+            _gameProxy.Stop();
+            OnPropertyChanged(nameof(Running));
+            throw;
+        }
+        finally
+        {
+            options.AutoRelogin = relogin;
+        }
     }
 
     protected override void OnActivated()

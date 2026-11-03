@@ -238,6 +238,24 @@ public class ClientSettings
     [JsonPropertyName("ShowUsernameInTitle")]
     public bool ShowUsernameInTitle { get; set; } = true;
 
+    [JsonPropertyName("GrandpaMode")]
+    public bool GrandpaMode { get; set; } = false;
+
+    [JsonPropertyName("StatsAdvancedMode")]
+    public bool StatsAdvancedMode { get; set; } = false;
+
+    [JsonPropertyName("StatsRateUnit")]
+    public string StatsRateUnit { get; set; } = "/hr";
+
+    [JsonPropertyName("StatsRateHistory")]
+    public List<StatsRateSnapshot> StatsRateHistory { get; set; } = new();
+
+    [JsonPropertyName("InventoryGoals")]
+    public Dictionary<int, int> InventoryGoals { get; set; } = new();
+
+    [JsonPropertyName("JunkSkipSellWarning")]
+    public bool JunkSkipSellWarning { get; set; } = false;
+
     [JsonPropertyName("UserCustomScriptsFolder")]
     public string UserCustomScriptsFolder { get; set; } = string.Empty;
 
@@ -323,6 +341,9 @@ public class ClientSettings
     {
         UserOptions ??= new();
         UserPinnedScripts ??= new();
+        StatsRateUnit = string.IsNullOrWhiteSpace(StatsRateUnit) ? "/hr" : StatsRateUnit;
+        StatsRateHistory ??= new();
+        InventoryGoals ??= new();
 
         if (FastTravels == null || FastTravels.Count == 0)
         {

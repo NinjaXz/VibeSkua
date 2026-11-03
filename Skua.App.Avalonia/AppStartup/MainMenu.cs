@@ -26,6 +26,8 @@ internal class MainMenu
 {
     public static void RegisterManagedWindows(IWindowService windowService)
     {
+        // Initialize the singleton event collector before the user opens its window.
+        Ioc.Default.GetRequiredService<NotificationCenterViewModel>();
         windowService.RegisterManagedWindow<ScriptLoaderViewModel>("Scripts");
         windowService.RegisterManagedWindow<ScriptLoaderViewModel>("Script Loader");
         windowService.RegisterManagedWindow<ScriptSchedulerViewModel>("Scheduler");
@@ -50,6 +52,7 @@ internal class MainMenu
         windowService.RegisterManagedWindow<ScriptStatsViewModel>("Stats");
         windowService.RegisterManagedWindow<ConsoleViewModel>("Console");
         windowService.RegisterManagedWindow<DiagnosticsViewModel>("Diagnostics");
+        windowService.RegisterManagedWindow<NotificationCenterViewModel>("Notification Center");
 
         windowService.RegisterManagedWindow<AdvancedSkillsViewModel>("Skills");
 
@@ -99,6 +102,7 @@ internal class MainMenu
             new("Bank", new RelayCommand(Ioc.Default.GetRequiredService<IScriptBank>().Open)),
             new("Diagnostics", new List<MainMenuItemViewModel>()
             {
+                new("Notification Center"),
                 new("Logs"),
                 new("Console"),
                 new("Spammer"),

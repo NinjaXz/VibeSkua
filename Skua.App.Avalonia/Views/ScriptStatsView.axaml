@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vms="clr-namespace:Skua.App.Avalonia.ViewModels"
+             xmlns:models="clr-namespace:Skua.Core.Models;assembly=Skua.Core"
              xmlns:converters="clr-namespace:Skua.App.Avalonia.Converters"
              x:Class="Skua.App.Avalonia.Views.ScriptStatsView"
              x:DataType="vms:ScriptStatsViewModel"
@@ -11,6 +12,8 @@
              mc:Ignorable="d" d:DesignHeight="320" d:DesignWidth="440">
   <UserControl.Resources>
     <converters:AtLeastOneConverter x:Key="AtLeastOneConverter" />
+    <converters:TimeSpanTotalHoursConverter x:Key="TimeSpanTotalHoursConverter" />
+    <converters:RatePerUnitConverter x:Key="RatePerUnitConverter" />
   </UserControl.Resources>
 
   <UserControl.Styles>
@@ -27,6 +30,21 @@
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="Foreground" Value="{DynamicResource SkuaTextBrush}" />
     </Style>
+    <Style Selector="Border.metric-card">
+      <Setter Property="Background" Value="{DynamicResource SkuaSurfaceAltBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SkuaBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="Padding" Value="9,7" />
+    </Style>
+    <Style Selector="ProgressBar.metric-progress">
+      <Setter Property="Height" Value="7" />
+      <Setter Property="MinHeight" Value="7" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="CornerRadius" Value="3" />
+      <Setter Property="Background" Value="{DynamicResource SkuaSurfaceAltBrush}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
     <Style Selector="ProgressBar.storage">
       <Setter Property="Height" Value="6" />
       <Setter Property="MinHeight" Value="6" />
@@ -37,14 +55,15 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid Margin="12" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="10">
+  <Grid Margin="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" RowSpacing="10">
     <!-- Script time + reset -->
-    <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="8">
+    <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto" ColumnSpacing="8">
       <materialIcons:MaterialIcon Grid.Column="0" Kind="ClockOutline" Width="16" Height="16" Foreground="#9CA3AF" VerticalAlignment="Center" />
       <TextBlock Grid.Column="1" Text="{Binding ScriptStats.Time, StringFormat={}{0:hh\\:mm\\:ss}}" FontFamily="Cascadia Mono,Consolas,Courier New,monospace"
                  FontWeight="SemiBold" VerticalAlignment="Center" />
       <TextBlock Grid.Column="2" Text="script time" FontSize="11" Foreground="{DynamicResource SkuaMutedTextBrush}" VerticalAlignment="Center" />
-      <Button Grid.Column="4" Classes="skua-button small w84" Command="{Binding ResetStatsCommand}" ToolTip.Tip="Reset all combat and drop counters">
+      <ToggleSwitch Grid.Column="4" Content="Advanced" IsChecked="{Binding AdvancedMode}" VerticalAlignment="Center" ToolTip.Tip="Show detailed gameplay rates" />
+      <Button Grid.Column="5" Classes="skua-button small w84" Command="{Binding ResetStatsCommand}" ToolTip.Tip="Reset all combat and drop counters">
         <StackPanel Orientation="Horizontal" Spacing="5">
           <materialIcons:MaterialIcon Kind="Restore" Width="14" Height="14" />
           <TextBlock Text="Reset" VerticalAlignment="Center" />
@@ -158,6 +177,134 @@
             </MultiBinding>
           </TextBlock.Text>
         </TextBlock>
+      </Grid>
+    </Border>
+
+    <!-- Advanced gameplay metrics are sourced from live game state, not script execution. -->
+    <Border Grid.Row="4" Classes="stat-tile" IsVisible="{Binding AdvancedMode}" Padding="10">
+      <Grid RowDefinitions="Auto,Auto" RowSpacing="10">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+          <TextBlock Grid.Column="0" Classes="section-label" Text="GAMEPLAY METRICS" VerticalAlignment="Center" />
+          <ComboBox Grid.Column="1" Width="76" Height="28"
+                    ItemsSource="{Binding RateUnits}"
+                    SelectedItem="{Binding RateUnit, Mode=TwoWay}"
+                    ToolTip.Tip="Change the rate display unit" />
+        </Grid>
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="8">
+          <Border Grid.Row="0" Grid.Column="0" Classes="metric-card">
+            <StackPanel Spacing="4">
+              <TextBlock Classes="section-label"><Run Text="✨ " /><Run Text="{Binding ExperienceRateLabel}" /></TextBlock>
+              <TextBlock Classes="stat-value"><TextBlock.Text><MultiBinding Converter="{StaticResource RatePerUnitConverter}"><Binding Path="ScriptStats.ExperiencePerHour" /><Binding Path="RateUnit" /></MultiBinding></TextBlock.Text></TextBlock>
+              <ProgressBar Classes="metric-progress" Maximum="100" Value="{Binding ScriptStats.ExperienceProgress}" Foreground="{DynamicResource SkuaSuccessBrush}" />
+              <TextBlock FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" Text="{Binding ScriptStats.ExperienceProgressText}" />
+            </StackPanel>
+          </Border>
+          <Border Grid.Row="0" Grid.Column="1" Classes="metric-card">
+            <StackPanel Spacing="4">
+              <TextBlock Classes="section-label" ToolTip.Tip="Net gold balance change; spending reduces the measured rate."><Run Text="🪙 " /><Run Text="{Binding GoldRateLabel}" /></TextBlock>
+              <TextBlock Classes="stat-value"><TextBlock.Text><MultiBinding Converter="{StaticResource RatePerUnitConverter}"><Binding Path="ScriptStats.GoldPerHour" /><Binding Path="RateUnit" /></MultiBinding></TextBlock.Text></TextBlock>
+            </StackPanel>
+          </Border>
+          <Border Grid.Row="1" Grid.Column="0" Classes="metric-card">
+            <StackPanel Spacing="4">
+              <TextBlock Classes="section-label" Text="⚔️ KILLS / MIN" />
+              <TextBlock Classes="stat-value" Text="{Binding ScriptStats.KillsPerMinute, StringFormat={}{0:N1}}" />
+            </StackPanel>
+          </Border>
+          <Border Grid.Row="1" Grid.Column="1" Classes="metric-card">
+            <StackPanel Spacing="4">
+              <TextBlock Classes="section-label" Text="💀 DEATHS / MIN" />
+              <TextBlock Classes="stat-value" Text="{Binding ScriptStats.DeathsPerMinute, StringFormat={}{0:N2}}" />
+            </StackPanel>
+          </Border>
+          <Border Grid.Row="2" Grid.Column="0" Classes="metric-card">
+            <StackPanel Spacing="4">
+              <TextBlock Classes="section-label"><Run Text="🎁 " /><Run Text="{Binding ItemsRateLabel}" /></TextBlock>
+              <TextBlock Classes="stat-value"><TextBlock.Text><MultiBinding Converter="{StaticResource RatePerUnitConverter}"><Binding Path="ScriptStats.ItemsPerHour" /><Binding Path="RateUnit" /></MultiBinding></TextBlock.Text></TextBlock>
+            </StackPanel>
+          </Border>
+          <Border Grid.Row="2" Grid.Column="1" Classes="metric-card">
+            <StackPanel Spacing="4">
+              <TextBlock Classes="section-label" Text="⏱️ SESSION UPTIME" />
+              <TextBlock Classes="stat-value" Text="{Binding ScriptStats.SessionTime, StringFormat={}{0:dd\\.hh\\:mm\\:ss}}" />
+            </StackPanel>
+          </Border>
+          <Border Grid.Row="3" Grid.Column="0" Classes="metric-card">
+            <StackPanel Spacing="4">
+              <TextBlock Classes="section-label" Text="📈 TIME TO LEVEL" />
+              <TextBlock Classes="stat-value" Text="{Binding ScriptStats.TimeToLevel, Converter={StaticResource TimeSpanTotalHoursConverter}, TargetNullValue=—}" />
+            </StackPanel>
+          </Border>
+          <Border Grid.Row="3" Grid.Column="1" Classes="metric-card">
+            <StackPanel Spacing="4">
+              <TextBlock Classes="section-label"><Run Text="⭐ " /><Run Text="{Binding ClassPointsRateLabel}" /></TextBlock>
+              <TextBlock Classes="stat-value"><TextBlock.Text><MultiBinding Converter="{StaticResource RatePerUnitConverter}"><Binding Path="ScriptStats.ClassPointsPerHour" /><Binding Path="RateUnit" /></MultiBinding></TextBlock.Text></TextBlock>
+            </StackPanel>
+          </Border>
+          <Border Grid.Row="4" Grid.Column="0" Classes="metric-card">
+            <StackPanel Spacing="4">
+              <TextBlock Classes="section-label" Text="🏆 CLASS RANK → 10" />
+              <TextBlock Classes="stat-value" Text="{Binding ScriptStats.CurrentClassRank, StringFormat=Rank {0}}" />
+              <ProgressBar Classes="metric-progress" Maximum="100" Value="{Binding ScriptStats.ClassRank10Progress}" Foreground="{DynamicResource SkuaWarningBrush}" />
+              <TextBlock FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" Text="{Binding ScriptStats.ClassRank10ProgressText}" />
+            </StackPanel>
+          </Border>
+          <Border Grid.Row="4" Grid.Column="1" Classes="metric-card">
+            <StackPanel Spacing="4">
+              <TextBlock Classes="section-label" Text="⌛ TIME TO RANK 10" />
+              <TextBlock Classes="stat-value" Text="{Binding ScriptStats.TimeToClassRank10, Converter={StaticResource TimeSpanTotalHoursConverter}, TargetNullValue=—}" />
+            </StackPanel>
+          </Border>
+        </Grid>
+      </Grid>
+    </Border>
+
+    <!-- Manually saved rate snapshots -->
+    <Border Grid.Row="5" Classes="stat-tile" IsVisible="{Binding AdvancedMode}" Padding="10">
+      <Grid RowDefinitions="Auto,*" RowSpacing="7">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="7">
+          <StackPanel Spacing="1" VerticalAlignment="Center">
+            <TextBlock Classes="section-label" Text="📊 RATE HISTORY" />
+            <TextBlock Text="Capture the current rates whenever you want a checkpoint."
+                       FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+          </StackPanel>
+          <TextBlock Grid.Column="1" Text="{Binding RateHistory.Count, StringFormat='{}{0} saved'}"
+                     FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" VerticalAlignment="Center" />
+          <Button Grid.Column="2" Classes="skua-button small" Content="Save Snapshot"
+                  Command="{Binding SaveRateSnapshotCommand}" ToolTip.Tip="Save the current gameplay rates to history" />
+          <Button Grid.Column="3" Classes="skua-button small" Content="Export CSV"
+                  Command="{Binding ExportHistoryCommand}" />
+          <Button Grid.Column="4" Classes="skua-button small"
+                  Command="{Binding ClearRateHistoryCommand}" ToolTip.Tip="Delete all saved rate snapshots">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <materialIcons:MaterialIcon Kind="DeleteSweepOutline" Width="14" Height="14" />
+              <TextBlock Text="Clear History" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </Grid>
+        <DataGrid Grid.Row="1"
+                  ItemsSource="{Binding RateHistory}"
+                  MinHeight="120"
+                  VerticalAlignment="Stretch"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserResizeColumns="True"
+                  CanUserSortColumns="True"
+                  GridLinesVisibility="All"
+                  HeadersVisibility="Column"
+                  Background="{DynamicResource SkuaSurfaceBrush}">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Saved" Binding="{Binding SavedAtDisplay}" Width="112" />
+            <DataGridTextColumn Header="Session" Binding="{Binding SessionDisplay}" Width="90" />
+            <DataGridTextColumn Header="EXP" Binding="{Binding ExperienceDisplay}" Width="100" />
+            <DataGridTextColumn Header="Gold" Binding="{Binding GoldDisplay}" Width="105" />
+            <DataGridTextColumn Header="Kills" Binding="{Binding KillsDisplay}" Width="92" />
+            <DataGridTextColumn Header="Deaths" Binding="{Binding DeathsDisplay}" Width="92" />
+            <DataGridTextColumn Header="Items" Binding="{Binding ItemsDisplay}" Width="92" />
+            <DataGridTextColumn Header="Class CP" Binding="{Binding ClassPointsDisplay}" Width="112" />
+            <DataGridTextColumn Header="Rank" Binding="{Binding ClassRank}" Width="60" />
+          </DataGrid.Columns>
+        </DataGrid>
       </Grid>
     </Border>
   </Grid>

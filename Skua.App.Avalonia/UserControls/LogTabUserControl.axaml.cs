@@ -5,6 +5,7 @@ using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Skua.App.Avalonia.ViewModels.AppLogs;
+using Skua.App.Avalonia.Services;
 using System;
 using System.Collections.Specialized;
 using System.Linq;
@@ -49,6 +50,8 @@ public partial class LogTabUserControl : UserControl
     public LogTabUserControl()
     {
         InitializeComponent();
+        GrandpaModeState.Changed += ApplyGrandpaMode;
+        ApplyGrandpaMode(GrandpaModeState.Enabled);
         this.AttachedToVisualTree += (_, _) => Subscribe(DataContext as LogTabViewModel);
         this.DetachedFromVisualTree += (_, _) => Subscribe(null);
         this.DataContextChanged += (_, _) =>
@@ -56,6 +59,14 @@ public partial class LogTabUserControl : UserControl
             if (this.IsAttachedToVisualTree())
                 Subscribe(DataContext as LogTabViewModel);
         };
+    }
+
+    private void ApplyGrandpaMode(bool enabled)
+    {
+        LogsListBox.FontSize = enabled ? 15 : 11;
+        LogsListBox.Padding = new Thickness(enabled ? 7 : 4);
+        CountText.FontSize = enabled ? 13 : 11;
+        CopyHint.FontSize = enabled ? 13 : 11;
     }
 
     private void Subscribe(LogTabViewModel? vm)
