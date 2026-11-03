@@ -53,6 +53,7 @@ internal class MainMenu
         windowService.RegisterManagedWindow<ConsoleViewModel>("Console");
         windowService.RegisterManagedWindow<DiagnosticsViewModel>("Diagnostics");
         windowService.RegisterManagedWindow<NotificationCenterViewModel>("Notification Center");
+        windowService.RegisterManagedWindow<CalendarViewModel>("Calendar");
 
         windowService.RegisterManagedWindow<AdvancedSkillsViewModel>("Skills");
 
@@ -91,7 +92,8 @@ internal class MainMenu
                 new("Loader"),
                 new("Grabber"),
                 new("Current Drops"),
-                new("Junk Items")
+                new("Junk Items"),
+                new("Calendar")
             }),
             new("Combat", new List<MainMenuItemViewModel>()
             {
