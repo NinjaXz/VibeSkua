@@ -20,6 +20,14 @@
     <Style Selector="ListBoxItem:pointerover Border.junk-row">
       <Setter Property="Background" Value="{DynamicResource SkuaNavHoverBrush}" />
     </Style>
+    <Style Selector="Border.junk-row.equipped">
+      <Setter Property="Background" Value="{DynamicResource SkuaWarningTintBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SkuaWarningTintBorderBrush}" />
+    </Style>
+    <Style Selector="TextBlock.junk-item-name.equipped">
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource SkuaWarningBrush}" />
+    </Style>
     <Style Selector="Border.junk-row.selected">
       <Setter Property="Background" Value="{DynamicResource SkuaAccentTintBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource SkuaAccentBrush}" />
@@ -88,7 +96,7 @@
              Padding="4">
       <ListBox.ItemTemplate>
         <DataTemplate x:DataType="vms:JunkItemEntry">
-          <Border Classes="junk-row" Classes.selected="{Binding IsSelected}" Margin="0,0,0,2">
+          <Border Classes="junk-row" Classes.selected="{Binding IsSelected}" Classes.equipped="{Binding IsEquipped}" Margin="0,0,0,2">
             <Grid ColumnDefinitions="Auto,52,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="5">
               <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Center" />
               <TextBlock Grid.Column="1"
@@ -98,6 +106,8 @@
                          Foreground="{DynamicResource SkuaMutedTextBrush}"
                          VerticalAlignment="Center" />
               <TextBlock Grid.Column="2"
+                         Classes="junk-item-name"
+                         Classes.equipped="{Binding IsEquipped}"
                          Text="{Binding Name}"
                          TextTrimming="CharacterEllipsis"
                          VerticalAlignment="Center"
