@@ -184,47 +184,47 @@
         </Grid>
         <Grid Grid.Row="1" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="14" RowSpacing="9">
         <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4">
-          <TextBlock Classes="section-label" Text="{Binding ExperienceRateLabel}" />
+          <TextBlock Classes="section-label"><Run Text="✨ " /><Run Text="{Binding ExperienceRateLabel}" /></TextBlock>
           <TextBlock Classes="stat-value"><TextBlock.Text><MultiBinding Converter="{StaticResource RatePerUnitConverter}"><Binding Path="ScriptStats.ExperiencePerHour" /><Binding Path="RateUnit" /></MultiBinding></TextBlock.Text></TextBlock>
           <ProgressBar Classes="metric-progress" Maximum="100" Value="{Binding ScriptStats.ExperienceProgress}" Foreground="{DynamicResource SkuaSuccessBrush}" />
           <TextBlock FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" Text="{Binding ScriptStats.ExperienceProgressText}" />
         </StackPanel>
         <StackPanel Grid.Row="0" Grid.Column="1" Spacing="2">
-          <TextBlock Classes="section-label" Text="{Binding GoldRateLabel}" ToolTip.Tip="Net gold balance change; spending reduces the measured rate." />
+          <TextBlock Classes="section-label" ToolTip.Tip="Net gold balance change; spending reduces the measured rate."><Run Text="🪙 " /><Run Text="{Binding GoldRateLabel}" /></TextBlock>
           <TextBlock Classes="stat-value"><TextBlock.Text><MultiBinding Converter="{StaticResource RatePerUnitConverter}"><Binding Path="ScriptStats.GoldPerHour" /><Binding Path="RateUnit" /></MultiBinding></TextBlock.Text></TextBlock>
         </StackPanel>
         <StackPanel Grid.Row="1" Grid.Column="0" Spacing="2">
-          <TextBlock Classes="section-label" Text="KILLS / MIN" />
+          <TextBlock Classes="section-label" Text="⚔️ KILLS / MIN" />
           <TextBlock Classes="stat-value" Text="{Binding ScriptStats.KillsPerMinute, StringFormat={}{0:N1}}" />
         </StackPanel>
         <StackPanel Grid.Row="1" Grid.Column="1" Spacing="2">
-          <TextBlock Classes="section-label" Text="DEATHS / MIN" />
+          <TextBlock Classes="section-label" Text="💀 DEATHS / MIN" />
           <TextBlock Classes="stat-value" Text="{Binding ScriptStats.DeathsPerMinute, StringFormat={}{0:N2}}" />
         </StackPanel>
         <StackPanel Grid.Row="2" Grid.Column="0" Spacing="2">
-          <TextBlock Classes="section-label" Text="{Binding ItemsRateLabel}" />
+          <TextBlock Classes="section-label"><Run Text="🎁 " /><Run Text="{Binding ItemsRateLabel}" /></TextBlock>
           <TextBlock Classes="stat-value"><TextBlock.Text><MultiBinding Converter="{StaticResource RatePerUnitConverter}"><Binding Path="ScriptStats.ItemsPerHour" /><Binding Path="RateUnit" /></MultiBinding></TextBlock.Text></TextBlock>
         </StackPanel>
         <StackPanel Grid.Row="2" Grid.Column="1" Spacing="2">
-          <TextBlock Classes="section-label" Text="SESSION UPTIME" />
+          <TextBlock Classes="section-label" Text="⏱️ SESSION UPTIME" />
           <TextBlock Classes="stat-value" Text="{Binding ScriptStats.SessionTime, StringFormat={}{0:dd\\.hh\\:mm\\:ss}}" />
         </StackPanel>
         <StackPanel Grid.Row="3" Grid.Column="0" Spacing="2">
-          <TextBlock Classes="section-label" Text="TIME TO LEVEL" />
+          <TextBlock Classes="section-label" Text="📈 TIME TO LEVEL" />
           <TextBlock Classes="stat-value" Text="{Binding ScriptStats.TimeToLevel, Converter={StaticResource TimeSpanTotalHoursConverter}, TargetNullValue=—}" />
         </StackPanel>
         <StackPanel Grid.Row="3" Grid.Column="1" Spacing="2">
-          <TextBlock Classes="section-label" Text="{Binding ClassPointsRateLabel}" />
+          <TextBlock Classes="section-label"><Run Text="⭐ " /><Run Text="{Binding ClassPointsRateLabel}" /></TextBlock>
           <TextBlock Classes="stat-value"><TextBlock.Text><MultiBinding Converter="{StaticResource RatePerUnitConverter}"><Binding Path="ScriptStats.ClassPointsPerHour" /><Binding Path="RateUnit" /></MultiBinding></TextBlock.Text></TextBlock>
         </StackPanel>
         <StackPanel Grid.Row="4" Grid.Column="0" Spacing="4">
-          <TextBlock Classes="section-label" Text="CLASS RANK → 10" />
+          <TextBlock Classes="section-label" Text="🏆 CLASS RANK → 10" />
           <TextBlock Classes="stat-value" Text="{Binding ScriptStats.CurrentClassRank, StringFormat=Rank {0}}" />
           <ProgressBar Classes="metric-progress" Maximum="100" Value="{Binding ScriptStats.ClassRank10Progress}" Foreground="{DynamicResource SkuaWarningBrush}" />
           <TextBlock FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" Text="{Binding ScriptStats.ClassRank10ProgressText}" />
         </StackPanel>
         <StackPanel Grid.Row="4" Grid.Column="1" Spacing="2">
-          <TextBlock Classes="section-label" Text="TIME TO RANK 10" />
+          <TextBlock Classes="section-label" Text="⌛ TIME TO RANK 10" />
           <TextBlock Classes="stat-value" Text="{Binding ScriptStats.TimeToClassRank10, Converter={StaticResource TimeSpanTotalHoursConverter}, TargetNullValue=—}" />
         </StackPanel>
         </Grid>
