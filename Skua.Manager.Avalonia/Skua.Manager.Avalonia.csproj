@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <DefaultItemExcludes>$(DefaultItemExcludes);obj_run\**</DefaultItemExcludes>
-    <ApplicationIcon>Assets/Skua-Manager-Icon.ico</ApplicationIcon>
+    <ApplicationIcon>../Skua.Shared.Avalonia/Assets/SkuaIcon.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>VibeSkua.Manager</AssemblyName>
     <AssemblyTitle>VibeSkua Manager</AssemblyTitle>
@@ -43,7 +43,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <_DeploymentManifestIconFile Remove="Assets\Skua-Manager-Icon.ico" />
+    <_DeploymentManifestIconFile Remove="Assets\SkuaIcon.ico" />
   </ItemGroup>
 
 </Project>

@@ -11,7 +11,7 @@
         Width="850"
         Height="500"
         WindowStartupLocation="CenterScreen"
-        Icon="avares://VibeSkua.Manager/Assets/Skua-Manager-Icon.ico"
+        Icon="avares://Skua.Shared.Avalonia/Assets/SkuaIcon.ico"
         SystemDecorations="BorderOnly"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="NoChrome"
