@@ -5,12 +5,14 @@ using Skua.Core.Models;
 using Skua.Shared.Avalonia.ViewModels;
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace Skua.App.Avalonia.ViewModels;
 
 public sealed partial class NotificationCenterViewModel : BotControlViewModelBase
 {
     private const int MaximumNotifications = 500;
+    private string _selectedFilter = "All Events";
 
     public NotificationCenterViewModel()
         : base("Notification Center", 560, 480, canResize: true)
@@ -30,11 +32,24 @@ public sealed partial class NotificationCenterViewModel : BotControlViewModelBas
     }
 
     public ObservableCollection<NotificationEntry> Notifications { get; } = new();
+    public ObservableCollection<NotificationEntry> FilteredNotifications { get; } = new();
+    public string[] FilterOptions { get; } = ["All Events", "Items", "Activity", "Warnings", "Errors", "System"];
+
+    public string SelectedFilter
+    {
+        get => _selectedFilter;
+        set
+        {
+            if (SetProperty(ref _selectedFilter, value))
+                ApplyFilter();
+        }
+    }
 
     [CommunityToolkit.Mvvm.Input.RelayCommand]
     private void Clear()
     {
         Notifications.Clear();
+        FilteredNotifications.Clear();
     }
 
     private void OnLog(NotificationCenterViewModel recipient, AddLogMessage message)
@@ -81,6 +96,13 @@ public sealed partial class NotificationCenterViewModel : BotControlViewModelBas
     private void OnScriptError(NotificationCenterViewModel recipient, ScriptErrorMessage message) =>
         recipient.Add(message.Exception.Message, NotificationKind.Error);
 
+    private void ApplyFilter()
+    {
+        FilteredNotifications.Clear();
+        foreach (NotificationEntry entry in Notifications.Where(entry => SelectedFilter == "All Events" || entry.Kind.ToString().Equals(SelectedFilter.TrimEnd('s'), StringComparison.OrdinalIgnoreCase)))
+            FilteredNotifications.Add(entry);
+    }
+
     private void Add(string message, NotificationKind kind)
     {
         if (string.IsNullOrWhiteSpace(message))
@@ -91,6 +113,7 @@ public sealed partial class NotificationCenterViewModel : BotControlViewModelBas
             Notifications.Insert(0, new NotificationEntry(DateTimeOffset.Now, kind, message));
             while (Notifications.Count > MaximumNotifications)
                 Notifications.RemoveAt(Notifications.Count - 1);
+            ApplyFilter();
         });
     }
 }
