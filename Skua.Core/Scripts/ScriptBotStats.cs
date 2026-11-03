@@ -420,7 +420,8 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
             _sessionKills,
             _sessionDeaths,
             _sessionItems,
-            _earnedClassPoints));
+            _earnedClassPoints,
+            _lastClassId));
         if (history.Count > 50)
             history.RemoveRange(50, history.Count - 50);
 
