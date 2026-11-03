@@ -623,7 +623,7 @@ public class Follower
                     // keeps issuing it even when we believe we're already in place.
                     // Throttled by the same Goto delay as travel; leech mode is a separate
                     // branch above, so it is unaffected.
-                    if (_settings.AlwaysGoto() && !m.OffGoto && !_gotoOff)
+                    if (_settings.AlwaysGoto() && !_settings.CopyWalk() && !m.OffGoto && !_gotoOff)
                         TryGoto(master);
 
                     // In the master's room: only the CELL matters. Pads are ignored on
@@ -632,9 +632,11 @@ public class Follower
                     // move command. The master's pad is only used as the arrival pad.
                     string targetCell = m.Cell;
                     string targetPad = m.Pad;
+                    PlayerInfo? masterInfo = null;
                     if (_bot.Map!.TryGetPlayer(master, out PlayerInfo? info) &&
                         !string.IsNullOrEmpty(info?.Cell))
                     {
+                        masterInfo = info;
                         targetCell = info.Cell;
                         targetPad = string.IsNullOrEmpty(info.Pad) ? m.Pad : info.Pad;
                     }
@@ -651,6 +653,16 @@ public class Follower
                         // position, our current cell, or Enter). Butler v3 does the same.
                         _bot.Map.Jump(targetCell, targetPad, autoCorrect: false);
                         _lastJumpTime = DateTime.UtcNow;
+                    }
+
+                    if (_settings.CopyWalk() && masterInfo is not null &&
+                        _bot.Player!.Cell.Equals(targetCell, StringComparison.OrdinalIgnoreCase))
+                    {
+                        CopyMasterWalk(masterInfo);
+                    }
+                    else if (!_settings.CopyWalk())
+                    {
+                        _hasWalkTarget = false;
                     }
 
                     HandleCombat(m);
@@ -1278,6 +1290,57 @@ public class Follower
         }
         catch
         {
+        }
+    }
+
+    /// <summary>
+    /// Mirrors the master's live in-room position without waiting for the walk to finish.
+    /// Room and cell transitions remain controlled by the existing goto/jump/rescue logic.
+    /// </summary>
+    private void CopyMasterWalk(PlayerInfo master)
+    {
+        IScriptPlayer? player = _bot.Player;
+        if (player is null)
+            return;
+
+        int targetX = (int)Math.Round(master.X);
+        int targetY = (int)Math.Round(master.Y);
+        double deltaX = targetX - player.X;
+        double deltaY = targetY - player.Y;
+
+        // Avoid issuing tiny correction walks when both characters are already together.
+        if (deltaX * deltaX + deltaY * deltaY <= 100)
+        {
+            _hasWalkTarget = false;
+            return;
+        }
+
+        DateTime now = DateTime.UtcNow;
+        bool targetChanged = !_hasWalkTarget ||
+            Math.Abs(targetX - _lastWalkTargetX) >= 4 ||
+            Math.Abs(targetY - _lastWalkTargetY) >= 4;
+        double elapsedMs = (now - _lastWalkCommandTime).TotalMilliseconds;
+        if (!targetChanged && elapsedMs < 1500)
+            return;
+
+        // Reuse Goto delay as the movement command throttle, with a safe 250ms floor.
+        int throttleMs = Math.Clamp(_settings.GotoDelayMs(), LoopDelayMs, 2000);
+        if (elapsedMs < throttleMs)
+            return;
+
+        try
+        {
+            int speed = player.WalkSpeed > 0 ? Math.Clamp(player.WalkSpeed, 1, 20) : 8;
+            _bot.Flash.Call("walkTo", targetX, targetY, speed);
+
+            _lastWalkTargetX = targetX;
+            _lastWalkTargetY = targetY;
+            _lastWalkCommandTime = now;
+            _hasWalkTarget = true;
+        }
+        catch (Exception ex)
+        {
+            DebugLog.Log("Follower", $"copy walk failed: {ex.Message}");
         }
     }
 
