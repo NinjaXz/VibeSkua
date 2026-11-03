@@ -231,6 +231,7 @@ public partial class MainWindow : Window
                 "Junk Items" => MaterialIconKind.DeleteSweepOutline,
                 "Skills" => MaterialIconKind.LightningBoltOutline,
                 "Stats" => MaterialIconKind.ChartLine,
+                "Notification Center" => MaterialIconKind.BellOutline,
                 "Runtime" => MaterialIconKind.PlayNetworkOutline,
                 "Logs" => MaterialIconKind.FileDocumentOutline,
                 "Console" => MaterialIconKind.Console,
