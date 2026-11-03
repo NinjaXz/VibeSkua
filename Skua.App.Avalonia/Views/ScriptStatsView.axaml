@@ -177,11 +177,11 @@
         <Grid Grid.Row="1" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="14" RowSpacing="9">
         <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2">
           <TextBlock Classes="section-label" Text="{Binding ExperienceRateLabel}" />
-          <TextBlock Classes="stat-value" <TextBlock.Text><MultiBinding Converter="{StaticResource RatePerUnitConverter}"><Binding Path="ScriptStats.ExperiencePerHour" /><Binding Path="RateUnit" /></MultiBinding></TextBlock.Text> />
+          <TextBlock Classes="stat-value"><TextBlock.Text><MultiBinding Converter="{StaticResource RatePerUnitConverter}"><Binding Path="ScriptStats.ExperiencePerHour" /><Binding Path="RateUnit" /></MultiBinding></TextBlock.Text></TextBlock>
         </StackPanel>
         <StackPanel Grid.Row="0" Grid.Column="1" Spacing="2">
-          <TextBlock Classes="section-label" Text="{Binding GoldRateLabel}" ToolTip.Tip="Net gold balance change per hour; spending reduces the measured rate." />
-          <TextBlock Classes="stat-value" <TextBlock.Text><MultiBinding Converter="{StaticResource RatePerUnitConverter}"><Binding Path="ScriptStats.GoldPerHour" /><Binding Path="RateUnit" /></MultiBinding></TextBlock.Text> />
+          <TextBlock Classes="section-label" Text="{Binding GoldRateLabel}" ToolTip.Tip="Net gold balance change; spending reduces the measured rate." />
+          <TextBlock Classes="stat-value"><TextBlock.Text><MultiBinding Converter="{StaticResource RatePerUnitConverter}"><Binding Path="ScriptStats.GoldPerHour" /><Binding Path="RateUnit" /></MultiBinding></TextBlock.Text></TextBlock>
         </StackPanel>
         <StackPanel Grid.Row="1" Grid.Column="0" Spacing="2">
           <TextBlock Classes="section-label" Text="KILLS / MIN" />
@@ -193,7 +193,7 @@
         </StackPanel>
         <StackPanel Grid.Row="2" Grid.Column="0" Spacing="2">
           <TextBlock Classes="section-label" Text="{Binding ItemsRateLabel}" />
-          <TextBlock Classes="stat-value" <TextBlock.Text><MultiBinding Converter="{StaticResource RatePerUnitConverter}"><Binding Path="ScriptStats.ItemsPerHour" /><Binding Path="RateUnit" /></MultiBinding></TextBlock.Text> />
+          <TextBlock Classes="stat-value"><TextBlock.Text><MultiBinding Converter="{StaticResource RatePerUnitConverter}"><Binding Path="ScriptStats.ItemsPerHour" /><Binding Path="RateUnit" /></MultiBinding></TextBlock.Text></TextBlock>
         </StackPanel>
         <StackPanel Grid.Row="2" Grid.Column="1" Spacing="2">
           <TextBlock Classes="section-label" Text="SESSION UPTIME" />
@@ -205,7 +205,7 @@
         </StackPanel>
         <StackPanel Grid.Row="3" Grid.Column="1" Spacing="2">
           <TextBlock Classes="section-label" Text="{Binding ClassPointsRateLabel}" />
-          <TextBlock Classes="stat-value" <TextBlock.Text><MultiBinding Converter="{StaticResource RatePerUnitConverter}"><Binding Path="ScriptStats.ClassPointsPerHour" /><Binding Path="RateUnit" /></MultiBinding></TextBlock.Text> />
+          <TextBlock Classes="stat-value"><TextBlock.Text><MultiBinding Converter="{StaticResource RatePerUnitConverter}"><Binding Path="ScriptStats.ClassPointsPerHour" /><Binding Path="RateUnit" /></MultiBinding></TextBlock.Text></TextBlock>
         </StackPanel>
         <StackPanel Grid.Row="4" Grid.Column="0" Spacing="2">
           <TextBlock Classes="section-label" Text="CLASS RANK" />
