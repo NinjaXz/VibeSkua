@@ -234,6 +234,7 @@ public class ButlerV5Plugin : ISkuaPlugin
             LevelFake = () => GetOption("fakeLevel", false),
             QuestClone = () => GetOption("questClone", true),
             AlwaysGoto = () => GetOption("alwaysGoto", false),
+            CopyWalk = () => GetOption("copyWalk", false),
             UnlockAllQuests = () => GetOption("questUnlockAll", true),
             ScriptRunning = () => IsScriptRunning,
             AntiLagSummoned = () => GetOption("antiLagSummoned", true),
