@@ -11,7 +11,7 @@
         Width="850"
         Height="500"
         WindowStartupLocation="CenterScreen"
-        Icon="avares://Skua.Shared.Avalonia/Assets/SkuaIcon.ico"
+        Icon="avares://Skua.Manager.Avalonia/Assets/Skua-Manager-Icon.ico"
         SystemDecorations="BorderOnly"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="NoChrome"
