@@ -7,7 +7,7 @@
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <ApplicationIcon>../Skua.Shared.Avalonia/Assets/SkuaIcon.ico</ApplicationIcon>
+        <ApplicationIcon>../Skua.Shared.Avalonia/Assets/SkuaClientIcon.ico</ApplicationIcon>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AssemblyName>VibeSkua</AssemblyName>
         <AssemblyTitle>VibeSkua</AssemblyTitle>
