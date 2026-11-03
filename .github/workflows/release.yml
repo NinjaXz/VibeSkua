@@ -63,7 +63,7 @@ jobs:
           if (Test-Path "Build\Releases") {
               Remove-Item "Build\Releases" -Recurse -Force
           }
-          vpk pack -u VibeSkua -v $ver -p "Build" -e VibeSkua.Manager.exe --packTitle "VibeSkua Manager" --icon "Skua.Shared.Avalonia\Assets\SkuaIcon.ico" -o "Build\Releases" -r win-x64
+          vpk pack -u VibeSkua -v $ver -p "Build" -e VibeSkua.Manager.exe --packTitle "VibeSkua Manager" --icon "Skua.Manager.Avalonia\Assets\Skua-Manager-Icon.ico" -o "Build\Releases" -r win-x64
           if ($LASTEXITCODE -ne 0) {
               throw "Velopack packaging failed with exit code $LASTEXITCODE"
           }
