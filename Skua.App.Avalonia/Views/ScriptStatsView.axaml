@@ -12,6 +12,7 @@
   <UserControl.Resources>
     <converters:AtLeastOneConverter x:Key="AtLeastOneConverter" />
     <converters:TimeSpanTotalHoursConverter x:Key="TimeSpanTotalHoursConverter" />
+    <converters:RatePerUnitConverter x:Key="RatePerUnitConverter" />
   </UserControl.Resources>
 
   <UserControl.Styles>
@@ -165,14 +166,22 @@
 
     <!-- Advanced gameplay metrics are sourced from live game state, not script execution. -->
     <Border Grid.Row="4" Classes="stat-tile" IsVisible="{Binding AdvancedMode}" Padding="10">
-      <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="14" RowSpacing="9">
+      <Grid RowDefinitions="Auto,Auto" RowSpacing="10">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+          <TextBlock Grid.Column="0" Classes="section-label" Text="GAMEPLAY METRICS" VerticalAlignment="Center" />
+          <ComboBox Grid.Column="1" Width="76" Height="28"
+                    ItemsSource="{Binding RateUnits}"
+                    SelectedItem="{Binding RateUnit, Mode=TwoWay}"
+                    ToolTip.Tip="Change the rate display unit" />
+        </Grid>
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="14" RowSpacing="9">
         <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2">
-          <TextBlock Classes="section-label" Text="EXP / HR" />
-          <TextBlock Classes="stat-value" Text="{Binding ScriptStats.ExperiencePerHour, StringFormat={}{0:N0}}" />
+          <TextBlock Classes="section-label" Text="{Binding ExperienceRateLabel}" />
+          <TextBlock Classes="stat-value" <TextBlock.Text><MultiBinding Converter="{StaticResource RatePerUnitConverter}"><Binding Path="ScriptStats.ExperiencePerHour" /><Binding Path="RateUnit" /></MultiBinding></TextBlock.Text> />
         </StackPanel>
         <StackPanel Grid.Row="0" Grid.Column="1" Spacing="2">
-          <TextBlock Classes="section-label" Text="NET GOLD / HR" ToolTip.Tip="Net gold balance change per hour; spending reduces the measured rate." />
-          <TextBlock Classes="stat-value" Text="{Binding ScriptStats.GoldPerHour, StringFormat={}{0:N0}}" />
+          <TextBlock Classes="section-label" Text="{Binding GoldRateLabel}" ToolTip.Tip="Net gold balance change per hour; spending reduces the measured rate." />
+          <TextBlock Classes="stat-value" <TextBlock.Text><MultiBinding Converter="{StaticResource RatePerUnitConverter}"><Binding Path="ScriptStats.GoldPerHour" /><Binding Path="RateUnit" /></MultiBinding></TextBlock.Text> />
         </StackPanel>
         <StackPanel Grid.Row="1" Grid.Column="0" Spacing="2">
           <TextBlock Classes="section-label" Text="KILLS / MIN" />
@@ -183,8 +192,8 @@
           <TextBlock Classes="stat-value" Text="{Binding ScriptStats.DeathsPerMinute, StringFormat={}{0:N2}}" />
         </StackPanel>
         <StackPanel Grid.Row="2" Grid.Column="0" Spacing="2">
-          <TextBlock Classes="section-label" Text="ITEMS / HR" />
-          <TextBlock Classes="stat-value" Text="{Binding ScriptStats.ItemsPerHour, StringFormat={}{0:N0}}" />
+          <TextBlock Classes="section-label" Text="{Binding ItemsRateLabel}" />
+          <TextBlock Classes="stat-value" <TextBlock.Text><MultiBinding Converter="{StaticResource RatePerUnitConverter}"><Binding Path="ScriptStats.ItemsPerHour" /><Binding Path="RateUnit" /></MultiBinding></TextBlock.Text> />
         </StackPanel>
         <StackPanel Grid.Row="2" Grid.Column="1" Spacing="2">
           <TextBlock Classes="section-label" Text="SESSION UPTIME" />
@@ -195,8 +204,8 @@
           <TextBlock Classes="stat-value" Text="{Binding ScriptStats.TimeToLevel, Converter={StaticResource TimeSpanTotalHoursConverter}, TargetNullValue=—}" />
         </StackPanel>
         <StackPanel Grid.Row="3" Grid.Column="1" Spacing="2">
-          <TextBlock Classes="section-label" Text="CLASS POINTS / HR" />
-          <TextBlock Classes="stat-value" Text="{Binding ScriptStats.ClassPointsPerHour, StringFormat={}{0:N0}}" />
+          <TextBlock Classes="section-label" Text="{Binding ClassPointsRateLabel}" />
+          <TextBlock Classes="stat-value" <TextBlock.Text><MultiBinding Converter="{StaticResource RatePerUnitConverter}"><Binding Path="ScriptStats.ClassPointsPerHour" /><Binding Path="RateUnit" /></MultiBinding></TextBlock.Text> />
         </StackPanel>
         <StackPanel Grid.Row="4" Grid.Column="0" Spacing="2">
           <TextBlock Classes="section-label" Text="CLASS RANK" />
@@ -207,6 +216,7 @@
           <TextBlock Classes="section-label" Text="TIME TO RANK 10" />
           <TextBlock Classes="stat-value" Text="{Binding ScriptStats.TimeToClassRank10, Converter={StaticResource TimeSpanTotalHoursConverter}, TargetNullValue=—}" />
         </StackPanel>
+        </Grid>
       </Grid>
     </Border>
   </Grid>
