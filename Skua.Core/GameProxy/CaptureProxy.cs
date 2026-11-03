@@ -165,11 +165,16 @@ public partial class CaptureProxy : ObservableRecipient, ICaptureProxy
     {
         byte[] messageBuffer = new byte[4096];
         List<byte> cpacket = new();
-        NetworkStream targetStream = target.GetStream();
-        NetworkStream destStream = destination.GetStream();
+        NetworkStream? targetStream = null;
+        NetworkStream? destStream = null;
 
         try
         {
+            // Socket shutdown can race task startup; acquire streams inside the guarded block
+            // so every started interceptor reaches the cleanup path and decrements ActiveStreams.
+            targetStream = target.GetStream();
+            destStream = destination.GetStream();
+
             while (!token.IsCancellationRequested && target.Connected && destination.Connected)
             {
                 int read = await targetStream.ReadAsync(messageBuffer, token).ConfigureAwait(false);
