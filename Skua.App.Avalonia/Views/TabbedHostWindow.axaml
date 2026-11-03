@@ -314,7 +314,7 @@
                     </Border>
 
                     <!-- Grid Layout selector temporarily hidden; implementation retained for later.
-                    
+
                     <Border x:Name="GridLayoutBorder"
                             Cursor="Hand"
                             Height="28"
@@ -339,6 +339,7 @@
                             </MenuFlyout>
                         </FlyoutBase.AttachedFlyout>
                     </Border>
+                    -->
                 </StackPanel>
             </Grid>
         </Border>
