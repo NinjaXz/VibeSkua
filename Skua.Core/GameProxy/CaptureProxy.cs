@@ -217,9 +217,16 @@ public partial class CaptureProxy : ObservableRecipient, ICaptureProxy
                         Interlocked.Add(ref _inboundBytes, data.Length);
                     }
 
-                    if (Interceptors.Count > 0)
+                    IInterceptor[] currentInterceptors;
+                    lock (Interceptors)
                     {
-                        IInterceptor[] currentInterceptors = Interceptors.OrderBy(i => i.Priority).ToArray();
+                        currentInterceptors = Interceptors.Count == 0
+                            ? Array.Empty<IInterceptor>()
+                            : Interceptors.OrderBy(i => i.Priority).ToArray();
+                    }
+
+                    if (currentInterceptors.Length > 0)
+                    {
                         long interceptorStart = Stopwatch.GetTimestamp();
                         foreach (IInterceptor interceptor in currentInterceptors)
                         {
