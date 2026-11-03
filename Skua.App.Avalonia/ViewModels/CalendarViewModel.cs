@@ -204,7 +204,6 @@ public sealed partial class CalendarViewModel : BotControlViewModelBase, IDispos
     private void ClearEditor()
     {
         Title = string.Empty;
-        Description = string.Empty;
         Url = string.Empty;
     }
 
