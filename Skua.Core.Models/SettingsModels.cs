@@ -238,6 +238,9 @@ public class ClientSettings
     [JsonPropertyName("ShowUsernameInTitle")]
     public bool ShowUsernameInTitle { get; set; } = true;
 
+    [JsonPropertyName("StatsAdvancedMode")]
+    public bool StatsAdvancedMode { get; set; } = false;
+
     [JsonPropertyName("UserCustomScriptsFolder")]
     public string UserCustomScriptsFolder { get; set; } = string.Empty;
 

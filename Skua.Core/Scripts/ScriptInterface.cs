@@ -297,6 +297,24 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
 
                 bool currentInGame = Flash.IsWorldLoaded && Player.LoggedIn;
                 bool currentPlaying = currentInGame && Player.Alive;
+
+                // Track connected gameplay regardless of whether a script is running.
+                _limit.LimitedRun("gameplayStats", 1000, () =>
+                {
+                    if (!currentInGame)
+                    {
+                        Stats.UpdateGameplaySnapshot(0, 0, 0, 0, 0, 0, 0, 0, false);
+                        return;
+                    }
+
+                    InventoryItem? equippedClass = Inventory.Items?.Find(item => item is { Equipped: true, Category: ItemCategory.Class });
+                    // iCurCP is progress within the current class rank; iCPToRank is that rank's point requirement.
+                    int currentClassPoints = Flash.GetGameObject<int>("world.myAvatar.objData.iCurCP", 0);
+                    int classPointsToRank = Flash.GetGameObject<int>("world.myAvatar.objData.iCPToRank", 0);
+                    Stats.UpdateGameplaySnapshot(Player.XP, Player.RequiredXP, Player.Level, Player.Gold,
+                        equippedClass?.ID ?? 0, currentClassPoints, classPointsToRank, Player.CurrentClassRank, true);
+                });
+
                 if (currentInGame)
                 {
                     wasPlaying = true;
@@ -645,7 +663,9 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
                             Messenger.Send<DropPickupResultMessage, int>(new(Convert.ToInt32(data.ItemID), data.bSuccess == 1), (int)MessageChannels.GameEvents);
                             if (data.bSuccess == 1)
                             {
-                                Stats.Drops += (int)data.iQty;
+                                int pickedUpQuantity = Convert.ToInt32(data.iQty);
+                                Stats.RecordItemPickup(pickedUpQuantity);
+                                Stats.Drops += pickedUpQuantity;
                                 Stats.GetSpace();
                             }
                             if (toBank)

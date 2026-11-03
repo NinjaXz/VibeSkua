@@ -37,14 +37,15 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid Margin="12" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="10">
+  <Grid Margin="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
     <!-- Script time + reset -->
-    <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="8">
+    <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto" ColumnSpacing="8">
       <materialIcons:MaterialIcon Grid.Column="0" Kind="ClockOutline" Width="16" Height="16" Foreground="#9CA3AF" VerticalAlignment="Center" />
       <TextBlock Grid.Column="1" Text="{Binding ScriptStats.Time, StringFormat={}{0:hh\\:mm\\:ss}}" FontFamily="Cascadia Mono,Consolas,Courier New,monospace"
                  FontWeight="SemiBold" VerticalAlignment="Center" />
       <TextBlock Grid.Column="2" Text="script time" FontSize="11" Foreground="{DynamicResource SkuaMutedTextBrush}" VerticalAlignment="Center" />
-      <Button Grid.Column="4" Classes="skua-button small w84" Command="{Binding ResetStatsCommand}" ToolTip.Tip="Reset all combat and drop counters">
+      <ToggleSwitch Grid.Column="4" Content="Advanced" IsChecked="{Binding AdvancedMode}" VerticalAlignment="Center" ToolTip.Tip="Show detailed gameplay rates" />
+      <Button Grid.Column="5" Classes="skua-button small w84" Command="{Binding ResetStatsCommand}" ToolTip.Tip="Reset all combat and drop counters">
         <StackPanel Orientation="Horizontal" Spacing="5">
           <materialIcons:MaterialIcon Kind="Restore" Width="14" Height="14" />
           <TextBlock Text="Reset" VerticalAlignment="Center" />
@@ -158,6 +159,53 @@
             </MultiBinding>
           </TextBlock.Text>
         </TextBlock>
+      </Grid>
+    </Border>
+
+    <!-- Advanced gameplay metrics are sourced from live game state, not script execution. -->
+    <Border Grid.Row="4" Classes="stat-tile" IsVisible="{Binding AdvancedMode}" Padding="10">
+      <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="14" RowSpacing="9">
+        <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2">
+          <TextBlock Classes="section-label" Text="EXP / HR" />
+          <TextBlock Classes="stat-value" Text="{Binding ScriptStats.ExperiencePerHour, StringFormat={}{0:N0}}" />
+        </StackPanel>
+        <StackPanel Grid.Row="0" Grid.Column="1" Spacing="2">
+          <TextBlock Classes="section-label" Text="GOLD / HR" ToolTip.Tip="Net positive gold balance change per hour; spending between samples can offset gains." />
+          <TextBlock Classes="stat-value" Text="{Binding ScriptStats.GoldPerHour, StringFormat={}{0:N0}}" />
+        </StackPanel>
+        <StackPanel Grid.Row="1" Grid.Column="0" Spacing="2">
+          <TextBlock Classes="section-label" Text="KILLS / MIN" />
+          <TextBlock Classes="stat-value" Text="{Binding ScriptStats.KillsPerMinute, StringFormat={}{0:N1}}" />
+        </StackPanel>
+        <StackPanel Grid.Row="1" Grid.Column="1" Spacing="2">
+          <TextBlock Classes="section-label" Text="DEATHS / MIN" />
+          <TextBlock Classes="stat-value" Text="{Binding ScriptStats.DeathsPerMinute, StringFormat={}{0:N2}}" />
+        </StackPanel>
+        <StackPanel Grid.Row="2" Grid.Column="0" Spacing="2">
+          <TextBlock Classes="section-label" Text="ITEMS / HR" />
+          <TextBlock Classes="stat-value" Text="{Binding ScriptStats.ItemsPerHour, StringFormat={}{0:N0}}" />
+        </StackPanel>
+        <StackPanel Grid.Row="2" Grid.Column="1" Spacing="2">
+          <TextBlock Classes="section-label" Text="SESSION UPTIME" />
+          <TextBlock Classes="stat-value" Text="{Binding ScriptStats.SessionTime, StringFormat={}{0:dd\\.hh\\:mm\\:ss}}" />
+        </StackPanel>
+        <StackPanel Grid.Row="3" Grid.Column="0" Spacing="2">
+          <TextBlock Classes="section-label" Text="TIME TO LEVEL" />
+          <TextBlock Classes="stat-value" Text="{Binding ScriptStats.TimeToLevel, StringFormat={}{0:g}, TargetNullValue=—}" />
+        </StackPanel>
+        <StackPanel Grid.Row="3" Grid.Column="1" Spacing="2">
+          <TextBlock Classes="section-label" Text="CLASS POINTS / HR" />
+          <TextBlock Classes="stat-value" Text="{Binding ScriptStats.ClassPointsPerHour, StringFormat={}{0:N0}}" />
+        </StackPanel>
+        <StackPanel Grid.Row="4" Grid.Column="0" Spacing="2">
+          <TextBlock Classes="section-label" Text="CLASS RANK" />
+          <TextBlock Classes="stat-value" Text="{Binding ScriptStats.CurrentClassRank, StringFormat={}{0}}" />
+          <TextBlock FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" Text="{Binding ScriptStats.CurrentClassPoints, StringFormat={}{0:N0} CP}" />
+        </StackPanel>
+        <StackPanel Grid.Row="4" Grid.Column="1" Spacing="2">
+          <TextBlock Classes="section-label" Text="TIME TO RANK 10" />
+          <TextBlock Classes="stat-value" Text="{Binding ScriptStats.TimeToClassRank10, StringFormat={}{0:g}, TargetNullValue=—}" />
+        </StackPanel>
       </Grid>
     </Border>
   </Grid>
