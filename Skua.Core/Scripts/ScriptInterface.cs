@@ -174,6 +174,10 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
         };
 
         IScriptInterface.Instance = this;
+
+        // The interface timer owns client-wide services, including gameplay stats.
+        // Start it with the client rather than waiting for a script to initialize it.
+        Initialize();
     }
 
     public Task Schedule(int delay, Func<IScriptInterface, Task> function)
