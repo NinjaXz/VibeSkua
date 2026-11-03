@@ -19,9 +19,9 @@ public sealed partial class NotificationCenterViewModel : BotControlViewModelBas
         WeakReferenceMessenger.Default.Register<NotificationCenterViewModel, AddLogMessage>(this, OnLog);
         StrongReferenceMessenger.Default.Register<NotificationCenterViewModel, ItemDroppedMessage, int>(this, (int)MessageChannels.GameEvents, OnItemDropped);
         StrongReferenceMessenger.Default.Register<NotificationCenterViewModel, PlayerDeathMessage, int>(this, (int)MessageChannels.GameEvents, OnPlayerDeath);
-        StrongReferenceMessenger.Default.Register<NotificationCenterViewModel, ScriptStartedMessage, int>(this, (int)MessageChannels.GameEvents, OnScriptStarted);
-        StrongReferenceMessenger.Default.Register<NotificationCenterViewModel, ScriptStoppedMessage, int>(this, (int)MessageChannels.GameEvents, OnScriptStopped);
-        StrongReferenceMessenger.Default.Register<NotificationCenterViewModel, ScriptErrorMessage, int>(this, (int)MessageChannels.GameEvents, OnScriptError);
+        StrongReferenceMessenger.Default.Register<NotificationCenterViewModel, ScriptStartedMessage, int>(this, (int)MessageChannels.ScriptStatus, OnScriptStarted);
+        StrongReferenceMessenger.Default.Register<NotificationCenterViewModel, ScriptStoppedMessage, int>(this, (int)MessageChannels.ScriptStatus, OnScriptStopped);
+        StrongReferenceMessenger.Default.Register<NotificationCenterViewModel, ScriptErrorMessage, int>(this, (int)MessageChannels.ScriptStatus, OnScriptError);
     }
 
     public ObservableCollection<NotificationEntry> Notifications { get; } = new();
