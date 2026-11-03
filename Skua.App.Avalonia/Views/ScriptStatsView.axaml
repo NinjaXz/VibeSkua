@@ -259,35 +259,43 @@
       </Grid>
     </Border>
 
-    <!-- Persisted session history -->
+    <!-- Manually saved rate snapshots -->
     <Border Grid.Row="5" Classes="stat-tile" IsVisible="{Binding AdvancedMode}" Padding="10">
       <StackPanel Spacing="7">
-        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-          <TextBlock Classes="section-label" Text="📚 RECENT SESSIONS" VerticalAlignment="Center" />
-          <TextBlock Grid.Column="1" Text="{Binding StatsHistory.Count, StringFormat='{}{0} saved'}"
+        <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="7">
+          <StackPanel Spacing="1" VerticalAlignment="Center">
+            <TextBlock Classes="section-label" Text="📊 RATE HISTORY" />
+            <TextBlock Text="Capture the current rates whenever you want a checkpoint."
+                       FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+          </StackPanel>
+          <TextBlock Grid.Column="1" Text="{Binding RateHistory.Count, StringFormat='{}{0} saved'}"
                      FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" VerticalAlignment="Center" />
-          <Button Grid.Column="2" Classes="skua-button small" Content="Export CSV" Command="{Binding ExportHistoryCommand}" />
+          <Button Grid.Column="2" Classes="skua-button small" Content="Save Snapshot"
+                  Command="{Binding SaveRateSnapshotCommand}" ToolTip.Tip="Save the current gameplay rates to history" />
+          <Button Grid.Column="3" Classes="skua-button small" Content="Export CSV"
+                  Command="{Binding ExportHistoryCommand}" />
         </Grid>
-        <ItemsControl ItemsSource="{Binding StatsHistory}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="models:StatsSessionRecord">
-              <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,2" ColumnSpacing="8">
-                <TextBlock Text="{Binding EndedAt, StringFormat={}{0:MM-dd HH:mm}}"
-                           FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="1"
-                           Text="{Binding ExperiencePerHour, StringFormat='{}{0:N0} XP/hr'}"
-                           FontSize="10" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="2"
-                           Text="{Binding KillsPerMinute, StringFormat='{}{0:N1} kills/min'}"
-                           FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="3" Text="{Binding ClassId, StringFormat='Class #{0}'}" FontSize="10"
-                           Foreground="{DynamicResource SkuaMutedTextBrush}" VerticalAlignment="Center" />
-              </Grid>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-        <TextBlock Text="Sessions are saved when stats are reset or the client closes."
-                   FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+        <DataGrid ItemsSource="{Binding RateHistory}"
+                  Height="190"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserResizeColumns="True"
+                  CanUserSortColumns="True"
+                  GridLinesVisibility="All"
+                  HeadersVisibility="Column"
+                  Background="{DynamicResource SkuaSurfaceBrush}">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Saved" Binding="{Binding SavedAtDisplay}" Width="112" />
+            <DataGridTextColumn Header="Session" Binding="{Binding SessionDisplay}" Width="90" />
+            <DataGridTextColumn Header="EXP" Binding="{Binding ExperienceDisplay}" Width="100" />
+            <DataGridTextColumn Header="Gold" Binding="{Binding GoldDisplay}" Width="105" />
+            <DataGridTextColumn Header="Kills" Binding="{Binding KillsDisplay}" Width="92" />
+            <DataGridTextColumn Header="Deaths" Binding="{Binding DeathsDisplay}" Width="92" />
+            <DataGridTextColumn Header="Items" Binding="{Binding ItemsDisplay}" Width="92" />
+            <DataGridTextColumn Header="Class CP" Binding="{Binding ClassPointsDisplay}" Width="112" />
+            <DataGridTextColumn Header="Rank" Binding="{Binding ClassRank}" Width="60" />
+          </DataGrid.Columns>
+        </DataGrid>
       </StackPanel>
     </Border>
   </Grid>
