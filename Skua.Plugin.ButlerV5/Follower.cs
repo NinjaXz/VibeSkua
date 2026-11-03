@@ -21,6 +21,9 @@ public class FollowerSettings
     /// <summary>Keep issuing goto even when already in the master's map and cell.</summary>
     public required Func<bool> AlwaysGoto { get; init; }
 
+    /// <summary>Mirror the master's movement while already in the same room and cell.</summary>
+    public required Func<bool> CopyWalk { get; init; }
+
     /// <summary>Nuclear bypass: max every quest slot client-side. Supersedes QuestClone and QuestBypasses.</summary>
     public required Func<bool> UnlockAllQuests { get; init; }
     public required Func<bool> ScriptRunning { get; init; }
@@ -68,6 +71,10 @@ public class Follower
     private DateTime _lastGoto = DateTime.MinValue;
     private DateTime _lastSnapshot = DateTime.MinValue;
     private DateTime _lastJumpTime = DateTime.MinValue;
+    private DateTime _lastWalkCommandTime = DateTime.MinValue;
+    private int _lastWalkTargetX;
+    private int _lastWalkTargetY;
+    private bool _hasWalkTarget;
     private DateTime _lastJoinTime = DateTime.MinValue;
     private string? _lastJoinTarget;
     private int _gotoAttempts;
@@ -134,6 +141,10 @@ public class Follower
         Master = master;
         Source = source;
         _lastReportedOffGoto = null;
+        _lastWalkCommandTime = DateTime.MinValue;
+        _lastWalkTargetX = 0;
+        _lastWalkTargetY = 0;
+        _hasWalkTarget = false;
         _directJoinTarget = null;
         _directJoinAttempts = 0;
         _suspended = false;
