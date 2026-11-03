@@ -76,7 +76,7 @@ public interface IScriptBotStats : INotifyPropertyChanged
     /// <summary>Estimated time remaining to the next level, when a valid rate is available.</summary>
     TimeSpan? TimeToLevel { get; }
 
-    /// <summary>Estimated time remaining to class rank 10, using the configured 325,000 point target.</summary>
+    /// <summary>Estimated time remaining to class rank 10, using the 302,500 cumulative point target.</summary>
     TimeSpan? TimeToClassRank10 { get; }
 
     /// <summary>Records a successful item pickup from the game event stream.</summary>
