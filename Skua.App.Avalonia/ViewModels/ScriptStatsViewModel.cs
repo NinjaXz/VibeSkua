@@ -17,14 +17,16 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
 
     private readonly ISettingsService _settings;
     private readonly IFileDialogService _fileDialogService;
+    private readonly IDialogService _dialogService;
     private bool _advancedMode;
     private string _rateUnit;
 
-    public ScriptStatsViewModel(IScriptBotStats scriptStats, ISettingsService settings, IFileDialogService fileDialogService)
+    public ScriptStatsViewModel(IScriptBotStats scriptStats, ISettingsService settings, IFileDialogService fileDialogService, IDialogService dialogService)
     {
         ScriptStats = scriptStats;
         _settings = settings;
         _fileDialogService = fileDialogService;
+        _dialogService = dialogService;
         RateHistory = new ObservableCollection<StatsRateSnapshot>(
             settings.Get("StatsRateHistory", new List<StatsRateSnapshot>()).Take(MaximumRateSnapshots));
         _advancedMode = settings.Get("StatsAdvancedMode", false);
@@ -38,6 +40,7 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
         GetSpaceCommand = new RelayCommand(ScriptStats.GetSpace);
         SaveRateSnapshotCommand = new RelayCommand(SaveRateSnapshot);
         ExportHistoryCommand = new RelayCommand(ExportHistory);
+        ClearRateHistoryCommand = new RelayCommand(ClearRateHistory);
     }
 
     public IScriptBotStats ScriptStats { get; }
@@ -45,6 +48,7 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
     public IRelayCommand GetSpaceCommand { get; }
     public IRelayCommand SaveRateSnapshotCommand { get; }
     public IRelayCommand ExportHistoryCommand { get; }
+    public IRelayCommand ClearRateHistoryCommand { get; }
     public ObservableCollection<StatsRateSnapshot> RateHistory { get; }
     public IReadOnlyList<string> RateUnits => AvailableRateUnits;
 
@@ -101,6 +105,26 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
         _settings.Set("StatsRateHistory", RateHistory.ToList());
     }
 
+    /// <summary>
+    /// Deletes all manually saved rate snapshots after explicit user confirmation.
+    /// </summary>
+    private void ClearRateHistory()
+    {
+        if (RateHistory.Count == 0)
+            return;
+
+        bool? confirm = _dialogService.ShowMessageBox(
+            $"Delete all {RateHistory.Count} saved rate snapshots? This cannot be undone.",
+            "Clear Rate History",
+            yesAndNo: true);
+
+        if (confirm != true)
+            return;
+
+        RateHistory.Clear();
+        _settings.Set("StatsRateHistory", new List<StatsRateSnapshot>());
+    }
+
     private static double ConvertHourlyRate(double value, string unit) => unit switch
     {
         "/min" => value / 60d,
@@ -147,5 +171,5 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
     public string Title => "Stats";
     public int Width => 480;
     public int Height => 0;
-    public bool CanResize => false;
+    public bool CanResize => true;
 }
