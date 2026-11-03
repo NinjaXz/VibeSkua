@@ -33,7 +33,7 @@ public sealed partial class CalendarViewModel : ObservableRecipient, Skua.Core.I
     public ObservableCollection<CalendarEvent> SelectedDateEvents { get; } = [];
 
     [ObservableProperty] private DateTimeOffset _selectedDate;
-    [ObservableProperty] private string _title = string.Empty;
+    [ObservableProperty] private string _eventTitle = string.Empty;
     [ObservableProperty] private string _url = string.Empty;
     [ObservableProperty] private DateTimeOffset? _lastSynced;
     [ObservableProperty] private string _status = "Calendar has not been synchronized yet.";
@@ -47,7 +47,7 @@ public sealed partial class CalendarViewModel : ObservableRecipient, Skua.Core.I
         if (value is null)
             return;
 
-        Title = value.IsCustom ? value.Title : string.Empty;
+        EventTitle = value.IsCustom ? value.Title : string.Empty;
         Url = value.IsCustom ? value.Url ?? string.Empty : string.Empty;
         SelectedDate = value.Start;
     }
@@ -103,7 +103,7 @@ public sealed partial class CalendarViewModel : ObservableRecipient, Skua.Core.I
     [RelayCommand]
     private async Task SaveEventAsync()
     {
-        if (string.IsNullOrWhiteSpace(Title))
+        if (string.IsNullOrWhiteSpace(EventTitle))
         {
             Status = "Enter an event title first.";
             return;
@@ -120,7 +120,7 @@ public sealed partial class CalendarViewModel : ObservableRecipient, Skua.Core.I
         CalendarEvent? existing = SelectedEvent is { IsCustom: true } selected ? selected : null;
         CalendarEvent entry = new(
             existing?.Id ?? Guid.NewGuid().ToString("N"),
-            Title.Trim(),
+            EventTitle.Trim(),
             SelectedDate.DateTime.Date,
             null,
             string.IsNullOrWhiteSpace(Url) ? null : Url.Trim(),
@@ -208,7 +208,7 @@ public sealed partial class CalendarViewModel : ObservableRecipient, Skua.Core.I
 
     private void ClearEditor()
     {
-        Title = string.Empty;
+        EventTitle = string.Empty;
         Url = string.Empty;
     }
 
