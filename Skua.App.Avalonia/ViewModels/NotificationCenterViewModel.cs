@@ -108,7 +108,7 @@ public sealed partial class NotificationCenterViewModel : BotControlViewModelBas
         if (string.IsNullOrWhiteSpace(message))
             return;
 
-        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        global::Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             Notifications.Insert(0, new NotificationEntry(DateTimeOffset.Now, kind, message));
             while (Notifications.Count > MaximumNotifications)
