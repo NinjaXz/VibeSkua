@@ -38,7 +38,7 @@ internal static class PacketInterceptor
             Category("Skills", "sAct", "gar", "sar", "sars", "geia", "seia"),
             Category("Stats", "uotls", "stu"),
             Category("Inventory", "loadInventoryBig", "retrieveInventory", "initInventory", "addItems", "forceAddItem",
-                "removeItem", "removeTempItem", "loadBank", "bankFromInv", "bankToInv", "bankSwapInv"),
+                "removeItem", "removeTempItem", "serverUseItem", "loadBank", "bankFromInv", "bankToInv", "bankSwapInv"),
             Category("Class", "updateClass", "changeClass"),
             Category("Misc", "crafting", "setHomeTown", "afk", "summonPet")
         };

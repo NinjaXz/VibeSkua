@@ -8,12 +8,13 @@ namespace Skua.App.Avalonia.ViewModels.Packets;
 public static class PacketCommands
 {
     // Quotes inside a JSON string are escaped, so chat text can't match this
-    private static readonly Regex _jsonCmd = new("\"cmd\":\"([^\"]+)\"", RegexOptions.Compiled);
-    private static readonly Regex _xmlAction = new("action='([^']+)'", RegexOptions.Compiled);
+    private static readonly Regex _jsonCmd = new("\"cmd\"\\s*:\\s*\"([^\"]+)\"", RegexOptions.Compiled);
+    private static readonly Regex _xmlAction = new("action=['\"]([^'\"]+)['\"]", RegexOptions.Compiled);
 
     // Every command a raw packet carries: a JSON packet lists its nested ones too, such as the auras in a ct
     public static string[] Parse(string packet)
     {
+        packet = packet.TrimStart();
         if (packet.StartsWith('%'))
             return ParseString(packet);
 
@@ -27,7 +28,8 @@ public static class PacketCommands
     // Outbound %xt%zm%command%room%args%, inbound %xt%command%room%args%
     private static string[] ParseString(string packet)
     {
-        string[] parts = packet.Split('%', StringSplitOptions.RemoveEmptyEntries);
+        // Only the first five fields are read, so a packet full of % doesn't become a huge array
+        string[] parts = packet.Split('%', 6, StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length < 2)
             return Array.Empty<string>();
         if (parts[1] != "zm")

@@ -138,14 +138,16 @@ public partial class PacketInterceptorViewModel : BotControlViewModelBase
         {
             Packets.Add(packet);
             if (Packets.Count > 1000)
-                Packets.RemoveAt(0);
-
-            if (MatchesPacket(packet))
             {
-                FilteredPackets.Add(packet);
-                if (FilteredPackets.Count > 1000)
+                // FilteredPackets keeps Packets' order, so the oldest packet can only be its first item
+                InterceptedPacketViewModel evicted = Packets[0];
+                Packets.RemoveAt(0);
+                if (FilteredPackets.Count > 0 && ReferenceEquals(FilteredPackets[0], evicted))
                     FilteredPackets.RemoveAt(0);
             }
+
+            if (MatchesPacket(packet))
+                FilteredPackets.Add(packet);
         });
     }
 
