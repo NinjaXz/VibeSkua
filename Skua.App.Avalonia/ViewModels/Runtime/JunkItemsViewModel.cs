@@ -176,7 +176,8 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
                     InventoryItem item = group.First();
                     int inventoryQuantity = inventoryItems.Where(candidate => candidate.ID == item.ID).Sum(candidate => candidate.Quantity);
                     int bankQuantity = bankItems.Where(candidate => candidate.ID == item.ID).Sum(candidate => candidate.Quantity);
-                    return new JunkItemEntry(item.ID, item.Name, item.Category.ToString(), item.Coins, item.Equipped, item.MaxStack, inventoryQuantity, bankQuantity, junkIds.Contains(item.ID), _inventory.IsFavorited(item.ID), goals.TryGetValue(item.ID, out int goalQuantity) ? goalQuantity : 0);
+                    bool nearStackLimit = inventoryItems.Any(candidate => candidate.ID == item.ID && candidate.MaxStack > 0 && candidate.Quantity >= candidate.MaxStack * 0.8);
+                    return new JunkItemEntry(item.ID, item.Name, item.Category.ToString(), item.Coins, item.Equipped, item.MaxStack, nearStackLimit, inventoryQuantity, bankQuantity, junkIds.Contains(item.ID), _inventory.IsFavorited(item.ID), goals.TryGetValue(item.ID, out int goalQuantity) ? goalQuantity : 0);
                 })
                 .OrderBy(item => item.Name)
                 .ToList();
@@ -433,7 +434,7 @@ public sealed partial class JunkItemsViewModel : BotControlViewModelBase
 
 public sealed partial class JunkItemEntry : ObservableObject
 {
-    public JunkItemEntry(int id, string name, string category, bool isAc, bool isEquipped, int maxStack, int inventoryQuantity, int bankQuantity, bool isJunk, bool isFavorite, int goalQuantity)
+    public JunkItemEntry(int id, string name, string category, bool isAc, bool isEquipped, int maxStack, bool isNearStackLimit, int inventoryQuantity, int bankQuantity, bool isJunk, bool isFavorite, int goalQuantity)
     {
         ID = id;
         Name = name;
@@ -442,6 +443,7 @@ public sealed partial class JunkItemEntry : ObservableObject
         IsEquipped = isEquipped;
         IsFavorite = isFavorite;
         MaxStack = maxStack;
+        IsNearStackLimit = isNearStackLimit;
         _goalQuantity = goalQuantity;
         InventoryQuantity = inventoryQuantity;
         BankQuantity = bankQuantity;
@@ -457,7 +459,7 @@ public sealed partial class JunkItemEntry : ObservableObject
     public int MaxStack { get; }
     public bool IsGoalTracked => GoalQuantity > 0;
     public string GoalProgressDisplay => $"{Math.Min(InventoryQuantity + BankQuantity, GoalQuantity):N0} / {GoalQuantity:N0}";
-    public bool IsNearStackLimit => MaxStack > 0 && InventoryQuantity >= MaxStack * 0.8;
+    public bool IsNearStackLimit { get; }
     public string StackDisplay => MaxStack > 0 ? $"{InventoryQuantity:N0} / {MaxStack:N0}" : InventoryQuantity.ToString("N0");
     public int InventoryQuantity { get; }
     public int BankQuantity { get; }
