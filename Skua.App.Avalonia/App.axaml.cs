@@ -84,6 +84,7 @@ public partial class App : Application
         RegisterGlobalExceptionHandlers();
 
         ServiceCollection services = new();
+        services.AddLogging();
         services.AddCommonServices();
         services.AddCompiler();
         services.AddScriptableObjects();
