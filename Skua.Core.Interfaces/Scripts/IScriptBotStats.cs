@@ -64,12 +64,6 @@ public interface IScriptBotStats : INotifyPropertyChanged
     /// <summary>Collected item quantity per hour during the current session.</summary>
     int ItemsPerHour { get; }
 
-    /// <summary>Average experience gained per recorded monster kill during this session.</summary>
-    double ExperiencePerKill { get; }
-
-    /// <summary>Average positive gold gained per recorded monster kill during this session.</summary>
-    double GoldPerKill { get; }
-
     /// <summary>Estimated time remaining to the next level, when a valid rate is available.</summary>
     TimeSpan? TimeToLevel { get; }
 
