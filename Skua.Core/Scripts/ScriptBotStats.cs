@@ -93,6 +93,18 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
     private TimeSpan _sessionTime;
 
     [ObservableProperty]
+    private double _experienceProgress;
+
+    [ObservableProperty]
+    private string _experienceProgressText = "0 / 0 XP";
+
+    [ObservableProperty]
+    private double _classRank10Progress;
+
+    [ObservableProperty]
+    private string _classRank10ProgressText = $"0 / {ClassPointsForRankTen:N0} CP";
+
+    [ObservableProperty]
     private int _experiencePerHour;
 
     [ObservableProperty]
@@ -227,6 +239,8 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
             _lastClassRank = 0;
             CurrentClassPoints = 0;
             CurrentClassRank = 0;
+            ClassRank10Progress = 0;
+            ClassRank10ProgressText = $"0 / {ClassPointsForRankTen:N0} CP";
             ClassPointsPerHour = 0;
             TimeToClassRank10 = null;
             return;
@@ -277,6 +291,8 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
 
         CurrentClassRank = Math.Max(0, classRank);
         CurrentClassPoints = GetClassRankBasePoints(classRank) + Math.Max(0, classPoints);
+        ClassRank10Progress = Math.Clamp(CurrentClassPoints / (double)ClassPointsForRankTen * 100d, 0d, 100d);
+        ClassRank10ProgressText = $"{Math.Min(CurrentClassPoints, ClassPointsForRankTen):N0} / {ClassPointsForRankTen:N0} CP";
 
         TimeSpan classElapsed = _classStopwatch.Elapsed;
         if (classElapsed.TotalSeconds < 5)
@@ -345,6 +361,10 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
         _earnedExperience = 0;
         _earnedGold = 0;
         SessionTime = TimeSpan.Zero;
+        ExperienceProgress = 0;
+        ExperienceProgressText = "0 / 0 XP";
+        ClassRank10Progress = 0;
+        ClassRank10ProgressText = $"0 / {ClassPointsForRankTen:N0} CP";
         ExperiencePerHour = 0;
         GoldPerHour = 0;
         KillsPerMinute = 0;
