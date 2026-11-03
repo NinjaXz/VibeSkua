@@ -49,6 +49,18 @@ public interface IScriptBotStats : INotifyPropertyChanged
     /// <summary>Connected gameplay time accumulated during this application session.</summary>
     TimeSpan SessionTime { get; }
 
+    /// <summary>Current experience progress within the player's level, from 0 to 100.</summary>
+    double ExperienceProgress { get; }
+
+    /// <summary>Formatted current and required experience for the player's level.</summary>
+    string ExperienceProgressText { get; }
+
+    /// <summary>Progress toward the cumulative class rank 10 target, from 0 to 100.</summary>
+    double ClassRank10Progress { get; }
+
+    /// <summary>Formatted current class points and the cumulative rank 10 target.</summary>
+    string ClassRank10ProgressText { get; }
+
     /// <summary>Positive experience gained per hour during the current session.</summary>
     int ExperiencePerHour { get; }
 
