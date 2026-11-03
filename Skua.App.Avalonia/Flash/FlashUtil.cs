@@ -214,7 +214,13 @@ public class FlashUtil : IFlashUtil
             {
                 try
                 {
+                    Stopwatch callTimer = Stopwatch.StartNew();
                     result = Flash.CallFunction(req.ToString());
+                    callTimer.Stop();
+
+                    if (callTimer.ElapsedMilliseconds >= 250)
+                        Trace.WriteLine($"Slow Flash call: {function} took {callTimer.ElapsedMilliseconds} ms (attempt {attempt + 1}/{maxRetries + 1}).");
+
                     break;
                 }
                 catch (COMException comEx) when (attempt < maxRetries && IsTransientComError(comEx.HResult))
