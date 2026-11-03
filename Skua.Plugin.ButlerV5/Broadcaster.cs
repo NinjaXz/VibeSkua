@@ -36,6 +36,10 @@ public class Broadcaster
     private bool _wasEnabled = true;
 
     private List<string> _followers = new();
+    private string _sendAllTarget = "";
+    private string _sendAllCommand = "";
+    private List<string> _sendAllRecipients = new();
+    private long _sendAllIssuedUtcTicks;
 
     private readonly Func<string?> _followingProvider;
     private readonly Func<string?> _scriptNameProvider; // null = no script running
@@ -67,6 +71,29 @@ public class Broadcaster
         lock (_writeLock)
             _followers = followers.Select(f => f.Trim()).Where(f => f.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         WriteNow();
+    }
+
+    public void PublishSendAllGoto(string target, IEnumerable<string> recipients)
+    {
+        string normalizedTarget = target.Trim();
+        List<string> normalizedRecipients = recipients
+            .Select(name => name.Trim())
+            .Where(name => name.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (normalizedTarget.Length == 0 || normalizedRecipients.Count == 0)
+            return;
+
+        lock (_writeLock)
+        {
+            _sendAllTarget = normalizedTarget;
+            _sendAllCommand = Guid.NewGuid().ToString("N");
+            _sendAllRecipients = normalizedRecipients;
+            _sendAllIssuedUtcTicks = DateTime.UtcNow.Ticks;
+        }
+
+        WriteNow();
+        DebugLog.Log("Broadcaster", $"published send-all goto to {normalizedRecipients.Count} accounts: {normalizedTarget}");
     }
 
     public void Start()
@@ -229,6 +256,10 @@ public class Broadcaster
                     ScriptName = SafeGet(_scriptNameProvider) ?? "",
                     Declined = SafeGet(_declinedProvider) ?? "",
                     Parking = SafeGetBool(_parkingProvider),
+                    SendAllTarget = _sendAllTarget,
+                    SendAllCommand = _sendAllCommand,
+                    SendAllRecipients = _sendAllRecipients.ToList(),
+                    SendAllIssuedUtcTicks = _sendAllIssuedUtcTicks,
                 };
 
                 WriteIfChanged(data);
