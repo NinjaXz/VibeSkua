@@ -159,7 +159,7 @@ public static class Services
 
         services.AddTransient<ConsoleViewModel>();
         services.AddTransient<DiagnosticsViewModel>();
-        services.AddTransient<NotificationCenterViewModel>();
+        services.AddSingleton<NotificationCenterViewModel>();
 
         services.AddSingleton<ScriptRepoViewModel>();
         services.AddSingleton<ScriptLoaderViewModel>();
