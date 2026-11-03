@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Skua.App.Avalonia.Plugins;
+using Skua.App.Avalonia.Services;
 using Skua.App.Avalonia.ViewModels;
 using Skua.App.Avalonia.ViewModels.AdvancedSkills;
 using Skua.App.Avalonia.ViewModels.AppLogs;
@@ -97,6 +98,7 @@ public static class Services
         services.AddSingleton<IAuraMonitorService, AuraMonitorService>();
         services.AddSingleton<IJunkService, JunkService>();
         services.AddSingleton<BackgroundThemeService>();
+        services.AddSingleton<ArtixCalendarService>();
 
         return services;
     }
@@ -160,6 +162,7 @@ public static class Services
         services.AddTransient<ConsoleViewModel>();
         services.AddTransient<DiagnosticsViewModel>();
         services.AddSingleton<NotificationCenterViewModel>();
+        services.AddTransient<CalendarViewModel>();
 
         services.AddSingleton<ScriptRepoViewModel>();
         services.AddSingleton<ScriptLoaderViewModel>();
