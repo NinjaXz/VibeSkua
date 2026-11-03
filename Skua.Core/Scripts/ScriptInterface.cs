@@ -23,6 +23,7 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
     private readonly ILogService _logger;
     private readonly IDialogService _dialogService;
     private readonly ISettingsService _settingsService;
+    private bool _playerDead;
 
     public bool ShouldExit => Manager.ShouldExit;
     public Version Version { get; }
@@ -584,10 +585,19 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
                             dynamic p = data.p?[Player.Username.ToLower()]!;
                             if (p is not null && p.intHP == 0)
                             {
-                                Stats.Deaths++;
-                                Messenger.Send<PlayerDeathMessage, int>((int)MessageChannels.GameEvents);
+                                // Combat-state packets can repeat while the player remains dead.
+                                if (!_playerDead)
+                                {
+                                    Stats.Deaths++;
+                                    Messenger.Send<PlayerDeathMessage, int>((int)MessageChannels.GameEvents);
+                                }
+
+                                _playerDead = true;
                                 break;
                             }
+
+                            if (p is not null)
+                                _playerDead = false;
                             dynamic anims = data.anims?[0]!;
                             if (anims is not null)
                             {
@@ -718,6 +728,7 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
                             break;
 
                         case "loginResponse":
+                            _playerDead = false;
                             if (Flash.IsWorldLoaded)
                                 Stats.GetSpace();
                             Options.CustomName = string.Empty;
