@@ -641,7 +641,7 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         string? preferredServerName = preferredName;
         try
         {
-            while (!token.IsCancellationRequested && !Manager.ShouldExit && !Player.Playing && tries < Options.ReloginTries)
+            while (!token.IsCancellationRequested && !Manager.ShouldExit && !IsIntentionalLogout && !Player.Playing && tries < Options.ReloginTries)
             {
                 tries++;
                 await GetServers(true);
@@ -751,7 +751,7 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         }
         catch { }
 
-        if (!Player.Playing)
+        if (!Player.Playing && !IsIntentionalLogout)
             ReloginLog("Unable to reconnect within configured retries.");
         return Player.Playing;
     }
