@@ -1,0 +1,90 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vms="clr-namespace:Skua.App.Avalonia.ViewModels"
+             x:Class="Skua.App.Avalonia.Views.CalendarView"
+             x:DataType="vms:CalendarViewModel"
+             Background="{DynamicResource SkuaPageBrush}"
+             mc:Ignorable="d">
+  <Grid Margin="14" RowDefinitions="Auto,*,Auto" RowSpacing="12">
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+      <StackPanel Spacing="3">
+        <TextBlock Text="AQW RELEASE CALENDAR" Classes="section-label" />
+        <TextBlock Text="{Binding Status}" FontSize="11" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+      </StackPanel>
+      <Button Grid.Column="1" Classes="skua-button" Content="New Event" Command="{Binding NewEventCommand}" />
+      <Button Grid.Column="2" Classes="skua-button skua-primary" Content="Refresh" Command="{Binding RefreshCommand}" IsEnabled="{Binding IsBusy, Converter={x:Static BooleanNegationConverter.Instance}}" />
+    </Grid>
+
+    <Grid Grid.Row="1" ColumnDefinitions="1.15*,*,1.1*" ColumnSpacing="10">
+      <Border Grid.Column="0" Classes="card" Padding="12">
+        <StackPanel Spacing="10">
+          <TextBlock Text="DATE" Classes="section-label" />
+          <DatePicker SelectedDate="{Binding SelectedDate, Mode=TwoWay}" HorizontalAlignment="Stretch" />
+          <TextBlock Text="EVENTS ON SELECTED DATE" Classes="section-label" Margin="0,8,0,0" />
+          <ListBox ItemsSource="{Binding SelectedDateEvents}" SelectedItem="{Binding SelectedEvent, Mode=TwoWay}" Background="Transparent" BorderThickness="0">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vms:CalendarEvent">
+                <Border Padding="8" Margin="0,2" CornerRadius="6" Background="{DynamicResource SkuaSurfaceAltBrush}">
+                  <StackPanel Spacing="4">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                      <Border Grid.Column="1" Classes="chip">
+                        <TextBlock Text="{Binding Source}" FontSize="9" />
+                      </Border>
+                    </Grid>
+                    <TextBlock Text="{Binding DateDisplay}" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <TextBlock Text="Select an event to edit your custom entries." FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <Border Grid.Column="1" Classes="card" Padding="12">
+        <StackPanel Spacing="8">
+          <TextBlock Text="UPCOMING AQW RELEASES" Classes="section-label" />
+          <ListBox ItemsSource="{Binding Events}" SelectedItem="{Binding SelectedEvent, Mode=TwoWay}" Background="Transparent" BorderThickness="0">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vms:CalendarEvent">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9" Margin="2,5">
+                  <Border Grid.Column="0" Width="4" CornerRadius="2" Background="{DynamicResource SkuaAccentBrush}" />
+                  <StackPanel Grid.Column="1" Spacing="3">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap" />
+                      <TextBlock Grid.Column="1" Text="{Binding Source}" FontSize="9" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+                    </Grid>
+                    <TextBlock Text="{Binding DateDisplay}" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+                  </StackPanel>
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </StackPanel>
+      </Border>
+
+      <Border Grid.Column="2" Classes="card" Padding="12">
+        <StackPanel Spacing="9">
+          <TextBlock Text="CUSTOM EVENT" Classes="section-label" />
+          <TextBlock Text="Title" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+          <TextBox Text="{Binding Title, Mode=TwoWay}" Watermark="Event name" />
+          <TextBlock Text="Date" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+          <DatePicker SelectedDate="{Binding SelectedDate, Mode=TwoWay}" HorizontalAlignment="Stretch" />
+          <TextBlock Text="Link (optional)" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+          <TextBox Text="{Binding Url, Mode=TwoWay}" Watermark="https://..." />
+          <TextBlock Text="Custom events are saved locally and are never changed by Artix sync." FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" TextWrapping="Wrap" />
+          <Button Content="Save Event" Classes="skua-button skua-primary" Command="{Binding SaveEventCommand}" />
+          <Button Content="Delete Selected Custom Event" Classes="skua-button" Command="{Binding DeleteEventCommand}" />
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+      <TextBlock Text="{Binding LastSynced, StringFormat='Last successful sync: {0:MMM d, yyyy h:mm tt}'}" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" VerticalAlignment="Center" />
+      <TextBlock Grid.Column="1" Text="Source: artix.com/calendar" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" VerticalAlignment="Center" />
+    </Grid>
+  </Grid>
+</UserControl>
