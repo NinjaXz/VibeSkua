@@ -74,7 +74,7 @@
              KeyDown="PacketsListBox_KeyDown"
              SelectionChanged="PacketsListBox_SelectionChanged"
              Padding="4"
-             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+             ScrollViewer.HorizontalScrollBarVisibility="Auto"
              FontFamily="JetBrains Mono,Consolas,Courier New,monospace"
              FontSize="11"
              Foreground="{DynamicResource SkuaTextBrush}">
@@ -111,7 +111,7 @@
                          Foreground="{Binding Outbound, Converter={StaticResource PacketTagFgConverter}}" />
             </Border>
             <TextBlock Grid.Column="1" Classes="packet" Text="{Binding Packet}" VerticalAlignment="Center"
-                       TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Packet}" />
+                       ToolTip.Tip="{Binding Packet}" />
           </Grid>
         </DataTemplate>
       </ListBox.ItemTemplate>

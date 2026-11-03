@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Skua.Core.Interfaces;
 using Skua.App.Avalonia.ViewModels.Packets;
@@ -10,62 +11,36 @@ internal static class PacketInterceptor
 {
     internal static PacketInterceptorViewModel CreateViewModel(IServiceProvider s)
     {
+        return new PacketInterceptorViewModel(CreateFilters(), s.GetRequiredService<ICaptureProxy>(), s.GetRequiredService<IScriptServers>(), s.GetRequiredService<IFileDialogService>());
+    }
+
+    // Each filter is given a packet's commands (PacketCommands.Parse), both directions of a request are listed
+    internal static List<PacketLogFilterViewModel> CreateFilters()
+    {
         List<PacketLogFilterViewModel> filters = new()
         {
-            new("Combat", p =>
-                p[0].Contains("\"cmd\":\"restRequest\"") ||
-                p[0].Contains("\"cmd\":\"gar\"") ||
-                p[0].Contains("\"cmd\":\"aggroMon\"")),
-            new("User Data", p =>
-                p[0].Contains("\"cmd\":\"retrieveUserData\"") ||
-                p[0].Contains("\"cmd\":\"retrieveUserDatas\"")),
-            new("Join", p =>
-                p[0].Contains("\"cmd\":\"moveToArea\"") ||
-                p[0].Contains("\"cmd\":\"tfer\"") ||
-                p[0].Contains("\"cmd\":\"house\"") ||
-                p[0].Contains("action='joinOK'")),
-            new("Jump", p =>
-                p[0].Contains("\"cmd\":\"moveToCell\"")),
-            new("Movement", p =>
-                p[0].Contains("\"cmd\":\"mv\"") ||
-                p[0].Contains("\"cmd\":\"mtcid\"")),
-            new("Get Map", p =>
-                p[0].Contains("\"cmd\":\"getMapItem\"")),
-            new("Quest", p =>
-                p[0].Contains("\"cmd\":\"getQuest\"") ||
-                p[0].Contains("\"cmd\":\"acceptQuest\"") ||
-                p[0].Contains("\"cmd\":\"tryQuestComplete\"") ||
-                p[0].Contains("\"cmd\":\"updateQuest\"")),
-            new("Shop", p =>
-                p[0].Contains("\"cmd\":\"loadShop\"") ||
-                p[0].Contains("\"cmd\":\"buyItem\"") ||
-                p[0].Contains("\"cmd\":\"sellItem\"")),
-            new("Equip", p =>
-                p[0].Contains("\"cmd\":\"equipItem\"")),
-            new("Drop", p =>
-                p[0].Contains("\"cmd\":\"getDrop\"")),
-            new("Chat", p =>
-                p[0].Contains("\"cmd\":\"message\"") ||
-                p[0].Contains("\"cmd\":\"cc\"")),
-            new("Auras", p =>
-                p[0].Contains("\"cmd\":\"aura+p\"") ||
-                p[0].Contains("\"cmd\":\"aura-p\"") ||
-                p[0].Contains("\"cmd\":\"clearAuras\"")),
-            new("Skills", p =>
-                p[0].Contains("\"cmd\":\"sAct\"")),
-            new("Stats", p =>
-                p[0].Contains("\"cmd\":\"uotls\"") ||
-                p[0].Contains("\"cmd\":\"tempSta\"")),
-            new("Inventory", p =>
-                p[0].Contains("\"cmd\":\"loadInventoryBig\"") ||
-                p[0].Contains("\"cmd\":\"loadInventory\"")),
-            new("Class", p =>
-                p[0].Contains("\"cmd\":\"updateClass\"")),
-            new("Misc", p =>
-                p[0].Contains("\"cmd\":\"crafting\"") ||
-                p[0].Contains("\"cmd\":\"setHomeTown\"") ||
-                p[0].Contains("\"cmd\":\"afk\"") ||
-                p[0].Contains("\"cmd\":\"summonPet\""))
+            Category("Combat", "ct", "gar", "sar", "sars", "anim", "mtls", "cb", "restRequest", "aggroMon",
+                "resPlayerTimed", "resTimed", "respawnMon", "playerDeath"),
+            Category("User Data", "retrieveUserData", "retrieveUserDatas", "initUserData", "initUserDatas"),
+            Category("Join", "moveToArea", "tfer", "house", "joinOK", "firstJoin", "exitArea"),
+            Category("Jump", "moveToCell"),
+            Category("Movement", "mv", "mtcid", "mvna", "mvnb"),
+            Category("Get Map", "getMapItem"),
+            Category("Quest", "getQuest", "getQuests", "getQuests2", "acceptQuest", "tryQuestComplete", "updateQuest",
+                "ccqr", "turnIn", "showQuestLink"),
+            Category("Shop", "loadShop", "reloadShop", "loadHairShop", "loadEnhShop", "buyItem", "sellItem",
+                "enhanceItem", "enhanceItemShop", "enhanceItemLocal"),
+            Category("Equip", "equipItem", "forceEquipItem", "unequipItem", "wearItem", "unwearItem"),
+            Category("Drop", "getDrop", "dropItem", "getMonsterDrops", "monsterDrops"),
+            Category("Chat", "message", "cc", "chatm", "whisper", "em", "emotea"),
+            Category("Auras", "aura+", "aura-", "aura++", "aura--", "aura*", "aura+p", "aura-p", "clearAuras", "auSnap",
+                "showAuraResult"),
+            Category("Skills", "sAct", "gar", "sar", "sars", "geia", "seia"),
+            Category("Stats", "uotls", "stu"),
+            Category("Inventory", "loadInventoryBig", "retrieveInventory", "initInventory", "addItems", "forceAddItem",
+                "removeItem", "removeTempItem", "serverUseItem", "loadBank", "bankFromInv", "bankToInv", "bankSwapInv"),
+            Category("Class", "updateClass", "changeClass"),
+            Category("Misc", "crafting", "setHomeTown", "afk", "summonPet")
         };
 
         List<PacketLogFilterViewModel> specificFilters = new(filters);
@@ -79,6 +54,12 @@ internal static class PacketInterceptor
             return true;
         }));
 
-        return new PacketInterceptorViewModel(filters, s.GetRequiredService<ICaptureProxy>(), s.GetRequiredService<IScriptServers>(), s.GetRequiredService<IFileDialogService>());
+        return filters;
+    }
+
+    private static PacketLogFilterViewModel Category(string name, params string[] commands)
+    {
+        HashSet<string> known = new(commands);
+        return new(name, p => p.Any(known.Contains));
     }
 }
