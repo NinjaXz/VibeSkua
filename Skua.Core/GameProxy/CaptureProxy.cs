@@ -59,7 +59,8 @@ public partial class CaptureProxy : ObservableRecipient, ICaptureProxy
 
             ResetDiagnosticsCounters();
             _listenPort = Destination.Port;
-            _captureProxyCTS = new();
+            CancellationTokenSource captureProxyCTS = new();
+            _captureProxyCTS = captureProxyCTS;
             _listener = new TcpListener(IPAddress.Loopback, _listenPort);
 
             try
@@ -68,14 +69,15 @@ public partial class CaptureProxy : ObservableRecipient, ICaptureProxy
             }
             catch
             {
+                try { _listener.Stop(); } catch { }
                 _listener = null;
-                _captureProxyCTS.Dispose();
+                captureProxyCTS.Dispose();
                 _captureProxyCTS = null;
                 return;
             }
 
             Running = true;
-            CancellationToken token = _captureProxyCTS.Token;
+            CancellationToken token = captureProxyCTS.Token;
             _thread = new(() =>
             {
                 try
