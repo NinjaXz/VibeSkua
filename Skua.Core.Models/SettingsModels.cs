@@ -238,6 +238,9 @@ public class ClientSettings
     [JsonPropertyName("ShowUsernameInTitle")]
     public bool ShowUsernameInTitle { get; set; } = true;
 
+    [JsonPropertyName("AutoJumpOnPositionChange")]
+    public bool AutoJumpOnPositionChange { get; set; } = false;
+
     [JsonPropertyName("GrandpaMode")]
     public bool GrandpaMode { get; set; } = false;
 

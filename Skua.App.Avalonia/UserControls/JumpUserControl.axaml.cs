@@ -22,7 +22,8 @@ public partial class JumpUserControl : UserControl
 
     private void Cells_KeyDown(object? sender, KeyEventArgs e)
     {
-        if (!Cells.IsFocused || Cells.ItemCount == 0)
+        // The open ComboBox popup can own keyboard focus instead of the ComboBox itself.
+        if ((!Cells.IsKeyboardFocusWithin && !Cells.IsDropDownOpen) || Cells.ItemCount == 0)
             return;
 
         int direction = e.Key switch
@@ -41,9 +42,8 @@ public partial class JumpUserControl : UserControl
 
         int nextIndex = System.Math.Clamp(selectedIndex + direction, 0, Cells.ItemCount - 1);
 
-        // ComboBox treats arrow keys in an open dropdown as preview navigation and
-        // waits for Enter/click to commit. Close it before applying the selection so
-        // SelectedCell changes immediately and triggers the existing auto-jump.
+        // Commit the selection immediately rather than leaving it as uncommitted
+        // dropdown preview navigation. The view model handles optional auto-jump.
         Cells.IsDropDownOpen = false;
         if (nextIndex != Cells.SelectedIndex)
             Cells.SelectedIndex = nextIndex;
