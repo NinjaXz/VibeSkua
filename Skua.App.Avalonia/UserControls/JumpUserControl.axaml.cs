@@ -23,7 +23,7 @@ public partial class JumpUserControl : UserControl
     private void Cells_KeyDown(object? sender, KeyEventArgs e)
     {
         // The open ComboBox popup can own keyboard focus instead of the ComboBox itself.
-        if ((!Cells.IsKeyboardFocusWithin && !Cells.IsDropDownOpen) || Cells.ItemCount == 0)
+        if ((!Cells.IsFocused && !Cells.IsDropDownOpen) || Cells.ItemCount == 0)
             return;
 
         int direction = e.Key switch
