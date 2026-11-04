@@ -1,6 +1,7 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia">
+        xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+        xmlns:buttons="using:Skua.Shared.Avalonia.Controls.Buttons">
     <Design.PreviewWith>
         <Border Padding="20">
             <!-- Add Controls for Previewer Here -->
@@ -50,6 +51,7 @@
     </Style>
 
     <Style Selector="ToggleButton.app-toggle, ToggleButton.option-chip">
+        <Setter Property="buttons:HoverGlow.Enabled" Value="True" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="CornerRadius" Value="12" />
         <Setter Property="Background" Value="{DynamicResource SkuaSurfaceAltBrush}" />
@@ -65,9 +67,10 @@
         <Setter Property="CornerRadius" Value="12" />
         <Setter Property="Foreground" Value="{DynamicResource SkuaMutedTextBrush}" />
     </Style>
+    <!-- Off + hover: the cursor-following glow (Controls\Buttons\HoverGlow.cs); on + hover keeps its accent tint below -->
     <Style Selector="ToggleButton.app-toggle:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.option-chip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource SkuaNavHoverBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource SkuaBorderStrongBrush}" />
+        <Setter Property="Background" Value="{CompiledBinding $parent[ToggleButton].(buttons:HoverGlow.Fill)}" />
+        <Setter Property="BorderBrush" Value="{CompiledBinding $parent[ToggleButton].(buttons:HoverGlow.Edge)}" />
         <Setter Property="Foreground" Value="{DynamicResource SkuaTextBrush}" />
     </Style>
     <Style Selector="ToggleButton.app-toggle:pressed /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.option-chip:pressed /template/ ContentPresenter#PART_ContentPresenter">
@@ -80,7 +83,21 @@
         <Setter Property="BorderBrush" Value="{DynamicResource SkuaAccentBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource SkuaTextBrush}" />
     </Style>
-    <Style Selector="ToggleButton.app-toggle:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.option-chip:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.app-toggle:checked:pressed /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.option-chip:checked:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <!-- On + hover: the glow in accent over the stronger tint, with a white-lit accent border -->
+    <Style Selector="ToggleButton.app-toggle:checked, ToggleButton.option-chip:checked">
+        <Setter Property="buttons:HoverGlow.Base" Value="{DynamicResource SkuaAccentTintStrongBrush}" />
+        <Setter Property="buttons:HoverGlow.Light" Value="{DynamicResource SkuaAccentBrush}" />
+        <Setter Property="buttons:HoverGlow.Amount" Value="0.3" />
+        <Setter Property="buttons:HoverGlow.EdgeBase" Value="{DynamicResource SkuaAccentBrush}" />
+        <Setter Property="buttons:HoverGlow.EdgeLight" Value="White" />
+        <Setter Property="buttons:HoverGlow.EdgeAmount" Value="0.5" />
+    </Style>
+    <Style Selector="ToggleButton.app-toggle:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.option-chip:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{CompiledBinding $parent[ToggleButton].(buttons:HoverGlow.Fill)}" />
+        <Setter Property="BorderBrush" Value="{CompiledBinding $parent[ToggleButton].(buttons:HoverGlow.Edge)}" />
+        <Setter Property="Foreground" Value="{DynamicResource SkuaTextBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.app-toggle:checked:pressed /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.option-chip:checked:pressed /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource SkuaAccentTintStrongBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource SkuaAccentBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource SkuaTextBrush}" />
