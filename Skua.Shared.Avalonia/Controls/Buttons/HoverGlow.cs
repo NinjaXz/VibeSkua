@@ -57,7 +57,8 @@ public static class HoverGlow
         InputElement.PointerEnteredEvent.AddClassHandler<Button>(OnPointerEntered, handledEventsToo: true);
         InputElement.PointerMovedEvent.AddClassHandler<Button>(OnPointerMoved, handledEventsToo: true);
 
-        // A colour change (a toggle checked under the cursor, a theme or accent change) repaints existing brushes.
+        // A colour property change (a toggle checked under the cursor, a theme variant switch) repaints existing
+        // brushes. ToggleButton derives from Button, so these Button handlers cover toggles too.
         foreach (AvaloniaProperty property in new AvaloniaProperty[]
                  { BaseProperty, LightProperty, AmountProperty, EdgeBaseProperty, EdgeLightProperty, EdgeAmountProperty })
             property.Changed.AddClassHandler<Button>((button, _) => UpdateColors(button));
@@ -108,8 +109,13 @@ public static class HoverGlow
 
     private static void OnPointerMoved(Button button, PointerEventArgs e)
     {
-        if (GetEnabled(button) && button.IsPointerOver)
-            Move(button, e);
+        if (!GetEnabled(button) || !button.IsPointerOver)
+            return;
+
+        // The theme recolours its accent brushes in place (ThemeResourceApplicator.SetOrUpdateBrush), which
+        // changes none of the properties above, so colours are re-read here too. SetStops only writes on a change.
+        UpdateColors(button);
+        Move(button, e);
     }
 
     private static void Move(Button button, PointerEventArgs e)

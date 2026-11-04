@@ -51,6 +51,7 @@
     </Style>
 
     <Style Selector="ToggleButton.app-toggle, ToggleButton.option-chip">
+        <Setter Property="buttons:HoverGlow.Enabled" Value="True" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="CornerRadius" Value="12" />
         <Setter Property="Background" Value="{DynamicResource SkuaSurfaceAltBrush}" />

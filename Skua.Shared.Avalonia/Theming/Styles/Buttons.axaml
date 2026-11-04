@@ -31,7 +31,9 @@
     <Style Selector="Button:pressed, ToggleButton:pressed">
         <Setter Property="RenderTransform" Value="scale(0.96)" />
     </Style>
+    <!-- Toggles glow only where a hover style binds the glow (.app-toggle/.option-chip turn it back on) -->
     <Style Selector="ToggleButton">
+        <Setter Property="buttons:HoverGlow.Enabled" Value="False" />
         <Setter Property="Transitions">
             <Transitions>
                 <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="BackEaseOut" />
@@ -114,6 +116,8 @@
 
     <!-- Icon buttons: square, r6, accent glyph; 26 by default, .icon-28 is the regular 32 -->
     <Style Selector="Button.danger-icon, Button.icon">
+        <!-- Flat hover, no glow -->
+        <Setter Property="buttons:HoverGlow.Enabled" Value="False" />
         <Setter Property="Width" Value="26" />
         <Setter Property="Height" Value="26" />
         <Setter Property="Padding" Value="0" />
@@ -343,6 +347,8 @@
 
     <!-- Ghost buttons: no box at rest (top bar actions and menu-bar style navigation) -->
     <Style Selector="Button.topbar-action">
+        <!-- Flat hover, no glow -->
+        <Setter Property="buttons:HoverGlow.Enabled" Value="False" />
         <Setter Property="Height" Value="28" />
         <Setter Property="MinWidth" Value="34" />
         <Setter Property="Padding" Value="10,0" />
@@ -365,6 +371,8 @@
     </Style>
 
     <Style Selector="Button.top-nav-item, ToggleButton.top-nav-item">
+        <!-- Flat hover, no glow -->
+        <Setter Property="buttons:HoverGlow.Enabled" Value="False" />
         <Setter Property="Foreground" Value="{DynamicResource SkuaTextBrush}" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -438,6 +446,8 @@
 
     <!-- Option action buttons: the secondary look, without the Fluent control theme -->
     <Style Selector="Button.option-action-button">
+        <!-- No template (Theme null), so nothing to glow -->
+        <Setter Property="buttons:HoverGlow.Enabled" Value="False" />
         <Setter Property="Theme" Value="{x:Null}" />
         <Setter Property="Height" Value="32" />
         <Setter Property="MinHeight" Value="32" />
@@ -490,6 +500,8 @@
     <!-- Set button attached to an option field: flat segment with a divider; .pending (unapplied edit) is accent,
          .applied shows the green check -->
     <Style Selector="Button.option-set">
+        <!-- Flat hover, no glow -->
+        <Setter Property="buttons:HoverGlow.Enabled" Value="False" />
         <Setter Property="Height" Value="30" />
         <Setter Property="MinHeight" Value="30" />
         <Setter Property="MinWidth" Value="48" />
