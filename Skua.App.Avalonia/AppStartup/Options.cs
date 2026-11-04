@@ -70,6 +70,7 @@ internal class Options
         List<DisplayOptionItemViewModelBase> appOptions = new()
         {
             CreateSettingOptionItem<bool>("Show Username in Title", "Whether to display logged-in character name in window title", "ShowUsernameInTitle"),
+            CreateSettingOptionItem<bool>("Auto-jump on Position Change", "Automatically jump when selecting a map cell or pad in the Jump control", "AutoJumpOnPositionChange"),
             new CommandOptionItemViewModel<bool>("Grandpa Mode", "Larger, easier-to-read text in logs and packet output", "GrandpaMode", new RelayCommand<bool>(enabled =>
             {
                 ISettingsService settings = Ioc.Default.GetRequiredService<ISettingsService>();
