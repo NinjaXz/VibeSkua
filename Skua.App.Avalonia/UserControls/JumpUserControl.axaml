@@ -42,10 +42,6 @@
                   SelectedItem="{Binding SelectedPad}" />
       </Grid>
 
-      <ToggleSwitch Content="Auto-jump on position change"
-                    IsChecked="{Binding AutoJumpOnPositionChange}"
-                    FontSize="11"
-                    HorizontalAlignment="Left" />
 
       <!-- Action Buttons -->
       <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
