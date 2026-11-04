@@ -13,14 +13,17 @@ namespace Skua.App.Avalonia.ViewModels;
 
 public partial class JumpViewModel : BotControlViewModelBase
 {
-    public JumpViewModel(IMapService mapService)
+    public JumpViewModel(IMapService mapService, ISettingsService settingsService)
         : base("Jump")
     {
         _mapService = mapService;
+        _settingsService = settingsService;
+        _autoJumpOnPositionChange = _settingsService.Get("AutoJumpOnPositionChange", false);
         Pads = _mapService.Pads;
     }
 
     private readonly IMapService _mapService;
+    private readonly ISettingsService _settingsService;
     private bool _suppressAutoJump = false;
 
     [ObservableProperty]
@@ -38,12 +41,32 @@ public partial class JumpViewModel : BotControlViewModelBase
             {
                 SelectedPad = "Left";
             }
-            await JumpTo();
+            if (AutoJumpOnPositionChange)
+                await JumpTo();
         }
     }
 
     [ObservableProperty]
     private string _selectedPad = string.Empty;
+
+    async partial void OnSelectedPadChanged(string value)
+    {
+        if (!string.IsNullOrWhiteSpace(value) &&
+            !string.IsNullOrWhiteSpace(SelectedCell) &&
+            !_suppressAutoJump &&
+            AutoJumpOnPositionChange)
+        {
+            await JumpTo();
+        }
+    }
+
+    [ObservableProperty]
+    private bool _autoJumpOnPositionChange;
+
+    partial void OnAutoJumpOnPositionChangeChanged(bool value)
+    {
+        _settingsService.Set("AutoJumpOnPositionChange", value);
+    }
 
     [ObservableProperty]
     private RangedObservableCollection<string> _cells = new();
