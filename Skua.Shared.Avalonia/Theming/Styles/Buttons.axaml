@@ -1,5 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:buttons="using:Skua.Shared.Avalonia.Controls.Buttons">
     <Design.PreviewWith>
         <Border Padding="20">
             <!-- Add Controls for Previewer Here -->
@@ -13,6 +14,29 @@
 
     <Style Selector="Button, ToggleButton">
         <Setter Property="Cursor" Value="Hand" />
+        <!-- Hover glow (Controls\Buttons\HoverGlow.cs): the hover styles below bind to its brushes. Colours here
+             are the secondary look (accent light on NavHover); primary, danger, soft danger and checked toggles
+             set their own. -->
+        <Setter Property="buttons:HoverGlow.Enabled" Value="True" />
+        <Setter Property="buttons:HoverGlow.Base" Value="{DynamicResource SkuaNavHoverBrush}" />
+        <Setter Property="buttons:HoverGlow.Light" Value="{DynamicResource SkuaAccentBrush}" />
+        <Setter Property="buttons:HoverGlow.Amount" Value="0.22" />
+        <Setter Property="buttons:HoverGlow.EdgeBase" Value="{DynamicResource SkuaBorderStrongBrush}" />
+        <Setter Property="buttons:HoverGlow.EdgeLight" Value="{DynamicResource SkuaAccentBrush}" />
+        <Setter Property="buttons:HoverGlow.EdgeAmount" Value="1" />
+        <Setter Property="RenderTransform" Value="none" />
+    </Style>
+    <!-- Press-shrink: the button squeezes while held and springs back on release (a render transform, so
+         nothing around it moves). The RenderTransform transitions sit in the Button/ToggleButton Transitions. -->
+    <Style Selector="Button:pressed, ToggleButton:pressed">
+        <Setter Property="RenderTransform" Value="scale(0.96)" />
+    </Style>
+    <Style Selector="ToggleButton">
+        <Setter Property="Transitions">
+            <Transitions>
+                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="BackEaseOut" />
+            </Transitions>
+        </Setter>
     </Style>
 
     <!-- Keyboard focus: an accent ring on the control's own edge, following its corners, with a page-coloured
@@ -52,6 +76,7 @@
             <Transitions>
                 <BrushTransition Property="Background" Duration="0:0:0.12" Easing="CubicEaseOut" />
                 <BrushTransition Property="BorderBrush" Duration="0:0:0.12" Easing="CubicEaseOut" />
+                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="BackEaseOut" />
             </Transitions>
         </Setter>
         <Setter Property="Foreground" Value="{DynamicResource SkuaTextBrush}" />
@@ -62,9 +87,10 @@
     </Style>
     <!-- No rest-state rule on the presenter: it takes Background/BorderBrush from the button and inherits
          Foreground, so class and local colours (skua-primary, skua-danger, plugins) show through. -->
+    <!-- Hover: NavHover fill and BorderStrong border, lit by an accent glow that follows the cursor -->
     <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource SkuaNavHoverBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource SkuaBorderStrongBrush}" />
+        <Setter Property="Background" Value="{CompiledBinding $parent[Button].(buttons:HoverGlow.Fill)}" />
+        <Setter Property="BorderBrush" Value="{CompiledBinding $parent[Button].(buttons:HoverGlow.Edge)}" />
         <Setter Property="Foreground" Value="{DynamicResource SkuaTextBrush}" />
     </Style>
     <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
@@ -179,8 +205,8 @@
         </Setter>
     </Style>
     <Style Selector="Button.skua-button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource SkuaNavHoverBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource SkuaBorderStrongBrush}" />
+        <Setter Property="Background" Value="{CompiledBinding $parent[Button].(buttons:HoverGlow.Fill)}" />
+        <Setter Property="BorderBrush" Value="{CompiledBinding $parent[Button].(buttons:HoverGlow.Edge)}" />
         <Setter Property="Foreground" Value="{DynamicResource SkuaTextBrush}" />
     </Style>
     <Style Selector="Button.skua-button:pressed /template/ ContentPresenter#PART_ContentPresenter">
@@ -231,6 +257,13 @@
         <Setter Property="Foreground" Value="{DynamicResource SkuaAccentForegroundBrush}" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Cursor" Value="Hand" />
+        <!-- Glow: a white highlight on the hover colour -->
+        <Setter Property="buttons:HoverGlow.Base" Value="{DynamicResource SkuaAccentHoverBrush}" />
+        <Setter Property="buttons:HoverGlow.Light" Value="White" />
+        <Setter Property="buttons:HoverGlow.Amount" Value="0.4" />
+        <Setter Property="buttons:HoverGlow.EdgeBase" Value="{DynamicResource SkuaAccentHoverBrush}" />
+        <Setter Property="buttons:HoverGlow.EdgeLight" Value="White" />
+        <Setter Property="buttons:HoverGlow.EdgeAmount" Value="0.6" />
     </Style>
     <Style Selector="Button.skua-primary /template/ ContentPresenter#PART_ContentPresenter, Button.skua-button.skua-primary /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Transitions">
@@ -241,8 +274,8 @@
         </Setter>
     </Style>
     <Style Selector="Button.skua-primary:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.skua-button.skua-primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource SkuaAccentHoverBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource SkuaAccentHoverBrush}" />
+        <Setter Property="Background" Value="{CompiledBinding $parent[Button].(buttons:HoverGlow.Fill)}" />
+        <Setter Property="BorderBrush" Value="{CompiledBinding $parent[Button].(buttons:HoverGlow.Edge)}" />
         <Setter Property="Foreground" Value="{DynamicResource SkuaAccentForegroundBrush}" />
     </Style>
     <Style Selector="Button.skua-primary:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.skua-button.skua-primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
@@ -258,6 +291,13 @@
         <Setter Property="Foreground" Value="{DynamicResource SkuaDangerForegroundBrush}" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Cursor" Value="Hand" />
+        <!-- Glow: a white highlight on the hover colour -->
+        <Setter Property="buttons:HoverGlow.Base" Value="{DynamicResource SkuaDangerHoverBrush}" />
+        <Setter Property="buttons:HoverGlow.Light" Value="White" />
+        <Setter Property="buttons:HoverGlow.Amount" Value="0.25" />
+        <Setter Property="buttons:HoverGlow.EdgeBase" Value="{DynamicResource SkuaDangerHoverBrush}" />
+        <Setter Property="buttons:HoverGlow.EdgeLight" Value="White" />
+        <Setter Property="buttons:HoverGlow.EdgeAmount" Value="0.6" />
     </Style>
     <Style Selector="Button.skua-danger /template/ ContentPresenter#PART_ContentPresenter, Button.skua-button.skua-danger /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Transitions">
@@ -267,8 +307,8 @@
         </Setter>
     </Style>
     <Style Selector="Button.skua-danger:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.skua-button.skua-danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource SkuaDangerHoverBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource SkuaDangerHoverBrush}" />
+        <Setter Property="Background" Value="{CompiledBinding $parent[Button].(buttons:HoverGlow.Fill)}" />
+        <Setter Property="BorderBrush" Value="{CompiledBinding $parent[Button].(buttons:HoverGlow.Edge)}" />
         <Setter Property="Foreground" Value="{DynamicResource SkuaDangerForegroundBrush}" />
     </Style>
     <Style Selector="Button.skua-danger:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.skua-button.skua-danger:pressed /template/ ContentPresenter#PART_ContentPresenter">
@@ -282,8 +322,20 @@
         <Setter Property="Background" Value="{DynamicResource SkuaDangerTintBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource SkuaDangerSoftBorderBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource SkuaDangerBrush}" />
+        <!-- Glow: the stronger tint, thickening towards solid red at the cursor -->
+        <Setter Property="buttons:HoverGlow.Base" Value="{DynamicResource SkuaDangerTintStrongBrush}" />
+        <Setter Property="buttons:HoverGlow.Light" Value="{DynamicResource SkuaDangerBrush}" />
+        <Setter Property="buttons:HoverGlow.Amount" Value="0.3" />
+        <Setter Property="buttons:HoverGlow.EdgeBase" Value="{DynamicResource SkuaDangerSoftBorderBrush}" />
+        <Setter Property="buttons:HoverGlow.EdgeLight" Value="{DynamicResource SkuaDangerBrush}" />
+        <Setter Property="buttons:HoverGlow.EdgeAmount" Value="1" />
     </Style>
-    <Style Selector="Button.skua-danger-soft:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.skua-button.skua-danger-soft:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.skua-danger-soft:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.skua-button.skua-danger-soft:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.skua-danger-soft:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.skua-button.skua-danger-soft:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{CompiledBinding $parent[Button].(buttons:HoverGlow.Fill)}" />
+        <Setter Property="BorderBrush" Value="{CompiledBinding $parent[Button].(buttons:HoverGlow.Edge)}" />
+        <Setter Property="Foreground" Value="{DynamicResource SkuaDangerBrush}" />
+    </Style>
+    <Style Selector="Button.skua-danger-soft:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.skua-button.skua-danger-soft:pressed /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource SkuaDangerTintStrongBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource SkuaDangerSoftBorderBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource SkuaDangerBrush}" />
@@ -346,6 +398,12 @@
     <Style Selector="Button.titlebar">
         <!-- No fade: Transparent is #00FFFFFF, so the base Button Background transition passes through a white tint on pointer-out. -->
         <Setter Property="Transitions" Value="{x:Null}" />
+        <Setter Property="buttons:HoverGlow.Enabled" Value="False" />
+    </Style>
+    <Style Selector="Button.titlebar:pressed">
+        <Setter Property="RenderTransform" Value="none" />
+    </Style>
+    <Style Selector="Button.titlebar">
         <Setter Property="Width" Value="36" />
         <Setter Property="Height" Value="32" />
         <Setter Property="Padding" Value="0" />
