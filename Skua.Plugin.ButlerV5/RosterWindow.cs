@@ -52,7 +52,6 @@ public sealed class RosterWindow : Window
         headerLeft.Children.Add(_meText);
         headerLeft.Children.Add(_stateText);
         header.Children.Add(headerLeft);
-
         root.Children.Add(header);
 
         Grid targetBar = new()
@@ -122,7 +121,7 @@ public sealed class RosterWindow : Window
         Grid footer = new()
         {
             Margin = new Thickness(2, 10, 2, 0),
-            ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto,Auto"),
+            ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto,Auto,Auto"),
         };
         _footerText = AvaloniaUi.TextBlock(11, AvaloniaUi.SubText);
         _footerText.VerticalAlignment = VerticalAlignment.Center;
@@ -147,18 +146,24 @@ public sealed class RosterWindow : Window
         Grid.SetColumn(_releaseAllButton, 2);
         footer.Children.Add(_releaseAllButton);
 
+        Button refreshButton = AvaloniaUi.Button("Refresh", () => Refresh(force: true));
+        AvaloniaUi.SetToolTip(refreshButton, "Rescan the shared ButlerV5 sync files now.");
+        refreshButton.Margin = new Thickness(0, 0, 6, 0);
+        Grid.SetColumn(refreshButton, 3);
+        footer.Children.Add(refreshButton);
+
         _summonAllButton = AvaloniaUi.Button("Summon all", () =>
         {
             _plugin.SummonAll();
             Refresh(force: true);
         });
         _summonAllButton.Margin = new Thickness(0, 0, 6, 0);
-        Grid.SetColumn(_summonAllButton, 3);
+        Grid.SetColumn(_summonAllButton, 4);
         footer.Children.Add(_summonAllButton);
 
         Button settings = AvaloniaUi.Button("Settings", _plugin.OpenSettings);
         AvaloniaUi.SetToolTip(settings, "Open the ButlerV5 settings and debug log.");
-        Grid.SetColumn(settings, 4);
+        Grid.SetColumn(settings, 5);
         footer.Children.Add(settings);
         Grid.SetRow(footer, 3);
         root.Children.Add(footer);
@@ -187,7 +192,7 @@ public sealed class RosterWindow : Window
 
     private void Refresh(bool force = false)
     {
-        List<SyncData> online = Roster.GetOnline(_plugin.OwnUsername);
+        List<SyncData> online = Roster.GetOnline();
         HashSet<string> myFollowers = new(_plugin.CurrentFollowers, StringComparer.OrdinalIgnoreCase);
         string? followingWho = _plugin.FollowingWho;
         bool pluginOff = !_plugin.PluginEnabled;
@@ -214,7 +219,7 @@ public sealed class RosterWindow : Window
             _timer.Interval = interval;
         _footerText.Text = pluginOff
             ? "ButlerV5 is DISABLED - turn it on in Settings"
-            : $"{online.Count} other plugin account{(online.Count == 1 ? "" : "s")} online - refreshes every {refreshSeconds}s";
+            : $"{online.Count} plugin account{(online.Count == 1 ? "" : "s")} online - refreshes every {refreshSeconds}s";
 
         string myServer = _plugin.MyServerName;
         string snapshot = string.Join(";", online.Select(d =>
@@ -229,7 +234,7 @@ public sealed class RosterWindow : Window
         if (online.Count == 0)
         {
             TextBlock empty = AvaloniaUi.TextBlock(12, AvaloniaUi.SubText);
-            empty.Text = "No other ButlerV5 accounts online.\nAccounts appear after they log in with the plugin installed.";
+            empty.Text = "No ButlerV5 accounts online.\nAccounts appear after they log in with the plugin installed.";
             empty.TextAlignment = TextAlignment.Center;
             empty.TextWrapping = TextWrapping.Wrap;
             empty.Margin = new Thickness(0, 40, 0, 0);
@@ -259,6 +264,7 @@ public sealed class RosterWindow : Window
     {
         bool iAmButler = _plugin.FollowingWho != null;
         bool pluginOff = !_plugin.PluginEnabled;
+        bool isSelf = account.Username.Equals(_plugin.OwnUsername ?? "", StringComparison.OrdinalIgnoreCase);
         bool followingMe = !string.IsNullOrEmpty(account.Following) &&
             account.Following.Equals(_plugin.OwnUsername ?? "", StringComparison.OrdinalIgnoreCase);
         bool followingOther = !string.IsNullOrEmpty(account.Following) && !followingMe;
@@ -315,7 +321,9 @@ public sealed class RosterWindow : Window
         follow.Margin = new Thickness(8, 0, 0, 0);
         follow.VerticalAlignment = VerticalAlignment.Center;
         string? followBlock = null;
-        if (pluginOff)
+        if (isSelf)
+            followBlock = "This is the account displaying the roster.";
+        else if (pluginOff)
             followBlock = "ButlerV5 is disabled.";
         else if (!amFollowing)
             followBlock = iAmButler ? $"You're following {_plugin.FollowingWho}; stop first."
@@ -343,7 +351,8 @@ public sealed class RosterWindow : Window
         summon.VerticalAlignment = VerticalAlignment.Center;
         string? summonBlock = null;
         if (!summonedByMe)
-            summonBlock = pluginOff ? "ButlerV5 is disabled."
+            summonBlock = isSelf ? "This is the account displaying the roster."
+                : pluginOff ? "ButlerV5 is disabled."
                 : iAmButler ? $"You're following {_plugin.FollowingWho}; stop before summoning anyone."
                 : amFollowing ? $"You're following {account.Username}; stop first."
                 : followingMe ? $"{account.Username} is already following you manually."
