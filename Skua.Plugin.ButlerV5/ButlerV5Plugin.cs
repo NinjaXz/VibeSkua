@@ -401,7 +401,7 @@ public class ButlerV5Plugin : ISkuaPlugin
         _follower?.Stop();
     }
 
-    /// <summary>Orders every eligible online ButlerV5 account to /goto an external player.</summary>
+    /// <summary>Orders this account and every eligible online ButlerV5 account to /goto an external player.</summary>
     public void SendAllToPlayer(string playerName)
     {
         string target = playerName.Trim();
@@ -452,8 +452,8 @@ public class ButlerV5Plugin : ISkuaPlugin
             .Select(account => account.Username)
             .ToList();
 
-        // The issuing client is not in Roster.GetOnline(me), so it must execute
-        // its own goto locally instead of waiting for its sync-file command.
+        // The issuing client must execute locally; its own sync-file broadcast is not
+        // a reliable delivery mechanism for a command originating from that same file.
         bool sentLocally = false;
         if (!IsScriptRunning)
         {
@@ -478,7 +478,6 @@ public class ButlerV5Plugin : ISkuaPlugin
             {
                 PlayerTargetHistory.Add(target);
                 Log($"Sent this account to {target}; no other available ButlerV5 accounts were online.");
-                DebugLog.Log("UI", $"Send all to {target}: local=[true], recipients=[], skipped=[{string.Join(", ", skipped)}]");
                 return;
             }
 
@@ -497,12 +496,20 @@ public class ButlerV5Plugin : ISkuaPlugin
             return;
         }
 
-        broadcaster.PublishSendAllGoto(target, recipients);
+        bool published = broadcaster.PublishSendAllGoto(target, recipients);
         PlayerTargetHistory.Add(target);
 
-        Log($"Sent {recipients.Count} other butler(s){(sentLocally ? " and this account" : "")} to {target}." +
-            (skipped.Count > 0 ? $" Skipped {skipped.Count} unavailable account(s)." : ""),
-            "Sent accounts to an external player.");
+        if (published)
+        {
+            Log($"Sent {recipients.Count} other butler(s){(sentLocally ? " and this account" : "")} to {target}." +
+                (skipped.Count > 0 ? $" Skipped {skipped.Count} unavailable account(s)." : ""),
+                "Sent accounts to an external player.");
+        }
+        else
+        {
+            Log($"{(sentLocally ? "This account was sent" : "This account was not sent")} to {target}; queued Send All for {recipients.Count} other butler(s). It will publish when this account finishes loading its map.",
+                "Send All queued; waiting for the sync file to become writable.");
+        }
         DebugLog.Log("UI", $"Send all to {target}: local=[{sentLocally}], recipients=[{string.Join(", ", recipients)}], skipped=[{string.Join(", ", skipped)}]");
         try { SyncFilesChanged?.Invoke(); } catch { }
     }
@@ -864,8 +871,11 @@ public class ButlerV5Plugin : ISkuaPlugin
 
                     // Read every sync file ONCE per tick and share the snapshot with the
                     // handshake + order-matching steps (was 2-3 ReadAll + pid checks/tick).
-                    List<SyncData> online = me != null ? Roster.GetOnline(me) : new();
-                    ProcessSendAllGotoCommands(me, online);
+                    List<SyncData> allOnline = me != null ? Roster.GetOnline() : new();
+                    List<SyncData> online = me != null
+                        ? allOnline.Where(account => !account.Username.Equals(me, StringComparison.OrdinalIgnoreCase)).ToList()
+                        : new();
+                    ProcessSendAllGotoCommands(me, allOnline);
                     ProcessServingHandshakes(me, online);
 
                     if (me != null && _follower != null && _follower.Source != FollowSource.Manual)
