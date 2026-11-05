@@ -43,7 +43,6 @@ public sealed class RosterWindow : Window
         Grid header = new()
         {
             Margin = new Thickness(2, 0, 2, 12),
-            ColumnDefinitions = new ColumnDefinitions("*,Auto"),
         };
         StackPanel headerLeft = new();
         _meText = AvaloniaUi.TextBlock(16);
@@ -54,27 +53,6 @@ public sealed class RosterWindow : Window
         headerLeft.Children.Add(_stateText);
         header.Children.Add(headerLeft);
 
-        StackPanel headerButtons = new()
-        {
-            Orientation = Orientation.Horizontal,
-            VerticalAlignment = VerticalAlignment.Center,
-            Spacing = 6,
-        };
-        _stopButton = AvaloniaUi.Button("Stop following", () =>
-        {
-            _plugin.StopFollow();
-            Refresh(force: true);
-        }, AvaloniaUi.Red);
-        _releaseAllButton = AvaloniaUi.Button("Release all", () =>
-        {
-            _plugin.ReleaseFollowers();
-            Refresh(force: true);
-        }, AvaloniaUi.OrangeButton);
-        AvaloniaUi.SetToolTip(_releaseAllButton, "Clear this account's followers list; released butlers park at their configured location.");
-        headerButtons.Children.Add(_stopButton);
-        headerButtons.Children.Add(_releaseAllButton);
-        Grid.SetColumn(headerButtons, 1);
-        header.Children.Add(headerButtons);
         root.Children.Add(header);
 
         Grid targetBar = new()
@@ -144,11 +122,30 @@ public sealed class RosterWindow : Window
         Grid footer = new()
         {
             Margin = new Thickness(2, 10, 2, 0),
-            ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto"),
+            ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto,Auto"),
         };
         _footerText = AvaloniaUi.TextBlock(11, AvaloniaUi.SubText);
         _footerText.VerticalAlignment = VerticalAlignment.Center;
         footer.Children.Add(_footerText);
+
+        _stopButton = AvaloniaUi.Button("Stop following", () =>
+        {
+            _plugin.StopFollow();
+            Refresh(force: true);
+        }, AvaloniaUi.Red);
+        _stopButton.Margin = new Thickness(0, 0, 6, 0);
+        Grid.SetColumn(_stopButton, 1);
+        footer.Children.Add(_stopButton);
+
+        _releaseAllButton = AvaloniaUi.Button("Release all", () =>
+        {
+            _plugin.ReleaseFollowers();
+            Refresh(force: true);
+        }, AvaloniaUi.OrangeButton);
+        AvaloniaUi.SetToolTip(_releaseAllButton, "Clear this account's followers list; released butlers park at their configured location.");
+        _releaseAllButton.Margin = new Thickness(0, 0, 6, 0);
+        Grid.SetColumn(_releaseAllButton, 2);
+        footer.Children.Add(_releaseAllButton);
 
         _summonAllButton = AvaloniaUi.Button("Summon all", () =>
         {
@@ -156,12 +153,12 @@ public sealed class RosterWindow : Window
             Refresh(force: true);
         });
         _summonAllButton.Margin = new Thickness(0, 0, 6, 0);
-        Grid.SetColumn(_summonAllButton, 1);
+        Grid.SetColumn(_summonAllButton, 3);
         footer.Children.Add(_summonAllButton);
 
         Button settings = AvaloniaUi.Button("Settings", _plugin.OpenSettings);
         AvaloniaUi.SetToolTip(settings, "Open the ButlerV5 settings and debug log.");
-        Grid.SetColumn(settings, 2);
+        Grid.SetColumn(settings, 4);
         footer.Children.Add(settings);
         Grid.SetRow(footer, 3);
         root.Children.Add(footer);
