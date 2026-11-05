@@ -115,14 +115,13 @@ public sealed class RosterWindow : Window
         Grid.SetRow(listPanel, 1);
         root.Children.Add(listPanel);
 
-        Grid footer = new()
-        {
-            Margin = new Thickness(2, 0, 2, 8),
-            ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto,Auto,Auto"),
-        };
+        StackPanel footer = new() { Margin = new Thickness(2, 0, 2, 8) };
         _footerText = AvaloniaUi.TextBlock(11, AvaloniaUi.SubText);
         _footerText.VerticalAlignment = VerticalAlignment.Center;
+        _footerText.TextWrapping = TextWrapping.Wrap;
         footer.Children.Add(_footerText);
+        WrapPanel footerActions = new() { Orientation = Orientation.Horizontal };
+        footerActions.Margin = new Thickness(0, 4, 0, 0);
 
         _stopButton = AvaloniaUi.Button("Stop following", () =>
         {
@@ -130,8 +129,7 @@ public sealed class RosterWindow : Window
             Refresh(force: true);
         }, AvaloniaUi.Red);
         _stopButton.Margin = new Thickness(0, 0, 6, 0);
-        Grid.SetColumn(_stopButton, 1);
-        footer.Children.Add(_stopButton);
+        footerActions.Children.Add(_stopButton);
 
         _releaseAllButton = AvaloniaUi.Button("Release all", () =>
         {
@@ -140,14 +138,12 @@ public sealed class RosterWindow : Window
         }, AvaloniaUi.OrangeButton);
         AvaloniaUi.SetToolTip(_releaseAllButton, "Clear this account's followers list; released butlers park at their configured location.");
         _releaseAllButton.Margin = new Thickness(0, 0, 6, 0);
-        Grid.SetColumn(_releaseAllButton, 2);
-        footer.Children.Add(_releaseAllButton);
+        footerActions.Children.Add(_releaseAllButton);
 
         Button refreshButton = AvaloniaUi.Button("Refresh", () => Refresh(force: true));
         AvaloniaUi.SetToolTip(refreshButton, "Rescan the shared ButlerV5 sync files now.");
         refreshButton.Margin = new Thickness(0, 0, 6, 0);
-        Grid.SetColumn(refreshButton, 3);
-        footer.Children.Add(refreshButton);
+        footerActions.Children.Add(refreshButton);
 
         _summonAllButton = AvaloniaUi.Button("Summon all", () =>
         {
@@ -155,13 +151,12 @@ public sealed class RosterWindow : Window
             Refresh(force: true);
         });
         _summonAllButton.Margin = new Thickness(0, 0, 6, 0);
-        Grid.SetColumn(_summonAllButton, 4);
-        footer.Children.Add(_summonAllButton);
+        footerActions.Children.Add(_summonAllButton);
 
         Button settings = AvaloniaUi.Button("Settings", _plugin.OpenSettings);
         AvaloniaUi.SetToolTip(settings, "Open the ButlerV5 settings and debug log.");
-        Grid.SetColumn(settings, 5);
-        footer.Children.Add(settings);
+        footerActions.Children.Add(settings);
+        footer.Children.Add(footerActions);
         StackPanel bottomPanel = new();
         bottomPanel.Children.Add(targetBar);
         bottomPanel.Children.Add(footer);
