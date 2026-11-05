@@ -137,31 +137,31 @@ public class UnifiedSettingsService
     {
         lock (_lock)
         {
+            PropertyInfo? sharedProp = FindPropertyByJsonName(_root.Shared.GetType(), key);
+            PropertyInfo? clientProp = FindPropertyByJsonName(_root.Client.GetType(), key);
+            PropertyInfo? managerProp = FindPropertyByJsonName(_root.Manager.GetType(), key);
+
+            object? previousSharedValue = sharedProp?.GetValue(_root.Shared);
+            object? previousClientValue = clientProp?.GetValue(_root.Client);
+            object? previousManagerValue = managerProp?.GetValue(_root.Manager);
+
             try
             {
-                PropertyInfo? sharedProp = FindPropertyByJsonName(_root.Shared.GetType(), key);
-                if (sharedProp != null)
-                {
-                    sharedProp.SetValue(_root.Shared, value);
-                }
-
-                PropertyInfo? clientProp = FindPropertyByJsonName(_root.Client.GetType(), key);
-                if (clientProp != null)
-                {
-                    clientProp.SetValue(_root.Client, value);
-                }
-
-                PropertyInfo? managerProp = FindPropertyByJsonName(_root.Manager.GetType(), key);
-                if (managerProp != null)
-                {
-                    managerProp.SetValue(_root.Manager, value);
-                }
+                sharedProp?.SetValue(_root.Shared, value);
+                clientProp?.SetValue(_root.Client, value);
+                managerProp?.SetValue(_root.Manager, value);
 
                 SaveSettings();
             }
             catch (Exception ex)
             {
+                // Keep the in-memory settings consistent with the last successfully persisted state.
+                sharedProp?.SetValue(_root.Shared, previousSharedValue);
+                clientProp?.SetValue(_root.Client, previousClientValue);
+                managerProp?.SetValue(_root.Manager, previousManagerValue);
+
                 Console.WriteLine($"Error setting value for key '{key}': {ex.Message}");
+                throw new InvalidOperationException($"Failed to save setting '{key}'.", ex);
             }
         }
     }
@@ -534,9 +534,11 @@ public class UnifiedSettingsService
 
     private void SaveSettings()
     {
+        bool mutexAcquired = false;
         try
         {
             _fileMutex.WaitOne();
+            mutexAcquired = true;
 
             string tempFile = ClientFileSources.SkuaSettingsDIR + ".tmp";
 
@@ -544,11 +546,7 @@ public class UnifiedSettingsService
             string json = JsonSerializer.Serialize(_root, options);
             File.WriteAllText(tempFile, json);
 
-            if (File.Exists(ClientFileSources.SkuaSettingsDIR))
-            {
-                File.Delete(ClientFileSources.SkuaSettingsDIR);
-            }
-
+            // Replace the destination directly so a failed write does not delete the last good settings file.
             File.Move(tempFile, ClientFileSources.SkuaSettingsDIR, overwrite: true);
 
             // Signal cross-process settings change event
@@ -559,13 +557,10 @@ public class UnifiedSettingsService
             }
             catch { }
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error saving settings: {ex.Message}");
-        }
         finally
         {
-            _fileMutex.ReleaseMutex();
+            if (mutexAcquired)
+                _fileMutex.ReleaseMutex();
         }
     }
 
