@@ -28,7 +28,7 @@ public sealed class RosterWindow : Window
         _plugin = plugin;
         Title = "ButlerV5 Avalonia";
         Width = 560;
-        Height = 490;
+        Height = 510;
         MinWidth = 450;
         MinHeight = 320;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
@@ -56,7 +56,7 @@ public sealed class RosterWindow : Window
 
         Grid targetBar = new()
         {
-            Margin = new Thickness(2, 0, 2, 10),
+            Margin = new Thickness(2, 0, 2, 12),
             ColumnDefinitions = new ColumnDefinitions("*,150,Auto"),
         };
         _targetPlayerText = new TextBox
@@ -117,7 +117,7 @@ public sealed class RosterWindow : Window
 
         Grid footer = new()
         {
-            Margin = new Thickness(2, 0, 2, 0),
+            Margin = new Thickness(2, 0, 2, 8),
             ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto,Auto,Auto"),
         };
         _footerText = AvaloniaUi.TextBlock(11, AvaloniaUi.SubText);
