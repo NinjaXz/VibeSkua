@@ -2,7 +2,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Media;
+using Avalonia.Platform;
 using Avalonia.Styling;
+using Skua.Shared.Avalonia.Controls.Shell;
 
 namespace ButlerV5;
 
@@ -27,6 +29,24 @@ internal static class AvaloniaUi
     {
         window.Background = Background;
         window.Classes.Add("skua");
+        // Use VibeSkua's own title bar instead of the OS one, like the client's other windows.
+        window.SystemDecorations = SystemDecorations.BorderOnly;
+        window.ExtendClientAreaToDecorationsHint = true;
+        window.ExtendClientAreaChromeHints = ExtendClientAreaChromeHints.NoChrome;
+        window.ExtendClientAreaTitleBarHeightHint = 32;
+    }
+
+    /// <summary>Sets the window content under a VibeSkua title bar showing the window's title.</summary>
+    public static void SetContent(Window window, Control content)
+    {
+        Grid root = new() { RowDefinitions = new RowDefinitions("Auto,*") };
+        root.Children.Add(new WindowTitleBar { TitleText = window.Title ?? "ButlerV5" });
+        Grid.SetRow(content, 1);
+        root.Children.Add(content);
+
+        Border frame = new() { BorderThickness = new Thickness(1), Child = root };
+        frame.Bind(Border.BorderBrushProperty, frame.GetResourceObservable("SkuaBorderBrush"));
+        window.Content = frame;
     }
 
     public static TextBlock TextBlock(double size, IBrush? foreground = null) => new()
