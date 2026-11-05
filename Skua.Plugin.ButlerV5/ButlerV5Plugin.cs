@@ -467,12 +467,20 @@ public class ButlerV5Plugin : ISkuaPlugin
             return;
         }
 
-        broadcaster.PublishSendAllGoto(target, recipients);
+        bool published = broadcaster.PublishSendAllGoto(target, recipients);
         PlayerTargetHistory.Add(target);
 
-        Log($"Sent {recipients.Count} butler(s) to {target}." +
-            (skipped.Count > 0 ? $" Skipped {skipped.Count} unavailable account(s)." : ""),
-            $"Sent {recipients.Count} butler(s) to an external player.");
+        if (published)
+        {
+            Log($"Sent {recipients.Count} butler(s) to {target}." +
+                (skipped.Count > 0 ? $" Skipped {skipped.Count} unavailable account(s)." : ""),
+                $"Sent {recipients.Count} butler(s) to an external player.");
+        }
+        else
+        {
+            Log($"Queued Send All to {target} for {recipients.Count} butler(s). It will publish when this account finishes loading its map.",
+                "Send All queued; waiting for the sync file to become writable.");
+        }
         DebugLog.Log("UI", $"Send all to {target}: recipients=[{string.Join(", ", recipients)}], skipped=[{string.Join(", ", skipped)}]");
         try { SyncFilesChanged?.Invoke(); } catch { }
     }

@@ -144,11 +144,17 @@ public sealed class RosterWindow : Window
         Grid footer = new()
         {
             Margin = new Thickness(2, 10, 2, 0),
-            ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto"),
+            ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto"),
         };
         _footerText = AvaloniaUi.TextBlock(11, AvaloniaUi.SubText);
         _footerText.VerticalAlignment = VerticalAlignment.Center;
         footer.Children.Add(_footerText);
+
+        Button refreshButton = AvaloniaUi.Button("Refresh", () => Refresh(force: true));
+        AvaloniaUi.SetToolTip(refreshButton, "Rescan the shared ButlerV5 sync files now.");
+        refreshButton.Margin = new Thickness(0, 0, 6, 0);
+        Grid.SetColumn(refreshButton, 1);
+        footer.Children.Add(refreshButton);
 
         _summonAllButton = AvaloniaUi.Button("Summon all", () =>
         {
@@ -156,12 +162,12 @@ public sealed class RosterWindow : Window
             Refresh(force: true);
         });
         _summonAllButton.Margin = new Thickness(0, 0, 6, 0);
-        Grid.SetColumn(_summonAllButton, 1);
+        Grid.SetColumn(_summonAllButton, 2);
         footer.Children.Add(_summonAllButton);
 
         Button settings = AvaloniaUi.Button("Settings", _plugin.OpenSettings);
         AvaloniaUi.SetToolTip(settings, "Open the ButlerV5 settings and debug log.");
-        Grid.SetColumn(settings, 2);
+        Grid.SetColumn(settings, 3);
         footer.Children.Add(settings);
         Grid.SetRow(footer, 3);
         root.Children.Add(footer);
