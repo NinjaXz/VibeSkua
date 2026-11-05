@@ -452,6 +452,11 @@ public class ButlerV5Plugin : ISkuaPlugin
             .Select(account => account.Username)
             .ToList();
 
+        // The roster snapshot excludes this client by design; include it explicitly
+        // so the account issuing Send All also consumes the published one-shot command.
+        if (!IsScriptRunning && !recipients.Contains(me, StringComparer.OrdinalIgnoreCase))
+            recipients.Add(me);
+
         if (recipients.Count == 0)
         {
             Log(skipped.Count == 0
@@ -842,8 +847,11 @@ public class ButlerV5Plugin : ISkuaPlugin
 
                     // Read every sync file ONCE per tick and share the snapshot with the
                     // handshake + order-matching steps (was 2-3 ReadAll + pid checks/tick).
-                    List<SyncData> online = me != null ? Roster.GetOnline(me) : new();
-                    ProcessSendAllGotoCommands(me, online);
+                    List<SyncData> allOnline = me != null ? Roster.GetOnline() : new();
+                    List<SyncData> online = me != null
+                        ? allOnline.Where(account => !account.Username.Equals(me, StringComparison.OrdinalIgnoreCase)).ToList()
+                        : new();
+                    ProcessSendAllGotoCommands(me, allOnline);
                     ProcessServingHandshakes(me, online);
 
                     if (me != null && _follower != null && _follower.Source != FollowSource.Manual)
