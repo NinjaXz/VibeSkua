@@ -2,6 +2,7 @@ using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -24,6 +25,8 @@ public partial class JumpViewModel : BotControlViewModelBase
 
     private readonly IMapService _mapService;
     private readonly ISettingsService _settingsService;
+    private readonly SemaphoreSlim _jumpSemaphore = new(1, 1);
+    private long _jumpRequestVersion;
     private bool _suppressAutoJump = false;
 
     [ObservableProperty]
@@ -119,9 +122,24 @@ public partial class JumpViewModel : BotControlViewModelBase
         if (string.IsNullOrWhiteSpace(cell) || string.IsNullOrWhiteSpace(pad))
             return;
 
+        // Each request gets a version so queued stale selections can be discarded.
+        long requestVersion = Interlocked.Increment(ref _jumpRequestVersion);
+
         try
         {
-            await Task.Run(() => _mapService.Jump(cell, pad));
+            await _jumpSemaphore.WaitAsync();
+            try
+            {
+                // Serialize map jumps and only execute the newest queued selection.
+                if (requestVersion != Volatile.Read(ref _jumpRequestVersion))
+                    return;
+
+                await Task.Run(() => _mapService.Jump(cell, pad));
+            }
+            finally
+            {
+                _jumpSemaphore.Release();
+            }
         }
         catch (Exception ex)
         {
