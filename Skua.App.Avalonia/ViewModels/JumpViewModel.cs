@@ -34,6 +34,9 @@ public partial class JumpViewModel : BotControlViewModelBase
 
     async partial void OnSelectedCellChanged(string value)
     {
+        // Invalidate queued jumps whenever the selection changes, including to an invalid value.
+        Interlocked.Increment(ref _jumpRequestVersion);
+
         if (string.IsNullOrWhiteSpace(value) || _suppressAutoJump)
             return;
 
@@ -60,6 +63,9 @@ public partial class JumpViewModel : BotControlViewModelBase
 
     async partial void OnSelectedPadChanged(string value)
     {
+        // A newer pad selection makes any queued jump for the previous selection stale.
+        Interlocked.Increment(ref _jumpRequestVersion);
+
         if (!string.IsNullOrWhiteSpace(value) &&
             !string.IsNullOrWhiteSpace(SelectedCell) &&
             !_suppressAutoJump &&
