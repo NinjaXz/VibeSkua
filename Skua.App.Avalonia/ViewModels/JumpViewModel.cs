@@ -71,7 +71,17 @@ public partial class JumpViewModel : BotControlViewModelBase
 
     partial void OnAutoJumpOnPositionChangeChanged(bool value)
     {
-        _settingsService.Set("AutoJumpOnPositionChange", value);
+        try
+        {
+            _settingsService.Set("AutoJumpOnPositionChange", value);
+        }
+        catch (Exception ex)
+        {
+            // Revert the generated property's backing field when persistence fails.
+            _autoJumpOnPositionChange = !value;
+            OnPropertyChanged(nameof(AutoJumpOnPositionChange));
+            Trace.WriteLine($"Failed to save AutoJumpOnPositionChange; toggle reverted: {ex}");
+        }
     }
 
     [ObservableProperty]
