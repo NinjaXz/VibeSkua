@@ -452,10 +452,38 @@ public class ButlerV5Plugin : ISkuaPlugin
             .Select(account => account.Username)
             .ToList();
 
+        // The issuing client is not in Roster.GetOnline(me), so it must execute
+        // its own goto locally instead of waiting for its sync-file command.
+        bool sentLocally = false;
+        if (!IsScriptRunning)
+        {
+            try
+            {
+                IScriptPlayer? player = _bot?.Player;
+                if (player?.LoggedIn == true)
+                {
+                    player.Goto(target);
+                    sentLocally = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                DebugLog.Log("UI", $"Local send-all goto failed for {target}: {ex.Message}");
+            }
+        }
+
         if (recipients.Count == 0)
         {
+            if (sentLocally)
+            {
+                PlayerTargetHistory.Add(target);
+                Log($"Sent this account to {target}; no other available ButlerV5 accounts were online.");
+                DebugLog.Log("UI", $"Send all to {target}: local=[true], recipients=[], skipped=[{string.Join(", ", skipped)}]");
+                return;
+            }
+
             Log(skipped.Count == 0
-                ? "No other ButlerV5 accounts are online."
+                ? "No available ButlerV5 accounts to send, and this account is busy running a script."
                 : $"No available butlers to send to {target}. Skipped: {string.Join(", ", skipped)}");
             return;
         }
@@ -463,17 +491,19 @@ public class ButlerV5Plugin : ISkuaPlugin
         Broadcaster? broadcaster = _broadcaster;
         if (broadcaster is null)
         {
-            Log("Can't send all - ButlerV5 is still initializing. Try again shortly.");
+            Log(sentLocally
+                ? $"This account was sent to {target}, but ButlerV5 is still initializing and couldn't broadcast to the other accounts."
+                : "Can't send all - ButlerV5 is still initializing. Try again shortly.");
             return;
         }
 
         broadcaster.PublishSendAllGoto(target, recipients);
         PlayerTargetHistory.Add(target);
 
-        Log($"Sent {recipients.Count} butler(s) to {target}." +
+        Log($"Sent {recipients.Count} other butler(s){(sentLocally ? " and this account" : "")} to {target}." +
             (skipped.Count > 0 ? $" Skipped {skipped.Count} unavailable account(s)." : ""),
-            $"Sent {recipients.Count} butler(s) to an external player.");
-        DebugLog.Log("UI", $"Send all to {target}: recipients=[{string.Join(", ", recipients)}], skipped=[{string.Join(", ", skipped)}]");
+            "Sent accounts to an external player.");
+        DebugLog.Log("UI", $"Send all to {target}: local=[{sentLocally}], recipients=[{string.Join(", ", recipients)}], skipped=[{string.Join(", ", skipped)}]");
         try { SyncFilesChanged?.Invoke(); } catch { }
     }
 
