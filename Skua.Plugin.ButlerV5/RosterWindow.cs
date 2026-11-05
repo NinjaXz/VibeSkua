@@ -37,7 +37,7 @@ public sealed class RosterWindow : Window
         Grid root = new()
         {
             Margin = new Thickness(14),
-            RowDefinitions = new RowDefinitions("Auto,Auto,*,Auto"),
+            RowDefinitions = new RowDefinitions("Auto,*,Auto"),
         };
 
         Grid header = new()
@@ -96,9 +96,6 @@ public sealed class RosterWindow : Window
         AvaloniaUi.SetToolTip(sendAllToPlayer, "Send every available online ButlerV5 client to this external player.");
         Grid.SetColumn(sendAllToPlayer, 2);
         targetBar.Children.Add(sendAllToPlayer);
-        Grid.SetRow(targetBar, 1);
-        root.Children.Add(targetBar);
-
         _rows = new StackPanel();
         ScrollViewer scroll = new()
         {
@@ -115,12 +112,12 @@ public sealed class RosterWindow : Window
             CornerRadius = new CornerRadius(7),
             Padding = new Thickness(6, 4),
         };
-        Grid.SetRow(listPanel, 2);
+        Grid.SetRow(listPanel, 1);
         root.Children.Add(listPanel);
 
         Grid footer = new()
         {
-            Margin = new Thickness(2, 10, 2, 0),
+            Margin = new Thickness(2, 0, 2, 0),
             ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto,Auto,Auto"),
         };
         _footerText = AvaloniaUi.TextBlock(11, AvaloniaUi.SubText);
@@ -165,8 +162,11 @@ public sealed class RosterWindow : Window
         AvaloniaUi.SetToolTip(settings, "Open the ButlerV5 settings and debug log.");
         Grid.SetColumn(settings, 5);
         footer.Children.Add(settings);
-        Grid.SetRow(footer, 3);
-        root.Children.Add(footer);
+        StackPanel bottomPanel = new();
+        bottomPanel.Children.Add(targetBar);
+        bottomPanel.Children.Add(footer);
+        Grid.SetRow(bottomPanel, 2);
+        root.Children.Add(bottomPanel);
 
         Content = root;
         _plugin.SyncFilesChanged += OnSyncFilesChanged;
