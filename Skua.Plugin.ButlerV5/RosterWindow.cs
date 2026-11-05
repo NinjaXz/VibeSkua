@@ -56,7 +56,7 @@ public sealed class RosterWindow : Window
 
         Grid targetBar = new()
         {
-            Margin = new Thickness(2, 0, 2, 12),
+            Margin = new Thickness(2, 16, 2, 12),
             ColumnDefinitions = new ColumnDefinitions("*,150,Auto"),
         };
         _targetPlayerText = new TextBox
