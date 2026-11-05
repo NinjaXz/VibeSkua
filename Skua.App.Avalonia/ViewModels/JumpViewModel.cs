@@ -2,6 +2,7 @@ using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -24,6 +25,8 @@ public partial class JumpViewModel : BotControlViewModelBase
 
     private readonly IMapService _mapService;
     private readonly ISettingsService _settingsService;
+    private readonly SemaphoreSlim _jumpSemaphore = new(1, 1);
+    private long _jumpRequestVersion;
     private bool _suppressAutoJump = false;
 
     [ObservableProperty]
@@ -31,19 +34,28 @@ public partial class JumpViewModel : BotControlViewModelBase
 
     async partial void OnSelectedCellChanged(string value)
     {
-        if (!string.IsNullOrEmpty(value) && !_suppressAutoJump)
+        // Invalidate queued jumps whenever the selection changes, including to an invalid value.
+        Interlocked.Increment(ref _jumpRequestVersion);
+
+        if (string.IsNullOrWhiteSpace(value) || _suppressAutoJump)
+            return;
+
+        // Pick a sensible pad when changing cells without causing a second jump.
+        _suppressAutoJump = true;
+        try
         {
             if (value == "Enter")
-            {
                 SelectedPad = "Spawn";
-            }
-            else if (string.IsNullOrEmpty(SelectedPad))
-            {
+            else if (string.IsNullOrWhiteSpace(SelectedPad))
                 SelectedPad = "Left";
-            }
-            if (AutoJumpOnPositionChange)
-                await JumpTo();
         }
+        finally
+        {
+            _suppressAutoJump = false;
+        }
+
+        if (AutoJumpOnPositionChange)
+            await JumpTo();
     }
 
     [ObservableProperty]
@@ -51,6 +63,9 @@ public partial class JumpViewModel : BotControlViewModelBase
 
     async partial void OnSelectedPadChanged(string value)
     {
+        // A newer pad selection makes any queued jump for the previous selection stale.
+        Interlocked.Increment(ref _jumpRequestVersion);
+
         if (!string.IsNullOrWhiteSpace(value) &&
             !string.IsNullOrWhiteSpace(SelectedCell) &&
             !_suppressAutoJump &&
@@ -65,7 +80,17 @@ public partial class JumpViewModel : BotControlViewModelBase
 
     partial void OnAutoJumpOnPositionChangeChanged(bool value)
     {
-        _settingsService.Set("AutoJumpOnPositionChange", value);
+        try
+        {
+            _settingsService.Set("AutoJumpOnPositionChange", value);
+        }
+        catch (Exception ex)
+        {
+            // Revert the generated property's backing field when persistence fails.
+            _autoJumpOnPositionChange = !value;
+            OnPropertyChanged(nameof(AutoJumpOnPositionChange));
+            Trace.WriteLine($"Failed to save AutoJumpOnPositionChange; toggle reverted: {ex}");
+        }
     }
 
     [ObservableProperty]
@@ -98,16 +123,29 @@ public partial class JumpViewModel : BotControlViewModelBase
     [RelayCommand]
     private async Task JumpTo()
     {
-        // Capture the selection before dispatching so rapid arrow-key navigation cannot
-        // make a queued jump use a later selection unexpectedly.
         string cell = SelectedCell;
         string pad = SelectedPad;
         if (string.IsNullOrWhiteSpace(cell) || string.IsNullOrWhiteSpace(pad))
             return;
 
+        // Each request gets a version so queued stale selections can be discarded.
+        long requestVersion = Interlocked.Increment(ref _jumpRequestVersion);
+
         try
         {
-            await Task.Run(() => _mapService.Jump(cell, pad));
+            await _jumpSemaphore.WaitAsync();
+            try
+            {
+                // Serialize map jumps and only execute the newest queued selection.
+                if (requestVersion != Volatile.Read(ref _jumpRequestVersion))
+                    return;
+
+                await Task.Run(() => _mapService.Jump(cell, pad));
+            }
+            finally
+            {
+                _jumpSemaphore.Release();
+            }
         }
         catch (Exception ex)
         {
@@ -118,7 +156,7 @@ public partial class JumpViewModel : BotControlViewModelBase
     [RelayCommand]
     public void UpdateCells()
     {
-        var newCells = _mapService.Cells;
+        string[] newCells = _mapService.Cells.ToArray();
         if (Cells.SequenceEqual(newCells))
             return;
 
