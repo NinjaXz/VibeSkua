@@ -401,7 +401,7 @@ public class ButlerV5Plugin : ISkuaPlugin
         _follower?.Stop();
     }
 
-    /// <summary>Orders every eligible online ButlerV5 account to /goto an external player.</summary>
+    /// <summary>Orders this account and every eligible online ButlerV5 account to /goto an external player.</summary>
     public void SendAllToPlayer(string playerName)
     {
         string target = playerName.Trim();
@@ -452,15 +452,37 @@ public class ButlerV5Plugin : ISkuaPlugin
             .Select(account => account.Username)
             .ToList();
 
-        // The roster snapshot excludes this client by design; include it explicitly
-        // so the account issuing Send All also consumes the published one-shot command.
-        if (!IsScriptRunning && !recipients.Contains(me, StringComparer.OrdinalIgnoreCase))
-            recipients.Add(me);
+        // The issuing client must execute locally; its own sync-file broadcast is not
+        // a reliable delivery mechanism for a command originating from that same file.
+        bool sentLocally = false;
+        if (!IsScriptRunning)
+        {
+            try
+            {
+                IScriptPlayer? player = _bot?.Player;
+                if (player?.LoggedIn == true)
+                {
+                    player.Goto(target);
+                    sentLocally = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                DebugLog.Log("UI", $"Local send-all goto failed for {target}: {ex.Message}");
+            }
+        }
 
         if (recipients.Count == 0)
         {
+            if (sentLocally)
+            {
+                PlayerTargetHistory.Add(target);
+                Log($"Sent this account to {target}; no other available ButlerV5 accounts were online.");
+                return;
+            }
+
             Log(skipped.Count == 0
-                ? "No other ButlerV5 accounts are online."
+                ? "No available ButlerV5 accounts to send, and this account is busy running a script."
                 : $"No available butlers to send to {target}. Skipped: {string.Join(", ", skipped)}");
             return;
         }
@@ -468,7 +490,9 @@ public class ButlerV5Plugin : ISkuaPlugin
         Broadcaster? broadcaster = _broadcaster;
         if (broadcaster is null)
         {
-            Log("Can't send all - ButlerV5 is still initializing. Try again shortly.");
+            Log(sentLocally
+                ? $"This account was sent to {target}, but ButlerV5 is still initializing and couldn't broadcast to the other accounts."
+                : "Can't send all - ButlerV5 is still initializing. Try again shortly.");
             return;
         }
 
@@ -477,16 +501,16 @@ public class ButlerV5Plugin : ISkuaPlugin
 
         if (published)
         {
-            Log($"Sent {recipients.Count} butler(s) to {target}." +
+            Log($"Sent {recipients.Count} other butler(s){(sentLocally ? " and this account" : "")} to {target}." +
                 (skipped.Count > 0 ? $" Skipped {skipped.Count} unavailable account(s)." : ""),
-                $"Sent {recipients.Count} butler(s) to an external player.");
+                "Sent accounts to an external player.");
         }
         else
         {
-            Log($"Queued Send All to {target} for {recipients.Count} butler(s). It will publish when this account finishes loading its map.",
+            Log($"{(sentLocally ? "This account was sent" : "This account was not sent")} to {target}; queued Send All for {recipients.Count} other butler(s). It will publish when this account finishes loading its map.",
                 "Send All queued; waiting for the sync file to become writable.");
         }
-        DebugLog.Log("UI", $"Send all to {target}: recipients=[{string.Join(", ", recipients)}], skipped=[{string.Join(", ", skipped)}]");
+        DebugLog.Log("UI", $"Send all to {target}: local=[{sentLocally}], recipients=[{string.Join(", ", recipients)}], skipped=[{string.Join(", ", skipped)}]");
         try { SyncFilesChanged?.Invoke(); } catch { }
     }
 
