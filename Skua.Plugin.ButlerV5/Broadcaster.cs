@@ -42,6 +42,7 @@ public class Broadcaster
     private string _sendAllCommand = "";
     private List<string> _sendAllRecipients = new();
     private long _sendAllIssuedUtcTicks;
+    private bool _sendAllPending;
 
     private readonly Func<string?> _followingProvider;
     private readonly Func<string?> _scriptNameProvider; // null = no script running
@@ -76,7 +77,7 @@ public class Broadcaster
         WriteNow();
     }
 
-    public void PublishSendAllGoto(string target, IEnumerable<string> recipients)
+    public bool PublishSendAllGoto(string target, IEnumerable<string> recipients)
     {
         string normalizedTarget = target.Trim();
         List<string> normalizedRecipients = recipients
@@ -85,18 +86,18 @@ public class Broadcaster
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
         if (normalizedTarget.Length == 0 || normalizedRecipients.Count == 0)
-            return;
+            return false;
 
         lock (_writeLock)
         {
             _sendAllTarget = normalizedTarget;
             _sendAllCommand = Guid.NewGuid().ToString("N");
             _sendAllRecipients = normalizedRecipients;
-            _sendAllIssuedUtcTicks = DateTime.UtcNow.Ticks;
+            _sendAllIssuedUtcTicks = 0;
+            _sendAllPending = true;
         }
 
-        WriteNow();
-        DebugLog.Log("Broadcaster", $"published send-all goto to {normalizedRecipients.Count} accounts: {normalizedTarget}");
+        return WriteNow();
     }
 
     public void Start()
@@ -193,23 +194,23 @@ public class Broadcaster
         WriteOffline();
     }
 
-    public void WriteNow()
+    public bool WriteNow()
     {
         try
         {
             if (!_enabled())
-                return;
+                return false;
 
             IScriptPlayer? player = _bot.Player;
             if (player?.LoggedIn != true || string.IsNullOrEmpty(player.Username))
-                return;
+                return false;
 
             // Mid-transition the map reports unloaded or a bogus name ("-1"); keep the
             // previous file contents until the new map has settled.
             IScriptMap? map = _bot.Map;
             string mapName = map?.Name?.ToLowerInvariant() ?? "";
             if (map?.Loaded != true || string.IsNullOrEmpty(mapName) || mapName == "-1")
-                return;
+                return false;
 
             // Hysteresis: report attacking immediately (passive followers engage fast),
             // but only report NOT attacking after ~4s of calm. Farming is fight-pause-
@@ -232,6 +233,11 @@ public class Broadcaster
 
             lock (_writeLock)
             {
+                // Start the command's expiry window only when it can actually be
+                // published. A map transition must not consume its 60-second lifetime.
+                if (_sendAllPending)
+                    _sendAllIssuedUtcTicks = DateTime.UtcNow.Ticks;
+
                 if (!player.Username.Equals(_lastUsername, StringComparison.OrdinalIgnoreCase))
                 {
                     _lastClassName = "";
@@ -274,11 +280,20 @@ public class Broadcaster
                     SendAllIssuedUtcTicks = _sendAllIssuedUtcTicks,
                 };
 
-                WriteIfChanged(data);
+                bool written = WriteIfChanged(data);
+                if (written && _sendAllPending)
+                {
+                    _sendAllPending = false;
+                    DebugLog.Log("Broadcaster", $"published send-all goto to {_sendAllRecipients.Count} accounts: {_sendAllTarget}");
+                }
+
+                return written;
             }
         }
-        catch
+        catch (Exception ex)
         {
+            DebugLog.Log("Broadcaster", $"sync write exception: {ex.Message}");
+            return false;
         }
     }
 
@@ -325,21 +340,21 @@ public class Broadcaster
         catch { return false; }
     }
 
-    private void WriteIfChanged(SyncData data)
+    private bool WriteIfChanged(SyncData data)
     {
         string serialized = data.Serialize();
         if (serialized == _lastWritten)
-            return;
+            return true;
 
         if (SyncFile.Write(data))
         {
             _lastWritten = serialized;
             DebugLog.Log("Broadcaster", $"wrote: {DebugLog.Describe(data)}");
+            return true;
         }
-        else
-        {
-            DebugLog.Log("Broadcaster", $"WRITE FAILED: {DebugLog.Describe(data)}");
-        }
+
+        DebugLog.Log("Broadcaster", $"WRITE FAILED: {DebugLog.Describe(data)}");
+        return false;
     }
 
     /// <summary>
