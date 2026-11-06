@@ -14,21 +14,24 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
 {
     private static readonly string[] AvailableRateUnits = ["/hr", "/min", "/sec"];
     private const int MaximumRateSnapshots = 100;
+    private const string HistoryKey = "StatsRateHistory";
 
     private readonly ISettingsService _settings;
     private readonly IFileDialogService _fileDialogService;
     private readonly IDialogService _dialogService;
+    private readonly IScriptPlayer _player;
     private bool _advancedMode;
     private string _rateUnit;
 
-    public ScriptStatsViewModel(IScriptBotStats scriptStats, ISettingsService settings, IFileDialogService fileDialogService, IDialogService dialogService)
+    public ScriptStatsViewModel(IScriptBotStats scriptStats, ISettingsService settings, IFileDialogService fileDialogService, IDialogService dialogService, IScriptPlayer player)
     {
         ScriptStats = scriptStats;
         _settings = settings;
         _fileDialogService = fileDialogService;
         _dialogService = dialogService;
+        _player = player;
         RateHistory = new ObservableCollection<StatsRateSnapshot>(
-            settings.Get("StatsRateHistory", new List<StatsRateSnapshot>()).Take(MaximumRateSnapshots));
+            settings.Get(HistoryKey, new List<StatsRateSnapshot>()).Take(MaximumRateSnapshots));
         _advancedMode = settings.Get("StatsAdvancedMode", false);
 
         string savedRateUnit = settings.Get("StatsRateUnit", "/hr");
@@ -39,8 +42,14 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
         ResetStatsCommand = new RelayCommand(ResetStats);
         GetSpaceCommand = new RelayCommand(ScriptStats.GetSpace);
         SaveRateSnapshotCommand = new RelayCommand(SaveRateSnapshot);
-        ExportHistoryCommand = new RelayCommand(ExportHistory);
-        ClearRateHistoryCommand = new RelayCommand(ClearRateHistory);
+        ExportHistoryCommand = new RelayCommand(ExportHistory, () => HasHistory);
+        ClearRateHistoryCommand = new RelayCommand(ClearRateHistory, () => HasHistory);
+        RateHistory.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(HasHistory));
+            ExportHistoryCommand.NotifyCanExecuteChanged();
+            ClearRateHistoryCommand.NotifyCanExecuteChanged();
+        };
     }
 
     public IScriptBotStats ScriptStats { get; }
@@ -51,6 +60,7 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
     public IRelayCommand ClearRateHistoryCommand { get; }
     public ObservableCollection<StatsRateSnapshot> RateHistory { get; }
     public IReadOnlyList<string> RateUnits => AvailableRateUnits;
+    public bool HasHistory => RateHistory.Count > 0;
 
     public bool AdvancedMode
     {
@@ -75,6 +85,8 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
             OnPropertyChanged(nameof(GoldRateLabel));
             OnPropertyChanged(nameof(ItemsRateLabel));
             OnPropertyChanged(nameof(ClassPointsRateLabel));
+            OnPropertyChanged(nameof(KillsRateLabel));
+            OnPropertyChanged(nameof(DeathsRateLabel));
         }
     }
 
@@ -96,13 +108,49 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
             ConvertPerMinuteRate(ScriptStats.DeathsPerMinute, RateUnit),
             ConvertHourlyRate(ScriptStats.ItemsPerHour, RateUnit),
             ConvertHourlyRate(ScriptStats.ClassPointsPerHour, RateUnit),
-            ScriptStats.CurrentClassRank);
+            ScriptStats.CurrentClassRank)
+        {
+            Character = _player.LoggedIn ? _player.Username : null
+        };
 
-        RateHistory.Insert(0, snapshot);
-        while (RateHistory.Count > MaximumRateSnapshots)
-            RateHistory.RemoveAt(RateHistory.Count - 1);
+        // Every client writes this one shared list, so the reload, the insert and the save are one step under the
+        // settings file lock: a snapshot another client saves at the same moment is kept, not overwritten.
+        bool saved = _settings.TryUpdate(HistoryKey, new List<StatsRateSnapshot>(), history =>
+        {
+            List<StatsRateSnapshot> next = new(history.Count + 1) { snapshot };
+            next.AddRange(history.Take(MaximumRateSnapshots - 1));
+            return next;
+        }, out List<StatsRateSnapshot> result);
 
-        _settings.Set("StatsRateHistory", RateHistory.ToList());
+        if (!saved)
+        {
+            _dialogService.ShowMessageBox(
+                "Couldn't save the snapshot: the settings file couldn't be read or written. Nothing was changed; try again.",
+                "Save Snapshot", yesAndNo: false);
+            return;
+        }
+        ShowHistory(result);
+    }
+
+    /// <summary>
+    /// Shows the history as saved now, including snapshots other clients saved or cleared since this window last
+    /// looked. Keeps the table as it is when the settings file can't be read.
+    /// </summary>
+    public void RefreshHistory()
+    {
+        if (_settings.TryReloadSettings())
+            ShowHistory(_settings.Get(HistoryKey, new List<StatsRateSnapshot>()));
+    }
+
+    private void ShowHistory(IEnumerable<StatsRateSnapshot> history)
+    {
+        List<StatsRateSnapshot> rows = history.Take(MaximumRateSnapshots).ToList();
+        if (rows.SequenceEqual(RateHistory))
+            return;
+
+        RateHistory.Clear();
+        foreach (StatsRateSnapshot snapshot in rows)
+            RateHistory.Add(snapshot);
     }
 
     /// <summary>
@@ -114,15 +162,21 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
             return;
 
         bool? confirm = _dialogService.ShowMessageBox(
-            $"Delete all {RateHistory.Count} saved rate snapshots? This cannot be undone.",
+            $"Delete all {RateHistory.Count} saved rate snapshots? This clears them for every client and cannot be undone.",
             "Clear Rate History",
             yesAndNo: true);
 
         if (confirm != true)
             return;
 
-        RateHistory.Clear();
-        _settings.Set("StatsRateHistory", new List<StatsRateSnapshot>());
+        if (!_settings.TryUpdate(HistoryKey, new List<StatsRateSnapshot>(), _ => new List<StatsRateSnapshot>(), out List<StatsRateSnapshot> result))
+        {
+            _dialogService.ShowMessageBox(
+                "Couldn't clear the history: the settings file couldn't be read or written. Nothing was changed; try again.",
+                "Clear Rate History", yesAndNo: false);
+            return;
+        }
+        ShowHistory(result);
     }
 
     private static double ConvertHourlyRate(double value, string unit) => unit switch
@@ -141,14 +195,17 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
 
     private void ExportHistory()
     {
+        // Export what is saved now, not what this window loaded earlier.
+        RefreshHistory();
         if (RateHistory.Count == 0)
             return;
 
         System.Text.StringBuilder csv = new();
-        csv.AppendLine("Saved At,Session Seconds,Rate Unit,Experience Rate,Gold Rate,Kills Rate,Deaths Rate,Items Rate,Class Points Rate,Class Rank");
+        csv.AppendLine("Saved At,Character,Session Seconds,Rate Unit,Experience Rate,Gold Rate,Kills Rate,Deaths Rate,Items Rate,Class Points Rate,Class Rank");
         foreach (StatsRateSnapshot snapshot in RateHistory)
         {
             csv.Append(snapshot.SavedAt.ToString("O", CultureInfo.InvariantCulture)).Append(',')
+                .Append(CsvField(snapshot.Character)).Append(',')
                 .Append(snapshot.SessionDuration.TotalSeconds.ToString("F0", CultureInfo.InvariantCulture)).Append(',')
                 .Append(snapshot.RateUnit).Append(',')
                 .Append(snapshot.ExperienceRate.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
@@ -163,10 +220,19 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
         _fileDialogService.SaveText(csv.ToString());
     }
 
-    public string ExperienceRateLabel => $"EXP {RateUnit.ToUpperInvariant()}";
-    public string GoldRateLabel => $"NET GOLD {RateUnit.ToUpperInvariant()}";
-    public string ItemsRateLabel => $"ITEMS {RateUnit.ToUpperInvariant()}";
-    public string ClassPointsRateLabel => $"CLASS POINTS {RateUnit.ToUpperInvariant()}";
+    private static string CsvField(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return string.Empty;
+        return value.IndexOfAny([',', '"', '\n', '\r']) < 0 ? value : $"\"{value.Replace("\"", "\"\"")}\"";
+    }
+
+    public string ExperienceRateLabel => $"EXP {RateUnit}";
+    public string GoldRateLabel => $"Net gold {RateUnit}";
+    public string ItemsRateLabel => $"Items {RateUnit}";
+    public string ClassPointsRateLabel => $"CP {RateUnit}";
+    public string KillsRateLabel => $"Kills {RateUnit}";
+    public string DeathsRateLabel => $"Deaths {RateUnit}";
 
     public string Title => "Stats";
     public int Width => 480;

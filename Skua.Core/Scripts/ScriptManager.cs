@@ -139,6 +139,8 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
             scriptCorrelationId = _scriptRunId!;
         }
 
+        bool startAnnounced = false;
+
         using IDiagnosticActivity startActivity = _diagnostics.BeginActivity("Script", "Start", scriptCorrelationId);
 
         try
@@ -274,14 +276,18 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
                 IsBackground = true
             };
 
+            // Announce the start before the thread runs: a script that ends at once sends its stopped (and error)
+            // messages from its own thread, and those must not reach listeners before this one (the loader would
+            // stay "[Running]", the feed would log the start after the stop).
+            StrongReferenceMessenger.Default.Send<ScriptStartedMessage, int>((int)MessageChannels.ScriptStatus);
+            startAnnounced = true;
+            _diagnostics.RecordEvent("Script", "Started", correlationId: scriptCorrelationId);
+
             lock (_threadLock)
             {
                 _currentScriptThread = scriptThread;
                 scriptThread.Start();
             }
-
-            StrongReferenceMessenger.Default.Send<ScriptStartedMessage, int>((int)MessageChannels.ScriptStatus);
-            _diagnostics.RecordEvent("Script", "Started", correlationId: scriptCorrelationId);
 
             return null;
         }
@@ -293,6 +299,9 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
                 ScriptRunning = false;
                 _scriptRunId = null;
             }
+            // Started was sent but the thread never ran: close the run for its listeners.
+            if (startAnnounced)
+                StrongReferenceMessenger.Default.Send<ScriptStoppedMessage, int>((int)MessageChannels.ScriptStatus);
             return e;
         }
     }
