@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using System.Collections.Generic;
 
 namespace Skua.Shared.Avalonia.Services;
 
@@ -12,23 +13,35 @@ namespace Skua.Shared.Avalonia.Services;
 /// </summary>
 public static class PointerCaptureReset
 {
-    private static IPointer? s_pointer;
+    // Pointers whose release event is being routed right now; a dialog opened from that event's handler blocks
+    // inside it. A list, not a set: a release inside the dialog's nested loop can add the same pointer again.
+    private static readonly List<IPointer> s_releasing = [];
     private static bool s_tracking;
 
-    /// <summary>Remembers the pointer of each press, so <see cref="Release"/> can reach it. Call once at startup.</summary>
+    /// <summary>Starts following pointer releases, so <see cref="Release"/> knows which pointer opened a dialog.
+    /// Call once at startup.</summary>
     public static void Track()
     {
         if (s_tracking)
             return;
         s_tracking = true;
-        InputElement.PointerPressedEvent.AddClassHandler<TopLevel>(
-            (_, e) => s_pointer = e.Pointer, RoutingStrategies.Tunnel, handledEventsToo: true);
+
+        // Every release route starts and ends at its TopLevel (a window or popup): tunnel runs before the control's
+        // own handlers raise Click, bubble after they return.
+        InputElement.PointerReleasedEvent.AddClassHandler<TopLevel>(
+            (_, e) => s_releasing.Add(e.Pointer), RoutingStrategies.Tunnel, handledEventsToo: true);
+        InputElement.PointerReleasedEvent.AddClassHandler<TopLevel>(
+            (_, e) => s_releasing.Remove(e.Pointer), RoutingStrategies.Bubble, handledEventsToo: true);
     }
 
-    /// <summary>Drops the current capture, if any. Call before showing a dialog that blocks the caller.</summary>
+    /// <summary>Drops the capture of the pointers whose release is opening a blocking dialog, and no others.
+    /// Call before showing a dialog that blocks the caller.</summary>
     public static void Release()
     {
-        if (s_pointer?.Captured is not null)
-            s_pointer.Capture(null);
+        foreach (IPointer pointer in s_releasing.ToArray())
+        {
+            if (pointer.Captured is not null)
+                pointer.Capture(null);
+        }
     }
 }
