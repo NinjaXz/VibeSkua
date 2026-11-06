@@ -172,6 +172,26 @@ public static class WindowPlacementHelper
         return new PixelPoint(posX, posY);
     }
 
+    /// <summary>
+    /// Caps the window's size at the working area of the screen it will open on, so a window that sizes to its
+    /// content (or asks for more than fits) never runs under the taskbar or off the screen.
+    /// </summary>
+    public static void FitToWorkingArea(Window window)
+    {
+        Screen? screen = GetTargetScreen(window);
+        if (screen is null || screen.Scaling <= 0)
+            return;
+
+        double maxWidth = screen.WorkingArea.Width / screen.Scaling;
+        double maxHeight = screen.WorkingArea.Height / screen.Scaling;
+        window.MaxWidth = Math.Min(window.MaxWidth, maxWidth);
+        window.MaxHeight = Math.Min(window.MaxHeight, maxHeight);
+        if (window.MinWidth > window.MaxWidth)
+            window.MinWidth = window.MaxWidth;
+        if (window.MinHeight > window.MaxHeight)
+            window.MinHeight = window.MaxHeight;
+    }
+
     public static void CenterOnActiveScreen(Window window)
     {
         window.WindowStartupLocation = WindowStartupLocation.Manual;

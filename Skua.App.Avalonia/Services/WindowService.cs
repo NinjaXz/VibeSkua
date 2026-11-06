@@ -184,6 +184,8 @@ public class WindowService : IWindowService
             window.MinHeight = Math.Min(height, 300);
         }
 
+        Skua.Shared.Avalonia.Services.WindowPlacementHelper.FitToWorkingArea(window);
+
         // Size first, then place: centring a window whose size is still unknown puts it in the wrong spot
         // and it visibly jumps once Opened corrects it.
         if (initialPos.HasValue)
