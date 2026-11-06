@@ -44,9 +44,11 @@ public sealed class RosterWindow : Window
             RowDefinitions = new RowDefinitions("Auto,*,Auto"),
         };
 
+        // Your account and follow state on the left; Stop following / Release all on the right, as in the original.
         Grid header = new()
         {
             Margin = new Thickness(2, 0, 2, 12),
+            ColumnDefinitions = new ColumnDefinitions("*,Auto"),
         };
         StackPanel headerLeft = new();
         _meText = AvaloniaUi.TextBlock(16);
@@ -56,6 +58,30 @@ public sealed class RosterWindow : Window
         headerLeft.Children.Add(_meText);
         headerLeft.Children.Add(_stateText);
         header.Children.Add(headerLeft);
+
+        StackPanel headerButtons = new()
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 6,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(8, 0, 0, 0),
+        };
+        _stopButton = AvaloniaUi.Button("Stop following", () =>
+        {
+            _plugin.StopFollow();
+            Refresh(force: true);
+        }, AvaloniaUi.Red);
+        headerButtons.Children.Add(_stopButton);
+
+        _releaseAllButton = AvaloniaUi.Button("Release all", () =>
+        {
+            _plugin.ReleaseFollowers();
+            Refresh(force: true);
+        }, AvaloniaUi.OrangeButton);
+        AvaloniaUi.SetToolTip(_releaseAllButton, "Clear this account's followers list; released butlers park at their configured location.");
+        headerButtons.Children.Add(_releaseAllButton);
+        Grid.SetColumn(headerButtons, 1);
+        header.Children.Add(headerButtons);
         root.Children.Add(header);
 
         // "Send to player" lives in a flyout off its own footer button: name box, Send, and recent names.
@@ -132,21 +158,6 @@ public sealed class RosterWindow : Window
             ItemSpacing = 6,
             LineSpacing = 6,
         };
-
-        _stopButton = AvaloniaUi.Button("Stop following", () =>
-        {
-            _plugin.StopFollow();
-            Refresh(force: true);
-        }, AvaloniaUi.Red);
-        footerActions.Children.Add(_stopButton);
-
-        _releaseAllButton = AvaloniaUi.Button("Release all", () =>
-        {
-            _plugin.ReleaseFollowers();
-            Refresh(force: true);
-        }, AvaloniaUi.OrangeButton);
-        AvaloniaUi.SetToolTip(_releaseAllButton, "Clear this account's followers list; released butlers park at their configured location.");
-        footerActions.Children.Add(_releaseAllButton);
 
         _sendToPlayerButton = AvaloniaUi.Button("Send to player", () => { });
         _sendToPlayerButton.Flyout = _targetFlyout;
