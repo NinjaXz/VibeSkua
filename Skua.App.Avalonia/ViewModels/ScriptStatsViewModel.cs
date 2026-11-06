@@ -14,6 +14,7 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
 {
     private static readonly string[] AvailableRateUnits = ["/hr", "/min", "/sec"];
     private const int MaximumRateSnapshots = 100;
+    private const string HistoryKey = "StatsRateHistory";
 
     private readonly ISettingsService _settings;
     private readonly IFileDialogService _fileDialogService;
@@ -30,7 +31,7 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
         _dialogService = dialogService;
         _player = player;
         RateHistory = new ObservableCollection<StatsRateSnapshot>(
-            settings.Get("StatsRateHistory", new List<StatsRateSnapshot>()).Take(MaximumRateSnapshots));
+            settings.Get(HistoryKey, new List<StatsRateSnapshot>()).Take(MaximumRateSnapshots));
         _advancedMode = settings.Get("StatsAdvancedMode", false);
 
         string savedRateUnit = settings.Get("StatsRateUnit", "/hr");
@@ -107,30 +108,48 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
             ConvertPerMinuteRate(ScriptStats.DeathsPerMinute, RateUnit),
             ConvertHourlyRate(ScriptStats.ItemsPerHour, RateUnit),
             ConvertHourlyRate(ScriptStats.ClassPointsPerHour, RateUnit),
-            ScriptStats.CurrentClassRank,
-            _player.LoggedIn ? _player.Username : null);
+            ScriptStats.CurrentClassRank)
+        {
+            Character = _player.LoggedIn ? _player.Username : null
+        };
 
-        // Every client writes this one shared list: start from the saved copy so snapshots other clients saved
-        // since this window opened are kept, not overwritten by this window's older copy.
-        List<StatsRateSnapshot> history = LoadSavedHistory();
-        history.Insert(0, snapshot);
-        if (history.Count > MaximumRateSnapshots)
-            history.RemoveRange(MaximumRateSnapshots, history.Count - MaximumRateSnapshots);
+        // Every client writes this one shared list, so the reload, the insert and the save are one step under the
+        // settings file lock: a snapshot another client saves at the same moment is kept, not overwritten.
+        bool saved = _settings.TryUpdate(HistoryKey, new List<StatsRateSnapshot>(), history =>
+        {
+            List<StatsRateSnapshot> next = new(history.Count + 1) { snapshot };
+            next.AddRange(history.Take(MaximumRateSnapshots - 1));
+            return next;
+        }, out List<StatsRateSnapshot> result);
 
-        _settings.Set("StatsRateHistory", history);
-        ShowHistory(history);
+        if (!saved)
+        {
+            _dialogService.ShowMessageBox(
+                "Couldn't save the snapshot: the settings file couldn't be read or written. Nothing was changed; try again.",
+                "Save Snapshot", yesAndNo: false);
+            return;
+        }
+        ShowHistory(result);
     }
 
-    private List<StatsRateSnapshot> LoadSavedHistory()
+    /// <summary>
+    /// Shows the history as saved now, including snapshots other clients saved or cleared since this window last
+    /// looked. Keeps the table as it is when the settings file can't be read.
+    /// </summary>
+    public void RefreshHistory()
     {
-        _settings.ReloadSettings();
-        return new List<StatsRateSnapshot>(_settings.Get("StatsRateHistory", new List<StatsRateSnapshot>()));
+        if (_settings.TryReloadSettings())
+            ShowHistory(_settings.Get(HistoryKey, new List<StatsRateSnapshot>()));
     }
 
     private void ShowHistory(IEnumerable<StatsRateSnapshot> history)
     {
+        List<StatsRateSnapshot> rows = history.Take(MaximumRateSnapshots).ToList();
+        if (rows.SequenceEqual(RateHistory))
+            return;
+
         RateHistory.Clear();
-        foreach (StatsRateSnapshot snapshot in history.Take(MaximumRateSnapshots))
+        foreach (StatsRateSnapshot snapshot in rows)
             RateHistory.Add(snapshot);
     }
 
@@ -150,9 +169,14 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
         if (confirm != true)
             return;
 
-        _settings.ReloadSettings();
-        _settings.Set("StatsRateHistory", new List<StatsRateSnapshot>());
-        RateHistory.Clear();
+        if (!_settings.TryUpdate(HistoryKey, new List<StatsRateSnapshot>(), _ => new List<StatsRateSnapshot>(), out List<StatsRateSnapshot> result))
+        {
+            _dialogService.ShowMessageBox(
+                "Couldn't clear the history: the settings file couldn't be read or written. Nothing was changed; try again.",
+                "Clear Rate History", yesAndNo: false);
+            return;
+        }
+        ShowHistory(result);
     }
 
     private static double ConvertHourlyRate(double value, string unit) => unit switch
@@ -171,6 +195,8 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
 
     private void ExportHistory()
     {
+        // Export what is saved now, not what this window loaded earlier.
+        RefreshHistory();
         if (RateHistory.Count == 0)
             return;
 

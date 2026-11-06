@@ -13,6 +13,7 @@ public partial class ScriptStatsView : UserControl
     private const double AdvancedHeight = 760;
 
     private ScriptStatsViewModel? _vm;
+    private Window? _window;
 
     public ScriptStatsView()
     {
@@ -21,9 +22,30 @@ public partial class ScriptStatsView : UserControl
         AttachedToVisualTree += (_, _) =>
         {
             Watch(DataContext as ScriptStatsViewModel);
+            WatchWindow(TopLevel.GetTopLevel(this) as Window);
             ApplyWindowSize();
         };
-        DetachedFromVisualTree += (_, _) => Watch(null);
+        DetachedFromVisualTree += (_, _) =>
+        {
+            Watch(null);
+            WatchWindow(null);
+        };
+    }
+
+    // Other clients write the shared rate history too: re-read it whenever this window comes to the front.
+    private void WatchWindow(Window? window)
+    {
+        if (_window is not null)
+            _window.Activated -= OnWindowActivated;
+        _window = window;
+        if (_window is not null)
+            _window.Activated += OnWindowActivated;
+    }
+
+    private void OnWindowActivated(object? sender, EventArgs e)
+    {
+        if (_vm is { AdvancedMode: true })
+            _vm.RefreshHistory();
     }
 
     private void Watch(ScriptStatsViewModel? vm)
