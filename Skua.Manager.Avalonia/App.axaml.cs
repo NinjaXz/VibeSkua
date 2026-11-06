@@ -30,6 +30,7 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        Skua.Shared.Avalonia.Services.PointerCaptureReset.Track();
         var services = new ServiceCollection();
 
         services.AddCommonServices();
