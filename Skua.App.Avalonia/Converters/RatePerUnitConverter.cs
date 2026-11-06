@@ -7,6 +7,7 @@ namespace Skua.App.Avalonia.Converters;
 
 /// <summary>
 /// Converts an hourly rate to the selected hourly, per-minute, or per-second display rate.
+/// With ConverterParameter "perMinute" the value is a per-minute rate (kills, deaths) and gets one more decimal.
 /// </summary>
 public sealed class RatePerUnitConverter : IMultiValueConverter
 {
@@ -15,7 +16,8 @@ public sealed class RatePerUnitConverter : IMultiValueConverter
         if (values.Count < 2 || values[0] is not IConvertible rateValue || values[1] is not string rateUnit)
             return "—";
 
-        double hourlyRate = System.Convert.ToDouble(rateValue, CultureInfo.InvariantCulture);
+        bool perMinute = parameter is "perMinute";
+        double hourlyRate = System.Convert.ToDouble(rateValue, CultureInfo.InvariantCulture) * (perMinute ? 60d : 1d);
         double divisor = rateUnit switch
         {
             "/hr" => 1d,
@@ -24,11 +26,13 @@ public sealed class RatePerUnitConverter : IMultiValueConverter
             _ => 1d
         };
 
-        string format = rateUnit switch
+        string format = (rateUnit, perMinute) switch
         {
-            "/hr" => "N0",
-            "/min" => "N1",
-            "/sec" => "N2",
+            ("/min", false) => "N1",
+            ("/sec", false) => "N2",
+            ("/hr", true) => "N1",
+            ("/min", true) => "N2",
+            ("/sec", true) => "N3",
             _ => "N0"
         };
 
