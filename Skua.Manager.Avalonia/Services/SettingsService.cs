@@ -31,4 +31,9 @@ public class SettingsService : ISettingsService
     public void SetApplicationVersion() => _unifiedService.SetApplicationVersion();
 
     public void ReloadSettings() => _unifiedService.ReloadSettings();
+
+    public bool TryReloadSettings() => _unifiedService.TryReloadSettings();
+
+    public bool TryUpdate<T>(string key, T defaultValue, System.Func<T, T> change, out T result) =>
+        _unifiedService.TryUpdate(key, defaultValue, change, out result);
 }

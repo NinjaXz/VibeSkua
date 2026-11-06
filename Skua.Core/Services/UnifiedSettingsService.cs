@@ -497,24 +497,11 @@ public class UnifiedSettingsService
         {
             if (File.Exists(ClientFileSources.SkuaSettingsDIR))
             {
-                string json = File.ReadAllText(ClientFileSources.SkuaSettingsDIR);
-                JsonSerializerOptions options = GetJsonOptions();
-                SettingsRoot? loaded = JsonSerializer.Deserialize<SettingsRoot>(json, options);
+                SettingsRoot? loaded = ReadSettingsFile();
 
                 if (loaded != null)
                 {
                     _root = loaded;
-                    if (_root.FormatVersion == 0)
-                        _root.FormatVersion = 1;
-
-                    _root.Shared ??= new SharedSettings();
-                    _root.Client ??= new ClientSettings();
-                    _root.Manager ??= new ManagerSettings();
-
-                    _root.Shared.InitializeDefaults();
-                    _root.Client.InitializeDefaults();
-                    _root.Manager.InitializeDefaults();
-
                     if (CleanupDeprecatedKeys())
                         SaveSettings();
                 }
@@ -530,6 +517,30 @@ public class UnifiedSettingsService
             BackupCorruptFile();
             _root = SettingsRoot.CreateDefaults();
         }
+    }
+
+    /// <summary>
+    /// Reads and normalizes the settings file; null when it holds no settings object. Throws on a read or parse
+    /// error. Call with the file mutex held.
+    /// </summary>
+    private SettingsRoot? ReadSettingsFile()
+    {
+        string json = File.ReadAllText(ClientFileSources.SkuaSettingsDIR);
+        SettingsRoot? loaded = JsonSerializer.Deserialize<SettingsRoot>(json, GetJsonOptions());
+        if (loaded == null)
+            return null;
+
+        if (loaded.FormatVersion == 0)
+            loaded.FormatVersion = 1;
+
+        loaded.Shared ??= new SharedSettings();
+        loaded.Client ??= new ClientSettings();
+        loaded.Manager ??= new ManagerSettings();
+
+        loaded.Shared.InitializeDefaults();
+        loaded.Client.InitializeDefaults();
+        loaded.Manager.InitializeDefaults();
+        return loaded;
     }
 
     private void SaveSettings()
@@ -666,20 +677,101 @@ public class UnifiedSettingsService
         }
     }
 
-    public void ReloadSettings()
+    public void ReloadSettings() => TryReloadSettings();
+
+    /// <summary>
+    /// Re-reads the settings file so changes other VibeSkua processes saved are seen. On a read or parse error the
+    /// settings in memory are kept and false is returned: falling back to defaults here would let the next save
+    /// write those defaults over the user's file. A missing file counts as success (memory is all there is).
+    /// </summary>
+    public bool TryReloadSettings()
     {
         lock (_lock)
         {
+            bool mutexAcquired = false;
             try
             {
-                _fileMutex.WaitOne();
-                LoadSettings();
+                mutexAcquired = AcquireFileMutex();
+                if (!File.Exists(ClientFileSources.SkuaSettingsDIR))
+                    return true;
+
+                SettingsRoot? loaded = ReadSettingsFile();
+                if (loaded == null)
+                {
+                    Console.WriteLine("Error reloading settings: the file holds no settings; kept the current ones.");
+                    return false;
+                }
+
+                _root = loaded;
+                if (CleanupDeprecatedKeys())
+                {
+                    // The loaded values are good either way; a failed cleanup save is retried by the next save.
+                    try { SaveSettings(); }
+                    catch (Exception ex) { Console.WriteLine($"Error saving settings cleanup: {ex.Message}"); }
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error reloading settings, kept the current ones: {ex.Message}");
+                return false;
             }
             finally
             {
-                _fileMutex.ReleaseMutex();
+                if (mutexAcquired)
+                    _fileMutex.ReleaseMutex();
             }
         }
+    }
+
+    /// <summary>
+    /// Reloads, changes and saves one setting as a single step under the cross-process file mutex, so a value
+    /// several processes edit (a shared list) never loses another process's change made in between. Returns false,
+    /// and writes nothing, when the reload fails; false too when the save fails (memory then keeps the old value).
+    /// <paramref name="change"/> must return a new value rather than modify the one it is given.
+    /// </summary>
+    public bool TryUpdate<T>(string key, T defaultValue, Func<T, T> change, out T result)
+    {
+        result = defaultValue;
+        lock (_lock)
+        {
+            bool mutexAcquired = false;
+            try
+            {
+                mutexAcquired = AcquireFileMutex();
+                if (!TryReloadSettings())
+                    return false;
+
+                T next = change(Get(key, defaultValue));
+                Set(key, next);
+                result = next;
+                return true;
+            }
+            catch (InvalidOperationException ex)
+            {
+                Console.WriteLine($"Error updating setting '{key}': {ex.Message}");
+                result = Get(key, defaultValue);
+                return false;
+            }
+            finally
+            {
+                if (mutexAcquired)
+                    _fileMutex.ReleaseMutex();
+            }
+        }
+    }
+
+    // A process that exited while holding the mutex leaves it abandoned; the wait still acquires it.
+    private bool AcquireFileMutex()
+    {
+        try
+        {
+            _fileMutex.WaitOne();
+        }
+        catch (AbandonedMutexException)
+        {
+        }
+        return true;
     }
 
     public void Dispose()
