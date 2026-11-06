@@ -145,20 +145,20 @@ public sealed partial class NotificationCenterViewModel : BotControlViewModelBas
     private void OnScriptStarted(NotificationCenterViewModel recipient, ScriptStartedMessage message)
     {
         recipient._runningScript = ScriptName(recipient._scriptManager.LoadedScript);
-        recipient.Add(recipient._runningScript is null ? "Script started" : $"Started {recipient._runningScript}", NotificationKind.Activity);
+        recipient.Add(recipient._runningScript is null ? "Script started" : $"Script started: {recipient._runningScript}", NotificationKind.Activity);
     }
 
     private void OnScriptStopped(NotificationCenterViewModel recipient, ScriptStoppedMessage message)
     {
         string? name = recipient._runningScript ?? ScriptName(recipient._scriptManager.LoadedScript);
         recipient._runningScript = null;
-        recipient.Add(name is null ? "Script stopped" : $"Stopped {name}", NotificationKind.Activity);
+        recipient.Add(name is null ? "Script stopped" : $"Script stopped: {name}", NotificationKind.Activity);
     }
 
     private void OnScriptError(NotificationCenterViewModel recipient, ScriptErrorMessage message)
     {
         string? name = recipient._runningScript ?? ScriptName(recipient._scriptManager.LoadedScript);
-        recipient.Add(name is null ? $"Script error: {message.Exception.Message}" : $"{name} error: {message.Exception.Message}", NotificationKind.Error);
+        recipient.Add(name is null ? $"Script error: {message.Exception.Message}" : $"Script error ({name}): {message.Exception.Message}", NotificationKind.Error);
     }
 
     private static string? ScriptName(string? path) =>
