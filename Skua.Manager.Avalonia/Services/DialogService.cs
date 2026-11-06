@@ -275,7 +275,7 @@ public class DialogService : IDialogService
             }
         };
         dialog.Content = WrapWithShell(title, content);
-        Show(dialog);
+        Show(dialog, input);
         return result;
     }
 
@@ -674,17 +674,19 @@ public class DialogService : IDialogService
         return rootBorder;
     }
 
-    private static void Show(Window dialog)
+    // initialFocus: the control that takes focus when the dialog opens (e.g. an input box); otherwise the default button.
+    private static void Show(Window dialog, Control? initialFocus = null)
     {
+        Skua.Shared.Avalonia.Services.PointerCaptureReset.Release();
         Skua.Shared.Avalonia.Services.WindowPlacementHelper.CenterOnActiveScreen(dialog);
         Window? owner = GetOwner();
         if (owner != null)
         {
-            ShowModalAndBlock(dialog, owner);
+            ShowModalAndBlock(dialog, owner, initialFocus);
             return;
         }
 
-        ShowAndBlock(dialog);
+        ShowAndBlock(dialog, initialFocus);
     }
 
     private static Window? GetOwner()
@@ -703,11 +705,11 @@ public class DialogService : IDialogService
         return desktop.MainWindow?.IsVisible == true ? desktop.MainWindow : null;
     }
 
-    private static void ShowModalAndBlock(Window dialog, Window owner)
+    private static void ShowModalAndBlock(Window dialog, Window owner, Control? initialFocus)
     {
         using CancellationTokenSource closedCts = new();
         void OnClosed(object? _, EventArgs __) => closedCts.Cancel();
-        void OnOpened(object? _, EventArgs __) => FocusDefaultDialogAction(dialog);
+        void OnOpened(object? _, EventArgs __) => FocusDefaultDialogAction(dialog, initialFocus);
 
         dialog.Closed += OnClosed;
         dialog.Opened += OnOpened;
@@ -728,11 +730,11 @@ public class DialogService : IDialogService
         }
     }
 
-    private static void ShowAndBlock(Window dialog)
+    private static void ShowAndBlock(Window dialog, Control? initialFocus)
     {
         using CancellationTokenSource closedCts = new();
         void OnClosed(object? _, EventArgs __) => closedCts.Cancel();
-        void OnOpened(object? _, EventArgs __) => FocusDefaultDialogAction(dialog);
+        void OnOpened(object? _, EventArgs __) => FocusDefaultDialogAction(dialog, initialFocus);
 
         dialog.Closed += OnClosed;
         dialog.Opened += OnOpened;
@@ -753,10 +755,17 @@ public class DialogService : IDialogService
         }
     }
 
-    private static void FocusDefaultDialogAction(Window dialog)
+    private static void FocusDefaultDialogAction(Window dialog, Control? initialFocus)
     {
         dialog.Activate();
         dialog.Focus();
+        if (initialFocus?.Focus() == true)
+        {
+            // Select any prefilled text so typing replaces it.
+            (initialFocus as TextBox)?.SelectAll();
+            return;
+        }
+
         dialog.GetVisualDescendants()
             .OfType<Button>()
             .FirstOrDefault(b => b.IsDefault)?
