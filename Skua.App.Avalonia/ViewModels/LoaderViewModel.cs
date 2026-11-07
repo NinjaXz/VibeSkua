@@ -51,6 +51,9 @@ public partial class LoaderViewModel : BotControlViewModelBase, IManagedWindow
     private bool _isLoading;
 
     [ObservableProperty]
+    private bool _probePastCeiling;
+
+    [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LoadCommand))]
     private string _inputIDs = string.Empty;
 
@@ -186,7 +189,7 @@ public partial class LoaderViewModel : BotControlViewModelBase, IManagedWindow
         });
         try
         {
-            List<QuestData> questData = await _questLoader.UpdateAsync("QuestData.json", getAll, progress, _loaderCTS.Token);
+            List<QuestData> questData = await _questLoader.UpdateAsync("QuestData.json", getAll, progress, _loaderCTS.Token, ProbePastCeiling);
             QuestIDs.Clear();
             QuestIDs.AddRange(questData);
             ApplySearch();

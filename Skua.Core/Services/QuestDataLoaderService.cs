@@ -42,7 +42,7 @@ public class QuestDataLoaderService : IQuestDataLoaderService
         return quests ?? new();
     }
 
-    public async Task<List<QuestData>> UpdateAsync(string fileName, bool all, IProgress<string>? progress, CancellationToken token)
+    public async Task<List<QuestData>> UpdateAsync(string fileName, bool all, IProgress<string>? progress, CancellationToken token, bool probePastCeiling = false)
     {
         return await Task.Run(async () =>
         {
@@ -58,36 +58,52 @@ public class QuestDataLoaderService : IQuestDataLoaderService
             _quests.Cached = all ? new List<QuestData>() : existingQuestData;
 
             int start = 1;
-            if (!all && (_quests.Cached.Count > 0))
-                start = _quests.Cached.Last().ID + 1;
+            if (!all && _quests.Cached.Count > 0)
+                start = _quests.Cached.Max(q => q.ID) + 1;
+
+            int safeMaximum = GetSafeQuestMaximum(existingQuestData);
+            if (TryReadQuestMarker(Path.Combine(ClientFileSources.SkuaDIR, "QuestCeiling.txt"), out int knownBadId))
+                progress?.Report($"Known quest ceiling: {safeMaximum} (quest {knownBadId} disconnects).");
 
             List<QuestData> quests = new();
-            for (int i = start; i < 13000; i += 29)
+            QuestRequestThrottle throttle = new();
+            int emptyInARow = 0;
+
+            if (!all && start > safeMaximum)
+                progress?.Report("No new quests remain within the remembered safe ceiling. Enable Probe newer IDs to test beyond it.");
+
+            for (int i = start; i <= safeMaximum; i += 29)
             {
                 if (token.IsCancellationRequested)
                     break;
 
-                _flash.SetGameObject("world.questTree", new ExpandoObject());
-                progress?.Report($"Loading Quests {i}-{i + 29}...");
+                int rangeEnd = Math.Min(i + 28, safeMaximum);
+                progress?.Report($"Loading Quests {i}-{rangeEnd}...");
 
-                _quests.Load(Enumerable.Range(i, 29).ToArray());
-
-                if (!_wait.ForQuestLoad(i, i + 28, 100))
+                List<Quest> loadedQuests = await FetchRangeWithFallbackAsync(i, rangeEnd, throttle, token);
+                if (!_player.LoggedIn)
                 {
-                    progress?.Report("No more quests found.");
+                    progress?.Report($"Disconnected while loading quests {i}-{rangeEnd}. Stopping without guessing which ID caused it.");
                     break;
                 }
 
-                List<Quest> loadedQuests = _quests.Tree.Where(q => q.ID >= i && q.ID <= i + 28).ToList();
+                if (token.IsCancellationRequested)
+                    break;
+
                 if (loadedQuests.Count == 0)
                 {
-                    progress?.Report("No more quests found.");
-                    break;
+                    if (++emptyInARow >= MaxEmptyBatches)
+                    {
+                        progress?.Report($"{MaxEmptyBatches} consecutive empty batches, stopping at quest {i}.");
+                        break;
+                    }
+
+                    progress?.Report($"No quests found in {i}-{rangeEnd}; continuing to the next batch.");
+                    continue;
                 }
 
+                emptyInARow = 0;
                 quests.AddRange(loadedQuests.Select(q => ConvertToQuestData(q)));
-                if (!token.IsCancellationRequested)
-                    await Task.Delay(1500);
             }
 
             // Handle cancellation gracefully and merge data appropriately
@@ -141,7 +157,12 @@ public class QuestDataLoaderService : IQuestDataLoaderService
             progress?.Report($"Getting quests from file {fileName}");
 
             _cachedQuests.Remove($"CachedQuests_{Path.Combine(ClientFileSources.SkuaDIR, fileName)}");
-            return _quests.Cached = await GetFromFileAsync(fileName);
+            List<QuestData> updatedQuestData = _quests.Cached = await GetFromFileAsync(fileName);
+
+            if (probePastCeiling && _player.LoggedIn && !token.IsCancellationRequested)
+                updatedQuestData = await ProbePastCeilingAsync(fileName, updatedQuestData, progress, token);
+
+            return _quests.Cached = updatedQuestData;
         });
     }
 
@@ -155,34 +176,34 @@ public class QuestDataLoaderService : IQuestDataLoaderService
             _quests.Cached = await GetFromFileAsync(fileName);
 
             List<QuestData> quests = new();
+            QuestRequestThrottle throttle = new();
+
             for (int i = startId; i <= endId; i += 29)
             {
                 if (token.IsCancellationRequested)
                     break;
 
-                _flash.SetGameObject("world.questTree", new ExpandoObject());
                 int questCount = Math.Min(29, endId - i + 1);
                 int rangeEnd = i + questCount - 1;
                 progress?.Report($"Loading Quests {i}-{rangeEnd}...");
 
-                _quests.Load(Enumerable.Range(i, questCount).ToArray());
-
-                if (!_wait.ForQuestLoad(i, rangeEnd, 100))
+                List<Quest> loadedQuests = await FetchRangeWithFallbackAsync(i, rangeEnd, throttle, token);
+                if (!_player.LoggedIn)
                 {
-                    progress?.Report("No more quests found.");
+                    progress?.Report($"Disconnected while loading quests {i}-{rangeEnd}. Stopping.");
                     break;
                 }
 
-                List<Quest> loadedQuests = _quests.Tree.Where(q => q.ID >= i && q.ID <= rangeEnd).ToList();
+                if (token.IsCancellationRequested)
+                    break;
+
                 if (loadedQuests.Count == 0)
                 {
-                    progress?.Report("No more quests found.");
-                    break;
+                    progress?.Report($"No quests found in {i}-{rangeEnd}; continuing through the requested range.");
+                    continue;
                 }
 
                 quests.AddRange(loadedQuests.Select(q => ConvertToQuestData(q)));
-                if (!token.IsCancellationRequested)
-                    await Task.Delay(1500);
             }
 
             HashSet<int> existingQuestIds = quests.Select(q => q.ID).ToHashSet();
@@ -194,6 +215,199 @@ public class QuestDataLoaderService : IQuestDataLoaderService
 
             return _quests.Cached = await GetFromFileAsync(fileName);
         });
+    }
+
+    private const int DefaultKnownQuestMaxId = 10882;
+    private const int MaxQuestProbeId = 13000;
+    private const int MaxEmptyBatches = 10;
+    private const int QuestSubBatchSize = 5;
+
+    private sealed class QuestRequestThrottle
+    {
+        private int _requestCount;
+
+        public async Task WaitAsync(CancellationToken token)
+        {
+            await Task.Delay(1500, token);
+            if (++_requestCount % 20 == 0)
+                await Task.Delay(5000, token);
+        }
+    }
+
+    private static bool TryReadQuestMarker(string path, out int questId)
+    {
+        questId = 0;
+        try
+        {
+            return File.Exists(path) && int.TryParse(File.ReadAllText(path).Trim(), out questId) && questId > 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static int GetSafeQuestMaximum(List<QuestData> existingQuestData)
+    {
+        string ceilingPath = Path.Combine(ClientFileSources.SkuaDIR, "QuestCeiling.txt");
+        if (TryReadQuestMarker(ceilingPath, out int knownBadId))
+            return Math.Max(0, knownBadId - 1);
+
+        string testedPath = Path.Combine(ClientFileSources.SkuaDIR, "QuestMaxTested.txt");
+        int cachedMaximum = existingQuestData.Count > 0 ? existingQuestData.Max(q => q.ID) : 0;
+        int testedMaximum = TryReadQuestMarker(testedPath, out int lastTestedId) ? lastTestedId : 0;
+        return Math.Max(DefaultKnownQuestMaxId, Math.Max(cachedMaximum, testedMaximum));
+    }
+
+    private async Task<List<Quest>> RequestQuestRangeAsync(int startId, int endId, QuestRequestThrottle throttle, CancellationToken token, bool waitBeforeRequest = true)
+    {
+        if (token.IsCancellationRequested || !_player.LoggedIn)
+            return new();
+
+        if (waitBeforeRequest)
+            await throttle.WaitAsync(token);
+
+        if (token.IsCancellationRequested || !_player.LoggedIn)
+            return new();
+
+        _flash.SetGameObject("world.questTree", new ExpandoObject());
+        _quests.Load(Enumerable.Range(startId, endId - startId + 1).ToArray());
+        _wait.ForQuestLoad(startId, endId, 100);
+
+        if (token.IsCancellationRequested || !_player.LoggedIn)
+            return new();
+
+        return _quests.Tree.Where(q => q.ID >= startId && q.ID <= endId).ToList();
+    }
+
+    private async Task<List<Quest>> FetchRangeWithFallbackAsync(int startId, int endId, QuestRequestThrottle throttle, CancellationToken token)
+    {
+        List<Quest> batch = await RequestQuestRangeAsync(startId, endId, throttle, token);
+        if (batch.Count > 0 || !_player.LoggedIn || token.IsCancellationRequested)
+            return batch;
+
+        List<Quest> found = new();
+        for (int subStart = startId; subStart <= endId && _player.LoggedIn && !token.IsCancellationRequested; subStart += QuestSubBatchSize)
+        {
+            int subEnd = Math.Min(subStart + QuestSubBatchSize - 1, endId);
+            List<Quest> subBatch = await RequestQuestRangeAsync(subStart, subEnd, throttle, token);
+
+            if (subBatch.Count > 0)
+            {
+                found.AddRange(subBatch);
+                continue;
+            }
+
+            for (int probeId = subStart; probeId <= subEnd && _player.LoggedIn && !token.IsCancellationRequested; probeId++)
+            {
+                List<Quest> single = await RequestQuestRangeAsync(probeId, probeId, throttle, token);
+                if (single.Count > 0)
+                    found.AddRange(single);
+            }
+        }
+
+        return found;
+    }
+
+    private async Task<List<QuestData>> ProbePastCeilingAsync(string fileName, List<QuestData> existingData, IProgress<string>? progress, CancellationToken token)
+    {
+        string ceilingPath = Path.Combine(ClientFileSources.SkuaDIR, "QuestCeiling.txt");
+        string testedPath = Path.Combine(ClientFileSources.SkuaDIR, "QuestMaxTested.txt");
+        string dataPath = Path.Combine(ClientFileSources.SkuaDIR, fileName);
+
+        int cachedMaximum = existingData.Count > 0 ? existingData.Max(q => q.ID) : 0;
+        int testedMaximum = TryReadQuestMarker(testedPath, out int lastTestedId) ? lastTestedId : 0;
+        int firstId = TryReadQuestMarker(ceilingPath, out int knownBadId)
+            ? knownBadId
+            : Math.Max(DefaultKnownQuestMaxId, Math.Max(cachedMaximum, testedMaximum)) + 1;
+
+        if (firstId > MaxQuestProbeId)
+        {
+            progress?.Report($"Probe limit reached at quest {MaxQuestProbeId}.");
+            return existingData;
+        }
+
+        progress?.Report($"Probing newer quest IDs from {firstId}, one at a time. The first rejected ID will disconnect the game and be remembered.");
+        HashSet<int> existingIds = existingData.Select(q => q.ID).ToHashSet();
+        QuestRequestThrottle throttle = new();
+        int emptyInARow = 0;
+
+        for (int id = firstId; id <= MaxQuestProbeId && !token.IsCancellationRequested; id++)
+        {
+            if (!_player.LoggedIn)
+            {
+                progress?.Report("Player is no longer logged in. Probe stopped.");
+                break;
+            }
+
+            await throttle.WaitAsync(token);
+            if (token.IsCancellationRequested || !_player.LoggedIn)
+                break;
+
+            // Persist the candidate immediately before sending so a disconnect leaves an exact ID to recover.
+            File.WriteAllText(ceilingPath, id.ToString());
+
+            List<Quest> loadedQuests;
+            try
+            {
+                loadedQuests = await RequestQuestRangeAsync(id, id, throttle, token, false);
+            }
+            catch (Exception ex)
+            {
+                if (_player.LoggedIn && File.Exists(ceilingPath))
+                    File.Delete(ceilingPath);
+                progress?.Report($"Probe at quest {id} failed: {ex.Message}");
+                break;
+            }
+
+            if (!_player.LoggedIn)
+            {
+                progress?.Report($"Disconnected at quest {id}. Quest {id - 1} is the remembered safe ceiling; normal updates will stop before it.");
+                break;
+            }
+
+            if (token.IsCancellationRequested)
+            {
+                if (File.Exists(ceilingPath))
+                    File.Delete(ceilingPath);
+                break;
+            }
+
+            if (File.Exists(ceilingPath))
+                File.Delete(ceilingPath);
+            File.WriteAllText(testedPath, id.ToString());
+
+            if (loadedQuests.Count > 0)
+            {
+                bool changed = false;
+                foreach (Quest quest in loadedQuests)
+                {
+                    if (existingIds.Add(quest.ID))
+                    {
+                        existingData.Add(ConvertToQuestData(quest));
+                        changed = true;
+                    }
+                }
+
+                if (changed)
+                {
+                    existingData = existingData.OrderBy(q => q.ID).ToList();
+                    _quests.Cached = existingData;
+                    await File.WriteAllTextAsync(dataPath, JsonConvert.SerializeObject(existingData, Formatting.Indented), CancellationToken.None);
+                    _cachedQuests.Remove($"CachedQuests_{dataPath}");
+                    progress?.Report($"Found quest {id}. Saved {existingData.Count} quests.");
+                }
+
+                emptyInARow = 0;
+            }
+            else if (++emptyInARow >= MaxEmptyBatches)
+            {
+                progress?.Report($"{MaxEmptyBatches} consecutive empty quest IDs. Probe paused at {id}; the next probe will resume after it.");
+                break;
+            }
+        }
+
+        return _quests.Cached = existingData;
     }
 
     private QuestData ConvertToQuestData(Quest q)
