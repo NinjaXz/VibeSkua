@@ -223,14 +223,19 @@ public class QuestDataLoaderService : IQuestDataLoaderService
 
     private sealed class QuestRequestThrottle
     {
+        private const int RequestDelayMilliseconds = 15000;
+        private const int CooldownEvery = 10;
+        private const int CooldownMilliseconds = 30000;
         private int _requestCount;
 
         public async Task WaitAsync(CancellationToken token)
         {
             if (_requestCount > 0)
-                await Task.Delay(5000, token);
+                await Task.Delay(RequestDelayMilliseconds, token);
 
             _requestCount++;
+            if (_requestCount % CooldownEvery == 0)
+                await Task.Delay(CooldownMilliseconds, token);
         }
     }
 
@@ -272,7 +277,12 @@ public class QuestDataLoaderService : IQuestDataLoaderService
 
         _flash.SetGameObject("world.questTree", new ExpandoObject());
         _quests.Load(Enumerable.Range(startId, endId - startId + 1).ToArray());
+
+        // ForQuestLoad can complete against a stale tree-count increase, so it is
+        // only an early signal. Allow the response to finish populating the tree
+        // before taking the batch snapshot.
         _wait.ForQuestLoad(startId, endId, 100);
+        await Task.Delay(3000, token);
 
         if (token.IsCancellationRequested || !_player.LoggedIn)
             return new();
