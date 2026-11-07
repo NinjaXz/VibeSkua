@@ -162,14 +162,26 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
             }
 
 
-            if (needsConfig)
+            // A saved enum choice the script no longer has was reset to its default on load: show the options
+            // window with the explanation before the script runs, even if the script skips its own options window.
+            bool hasResets = Config != null && Config.ResetNotices.Count > 0;
+            if (hasResets)
+            {
+                foreach (string notice in Config!.ResetNotices)
+                    _logger.ScriptLog($"[Options] {notice}");
+            }
+
+            if (needsConfig || hasResets)
             {
                 if (!SilentConfig)
                     await Task.Run(() => Config!.Configure());
 
-                lock (_configuredLock)
+                if (needsConfig)
                 {
-                    _configured[Config!.Storage] = true;
+                    lock (_configuredLock)
+                    {
+                        _configured[Config!.Storage] = true;
+                    }
                 }
             }
 
