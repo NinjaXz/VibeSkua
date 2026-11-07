@@ -33,6 +33,11 @@ public interface IOptionContainer
     Dictionary<IOption, string> OptionValues { get; }
 
     /// <summary>
+    /// One line per saved enum choice that the last <see cref="Load"/> found no longer valid and reset to its default.
+    /// </summary>
+    IReadOnlyList<string> ResetNotices => Array.Empty<string>();
+
+    /// <summary>
     /// Gets the option's value.
     /// </summary>
     /// <typeparam name="T">The type to return the value as.</typeparam>

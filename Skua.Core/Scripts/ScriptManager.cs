@@ -113,6 +113,8 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
 
     public IScriptOptionContainer? Config { get; set; }
 
+    public IScriptOptionContainer? RunningConfig { get; private set; }
+
     public string? OverrideStorage { get; set; }
     public bool SilentConfig { get; set; }
 
@@ -139,6 +141,12 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
             scriptCorrelationId = _scriptRunId!;
         }
 
+        bool startAnnounced = false;
+
+        // Read before the first await: callers (scheduler, Army Queue) set and clear OverrideStorage around their
+        // own work, so it may belong to another task by the time this start builds its options.
+        string? overrideStorage = OverrideStorage;
+
         using IDiagnosticActivity startActivity = _diagnostics.BeginActivity("Script", "Start", scriptCorrelationId);
 
         try
@@ -150,26 +158,45 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
             string scriptContent = File.ReadAllText(LoadedScript);
             object? script = await Task.Run(() => Compile(scriptContent));
 
-            LoadScriptConfig(script);
+            // Use this start's own container throughout: Config is shared and another configuration task (e.g. the
+            // Army Queue) can replace it while this start awaits.
+            IScriptOptionContainer? config = BuildScriptConfig(script, overrideStorage);
+            if (config is not null)
+                Config = config;
 
-            bool hasOptions = Config != null && (Config.Options.Count > 0 || Config.MultipleOptions.Count > 0);
+            bool hasOptions = config != null && (config.Options.Count > 0 || config.MultipleOptions.Count > 0);
             bool needsConfig;
             lock (_configuredLock)
             {
-                needsConfig = hasOptions && _configured.TryGetValue(Config!.Storage, out bool b) && !b;
+                needsConfig = hasOptions && _configured.TryGetValue(config!.Storage, out bool b) && !b;
             }
 
+            // A saved enum choice the script no longer has was reset to its default on load: show the options
+            // window with the explanation before the script runs, even if the script skips its own options window.
+            bool hasResets = config != null && config.ResetNotices.Count > 0;
 
-            if (needsConfig)
+            if (needsConfig || hasResets)
             {
                 if (!SilentConfig)
-                    await Task.Run(() => Config!.Configure());
-
-                lock (_configuredLock)
+                    await Task.Run(() => config!.Configure());
+                else if (hasResets)
                 {
-                    _configured[Config!.Storage] = true;
+                    foreach (string notice in config!.ResetNotices)
+                        _logger.ScriptLog($"[Options] {notice}");
+                }
+
+                if (needsConfig)
+                {
+                    lock (_configuredLock)
+                    {
+                        _configured[config!.Storage] = true;
+                    }
                 }
             }
+
+            // The running script reads Bot.Config through RunningConfig, which only this run sets, so a later
+            // change to Config by another configuration task doesn't reach it. Cleared when the run ends.
+            RunningConfig = config;
 
             Handlers.Clear();
 
@@ -261,6 +288,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
                     ScriptPaused = false;
                     _diagnostics.RecordEvent("Script", "Stopped", correlationId: scriptCorrelationId);
                     StrongReferenceMessenger.Default.Send<ScriptStoppedMessage, int>((int)MessageChannels.ScriptStatus);
+                    RunningConfig = null;
                     ScriptRunning = false;
                     lock (_threadLock)
                     {
@@ -274,14 +302,18 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
                 IsBackground = true
             };
 
+            // Announce the start before the thread runs: a script that ends at once sends its stopped (and error)
+            // messages from its own thread, and those must not reach listeners before this one (the loader would
+            // stay "[Running]", the feed would log the start after the stop).
+            StrongReferenceMessenger.Default.Send<ScriptStartedMessage, int>((int)MessageChannels.ScriptStatus);
+            startAnnounced = true;
+            _diagnostics.RecordEvent("Script", "Started", correlationId: scriptCorrelationId);
+
             lock (_threadLock)
             {
                 _currentScriptThread = scriptThread;
                 scriptThread.Start();
             }
-
-            StrongReferenceMessenger.Default.Send<ScriptStartedMessage, int>((int)MessageChannels.ScriptStatus);
-            _diagnostics.RecordEvent("Script", "Started", correlationId: scriptCorrelationId);
 
             return null;
         }
@@ -293,6 +325,9 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
                 ScriptRunning = false;
                 _scriptRunId = null;
             }
+            // Started was sent but the thread never ran: close the run for its listeners.
+            if (startAnnounced)
+                StrongReferenceMessenger.Default.Send<ScriptStoppedMessage, int>((int)MessageChannels.ScriptStatus);
             return e;
         }
     }
@@ -672,10 +707,17 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
 
     public void LoadScriptConfig(object? script)
     {
-        if (script is null)
-            return;
+        IScriptOptionContainer? opts = BuildScriptConfig(script, OverrideStorage);
+        if (opts is not null)
+            Config = opts;
+    }
 
-        IScriptOptionContainer opts = Config = Ioc.Default.GetRequiredService<IScriptOptionContainer>();
+    private IScriptOptionContainer? BuildScriptConfig(object? script, string? overrideStorage)
+    {
+        if (script is null)
+            return null;
+
+        IScriptOptionContainer opts = Ioc.Default.GetRequiredService<IScriptOptionContainer>();
         Type t = script.GetType();
         FieldInfo? storageField = t.GetField("OptionsStorage");
         FieldInfo? optsField = t.GetField("Options");
@@ -700,7 +742,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
         }
         if (optsField is not null)
             opts.Options.AddRange((List<IOption>)optsField.GetValue(script)!);
-        if (!string.IsNullOrWhiteSpace(OverrideStorage)) opts.Storage = OverrideStorage; else if (storageField is not null) opts.Storage = (string)storageField.GetValue(script)!;
+        if (!string.IsNullOrWhiteSpace(overrideStorage)) opts.Storage = overrideStorage; else if (storageField is not null) opts.Storage = (string)storageField.GetValue(script)!;
         lock (_configuredLock)
         {
             if (dontPreconfField is not null)
@@ -711,6 +753,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
 
         opts.SetDefaults();
         opts.Load();
+        return opts;
     }
 
     private static bool CanLoadAssembly(string path)

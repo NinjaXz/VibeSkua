@@ -30,4 +30,9 @@ public class SettingsService : ISettingsService
     public void SetApplicationVersion() => _settings.SetApplicationVersion();
 
     public void ReloadSettings() => _settings.ReloadSettings();
+
+    public bool TryReloadSettings() => _settings.TryReloadSettings();
+
+    public bool TryUpdate<T>(string key, T defaultValue, System.Func<T, T> change, out T result) =>
+        _settings.TryUpdate(key, defaultValue, change, out result);
 }

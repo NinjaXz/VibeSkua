@@ -63,7 +63,7 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
     public IScriptHandlers Handlers { get; }
     public ICaptureProxy GameProxy { get; }
     public IScriptAccounts Accounts { get; }
-    public IScriptOptionContainer? Config => Manager.Config;
+    public IScriptOptionContainer? Config => Manager.RunningConfig ?? Manager.Config;
     public Random Random { get; set; } = new Random();
 
     public ScriptInterface(

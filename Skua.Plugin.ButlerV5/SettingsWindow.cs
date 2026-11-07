@@ -161,7 +161,7 @@ public sealed class SettingsWindow : Window
 
         Grid.SetColumn(right, 2);
         root.Children.Add(right);
-        Content = root;
+        AvaloniaUi.SetContent(this, root);
 
         RefreshLog();
         _logTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
