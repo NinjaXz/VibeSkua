@@ -15,6 +15,9 @@ public class OptionContainer : ObservableObject, IOptionContainer
     public Dictionary<IOption, string> OptionValues { get; } = new();
     public virtual string OptionsFile { get; set; } = string.Empty;
 
+    private readonly List<string> _resetNotices = new();
+    public IReadOnlyList<string> ResetNotices => _resetNotices;
+
     public OptionContainer(IDialogService dialogService)
     {
         _dialogService = dialogService;
@@ -104,6 +107,7 @@ public class OptionContainer : ObservableObject, IOptionContainer
 
     public void Load()
     {
+        _resetNotices.Clear();
         if (string.IsNullOrWhiteSpace(OptionsFile) || !File.Exists(OptionsFile))
         {
             return;
@@ -139,11 +143,31 @@ public class OptionContainer : ObservableObject, IOptionContainer
                         }
                 }
             }
+            ResetRemovedEnumChoices();
             OnPropertyChanged(nameof(MultipleOptions));
             OnPropertyChanged(nameof(OptionValues));
             OnPropertyChanged(nameof(Options));
         }
         catch { }
+    }
+
+    // A saved enum choice the script no longer declares (removed or renamed) would make Get<T> throw.
+    // Put that option back to its default in memory only; the file changes when the user saves.
+    private void ResetRemovedEnumChoices()
+    {
+        foreach (IOption option in Options.Concat(MultipleOptions.Values.SelectMany(l => l)))
+        {
+            if (!option.Type.IsEnum
+                || !OptionValues.TryGetValue(option, out string? saved)
+                || string.IsNullOrEmpty(saved)
+                || Enum.GetNames(option.Type).Contains(saved.Replace(' ', '_')))
+                continue;
+
+            string defaultValue = option.DefaultValue?.ToString() ?? string.Empty;
+            OptionValues[option] = defaultValue;
+            string name = string.IsNullOrWhiteSpace(option.DisplayName) ? option.Name : option.DisplayName;
+            _resetNotices.Add($"{name}: \"{saved}\" is no longer a choice, reset to the default \"{defaultValue}\".");
+        }
     }
 
     public void Save()
