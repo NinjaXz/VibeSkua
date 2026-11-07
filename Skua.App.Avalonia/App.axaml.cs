@@ -82,6 +82,7 @@ public partial class App : Application
     public override void OnFrameworkInitializationCompleted()
     {
         RegisterGlobalExceptionHandlers();
+        Skua.Shared.Avalonia.Services.PointerCaptureReset.Track();
 
         ServiceCollection services = new();
         services.AddCommonServices();
