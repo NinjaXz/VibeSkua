@@ -48,7 +48,7 @@ public class OptionContainer : ObservableObject, IOptionContainer
             ? string.IsNullOrEmpty(value)
                 ? default
                 : typeof(T).IsEnum
-                ? (T)Enum.Parse(typeof(T), value.Replace(' ', '_'))
+                ? (T)Enum.Parse(typeof(T), ToEnumText(value))
                 : (T)Convert.ChangeType(value, typeof(T))
             : default;
     }
@@ -94,7 +94,7 @@ public class OptionContainer : ObservableObject, IOptionContainer
         {
             if (optionViewModel.Type.IsEnum)
             {
-                string enumStr = optionViewModel.SelectedValue?.Replace(' ', '_') ?? string.Empty;
+                string enumStr = ToEnumText(optionViewModel.SelectedValue ?? string.Empty);
                 Set(optionViewModel.Option, enumStr);
             }
             else
@@ -151,6 +151,16 @@ public class OptionContainer : ObservableObject, IOptionContainer
         catch { }
     }
 
+    /// <summary>
+    /// Turns enum option text (as saved or as shown, spaces for underscores) into text <see cref="Enum.Parse(Type, string)"/>
+    /// accepts: each comma-separated name is trimmed and its inner spaces become underscores, so a flags value such as
+    /// "A, B" keeps its separator.
+    /// </summary>
+    public static string ToEnumText(string value)
+    {
+        return string.Join(", ", value.Split(',').Select(name => name.Trim().Replace(' ', '_')));
+    }
+
     // A saved enum choice the script no longer declares (removed or renamed) would make Get<T> throw.
     // Put that option back to its default in memory only; the file changes when the user saves.
     // Parsed exactly as Get<T> does, so numeric and flags values it accepts are kept.
@@ -161,7 +171,7 @@ public class OptionContainer : ObservableObject, IOptionContainer
             if (!option.Type.IsEnum
                 || !OptionValues.TryGetValue(option, out string? saved)
                 || string.IsNullOrEmpty(saved)
-                || Enum.TryParse(option.Type, saved.Replace(' ', '_'), out _))
+                || Enum.TryParse(option.Type, ToEnumText(saved), out _))
                 continue;
 
             string defaultValue = option.DefaultValue?.ToString() ?? string.Empty;

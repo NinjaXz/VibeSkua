@@ -29,7 +29,7 @@ public partial class OptionContainerItemViewModel : ObservableObject, IOptionCon
             // A numeric or flags value Get<T> accepts: show its name, or keep it as its own entry so Save writes it back.
             if (!EnumValues.Contains(displayStr)
                 && !string.IsNullOrEmpty(currentRawVal)
-                && Enum.TryParse(Type, currentRawVal.Replace(' ', '_'), out object? parsed))
+                && Enum.TryParse(Type, OptionContainer.ToEnumText(currentRawVal), out object? parsed))
             {
                 string parsedStr = parsed?.ToString()?.Replace('_', ' ') ?? string.Empty;
                 if (EnumValues.Contains(parsedStr))

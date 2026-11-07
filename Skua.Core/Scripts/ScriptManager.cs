@@ -113,6 +113,8 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
 
     public IScriptOptionContainer? Config { get; set; }
 
+    public IScriptOptionContainer? RunningConfig { get; private set; }
+
     public string? OverrideStorage { get; set; }
     public bool SilentConfig { get; set; }
 
@@ -141,6 +143,10 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
 
         bool startAnnounced = false;
 
+        // Read before the first await: callers (scheduler, Army Queue) set and clear OverrideStorage around their
+        // own work, so it may belong to another task by the time this start builds its options.
+        string? overrideStorage = OverrideStorage;
+
         using IDiagnosticActivity startActivity = _diagnostics.BeginActivity("Script", "Start", scriptCorrelationId);
 
         try
@@ -154,7 +160,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
 
             // Use this start's own container throughout: Config is shared and another configuration task (e.g. the
             // Army Queue) can replace it while this start awaits.
-            IScriptOptionContainer? config = BuildScriptConfig(script);
+            IScriptOptionContainer? config = BuildScriptConfig(script, overrideStorage);
             if (config is not null)
                 Config = config;
 
@@ -188,9 +194,9 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
                 }
             }
 
-            // The script reads Bot.Config (this manager's Config): make sure it gets the container loaded above.
-            if (config is not null)
-                Config = config;
+            // The running script reads Bot.Config through RunningConfig, which only this run sets, so a later
+            // change to Config by another configuration task doesn't reach it. Cleared when the run ends.
+            RunningConfig = config;
 
             Handlers.Clear();
 
@@ -282,6 +288,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
                     ScriptPaused = false;
                     _diagnostics.RecordEvent("Script", "Stopped", correlationId: scriptCorrelationId);
                     StrongReferenceMessenger.Default.Send<ScriptStoppedMessage, int>((int)MessageChannels.ScriptStatus);
+                    RunningConfig = null;
                     ScriptRunning = false;
                     lock (_threadLock)
                     {
@@ -700,12 +707,12 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
 
     public void LoadScriptConfig(object? script)
     {
-        IScriptOptionContainer? opts = BuildScriptConfig(script);
+        IScriptOptionContainer? opts = BuildScriptConfig(script, OverrideStorage);
         if (opts is not null)
             Config = opts;
     }
 
-    private IScriptOptionContainer? BuildScriptConfig(object? script)
+    private IScriptOptionContainer? BuildScriptConfig(object? script, string? overrideStorage)
     {
         if (script is null)
             return null;
@@ -735,7 +742,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
         }
         if (optsField is not null)
             opts.Options.AddRange((List<IOption>)optsField.GetValue(script)!);
-        if (!string.IsNullOrWhiteSpace(OverrideStorage)) opts.Storage = OverrideStorage; else if (storageField is not null) opts.Storage = (string)storageField.GetValue(script)!;
+        if (!string.IsNullOrWhiteSpace(overrideStorage)) opts.Storage = overrideStorage; else if (storageField is not null) opts.Storage = (string)storageField.GetValue(script)!;
         lock (_configuredLock)
         {
             if (dontPreconfField is not null)

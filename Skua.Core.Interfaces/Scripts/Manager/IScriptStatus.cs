@@ -41,6 +41,12 @@ public interface IScriptStatus
     IScriptOptionContainer? Config { get; set; }
 
     /// <summary>
+    /// The option container of the script that is running now, set by its start and cleared when it ends; null when
+    /// no script runs. Unlike <see cref="Config"/>, configuring another script doesn't replace it.
+    /// </summary>
+    IScriptOptionContainer? RunningConfig { get; }
+
+    /// <summary>
     /// Asynchronously restarts the currently running script.
     /// </summary>
     /// <returns>A task that represents the asynchronous restart operation.</returns>
