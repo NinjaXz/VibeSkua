@@ -153,6 +153,7 @@ public class OptionContainer : ObservableObject, IOptionContainer
 
     // A saved enum choice the script no longer declares (removed or renamed) would make Get<T> throw.
     // Put that option back to its default in memory only; the file changes when the user saves.
+    // Parsed exactly as Get<T> does, so numeric and flags values it accepts are kept.
     private void ResetRemovedEnumChoices()
     {
         foreach (IOption option in Options.Concat(MultipleOptions.Values.SelectMany(l => l)))
@@ -160,7 +161,7 @@ public class OptionContainer : ObservableObject, IOptionContainer
             if (!option.Type.IsEnum
                 || !OptionValues.TryGetValue(option, out string? saved)
                 || string.IsNullOrEmpty(saved)
-                || Enum.GetNames(option.Type).Contains(saved.Replace(' ', '_')))
+                || Enum.TryParse(option.Type, saved.Replace(' ', '_'), out _))
                 continue;
 
             string defaultValue = option.DefaultValue?.ToString() ?? string.Empty;

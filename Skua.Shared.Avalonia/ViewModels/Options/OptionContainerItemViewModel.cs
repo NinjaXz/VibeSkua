@@ -26,6 +26,17 @@ public partial class OptionContainerItemViewModel : ObservableObject, IOptionCon
                 EnumValues.Add(name.Replace('_', ' '));
 
             string displayStr = currentRawVal.Replace('_', ' ');
+            // A numeric or flags value Get<T> accepts: show its name, or keep it as its own entry so Save writes it back.
+            if (!EnumValues.Contains(displayStr)
+                && !string.IsNullOrEmpty(currentRawVal)
+                && Enum.TryParse(Type, currentRawVal.Replace(' ', '_'), out object? parsed))
+            {
+                string parsedStr = parsed?.ToString()?.Replace('_', ' ') ?? string.Empty;
+                if (EnumValues.Contains(parsedStr))
+                    displayStr = parsedStr;
+                else
+                    EnumValues.Add(displayStr);
+            }
             SelectedValue = EnumValues.Contains(displayStr)
                 ? displayStr
                 : (EnumValues.Count > 0 ? EnumValues[0] : string.Empty);

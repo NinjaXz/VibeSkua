@@ -152,38 +152,45 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
             string scriptContent = File.ReadAllText(LoadedScript);
             object? script = await Task.Run(() => Compile(scriptContent));
 
-            LoadScriptConfig(script);
+            // Use this start's own container throughout: Config is shared and another configuration task (e.g. the
+            // Army Queue) can replace it while this start awaits.
+            IScriptOptionContainer? config = BuildScriptConfig(script);
+            if (config is not null)
+                Config = config;
 
-            bool hasOptions = Config != null && (Config.Options.Count > 0 || Config.MultipleOptions.Count > 0);
+            bool hasOptions = config != null && (config.Options.Count > 0 || config.MultipleOptions.Count > 0);
             bool needsConfig;
             lock (_configuredLock)
             {
-                needsConfig = hasOptions && _configured.TryGetValue(Config!.Storage, out bool b) && !b;
+                needsConfig = hasOptions && _configured.TryGetValue(config!.Storage, out bool b) && !b;
             }
-
 
             // A saved enum choice the script no longer has was reset to its default on load: show the options
             // window with the explanation before the script runs, even if the script skips its own options window.
-            bool hasResets = Config != null && Config.ResetNotices.Count > 0;
-            if (hasResets)
-            {
-                foreach (string notice in Config!.ResetNotices)
-                    _logger.ScriptLog($"[Options] {notice}");
-            }
+            bool hasResets = config != null && config.ResetNotices.Count > 0;
 
             if (needsConfig || hasResets)
             {
                 if (!SilentConfig)
-                    await Task.Run(() => Config!.Configure());
+                    await Task.Run(() => config!.Configure());
+                else if (hasResets)
+                {
+                    foreach (string notice in config!.ResetNotices)
+                        _logger.ScriptLog($"[Options] {notice}");
+                }
 
                 if (needsConfig)
                 {
                     lock (_configuredLock)
                     {
-                        _configured[Config!.Storage] = true;
+                        _configured[config!.Storage] = true;
                     }
                 }
             }
+
+            // The script reads Bot.Config (this manager's Config): make sure it gets the container loaded above.
+            if (config is not null)
+                Config = config;
 
             Handlers.Clear();
 
@@ -693,10 +700,17 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
 
     public void LoadScriptConfig(object? script)
     {
-        if (script is null)
-            return;
+        IScriptOptionContainer? opts = BuildScriptConfig(script);
+        if (opts is not null)
+            Config = opts;
+    }
 
-        IScriptOptionContainer opts = Config = Ioc.Default.GetRequiredService<IScriptOptionContainer>();
+    private IScriptOptionContainer? BuildScriptConfig(object? script)
+    {
+        if (script is null)
+            return null;
+
+        IScriptOptionContainer opts = Ioc.Default.GetRequiredService<IScriptOptionContainer>();
         Type t = script.GetType();
         FieldInfo? storageField = t.GetField("OptionsStorage");
         FieldInfo? optsField = t.GetField("Options");
@@ -732,6 +746,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
 
         opts.SetDefaults();
         opts.Load();
+        return opts;
     }
 
     private static bool CanLoadAssembly(string path)
