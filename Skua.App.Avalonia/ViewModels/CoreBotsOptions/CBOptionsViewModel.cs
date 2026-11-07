@@ -73,7 +73,9 @@ public class CBOptionsViewModel : ObservableObject, IManageCBOptions
                 try
                 {
                     option.Value = option.DisplayType == typeof(int)
-                        ? long.TryParse(value, out long longValue) ? longValue is > int.MaxValue or < int.MinValue ? 100000 : (int)longValue : 100000
+                        ? long.TryParse(value, out long longValue) && longValue is >= int.MinValue and <= int.MaxValue
+                            ? (int)longValue
+                            : DefaultValues[option.Tag]
                         : Convert.ChangeType(value, option.DisplayType);
                 }
                 catch (Exception)
