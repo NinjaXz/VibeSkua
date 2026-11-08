@@ -303,16 +303,18 @@ public class QuestDataLoaderService : IQuestDataLoaderService
         progress?.Report($"Disconnected while loading {startId}-{endId}. Saved range to QuestLoadFailures.txt.");
     }
 
-    private bool WasDisconnected => !_player.LoggedIn || Volatile.Read(ref _reloginTriggered) != 0;
+    private bool IsReadyForQuestLoading => _player.LoggedIn && _flash.IsWorldLoaded && !_player.Kicked;
+
+    private bool WasDisconnected => !IsReadyForQuestLoading || Volatile.Read(ref _reloginTriggered) != 0;
 
     private async Task<bool> WaitForReconnectAsync(IProgress<string>? progress, CancellationToken token)
     {
-        progress?.Report("Waiting for the player to reconnect before continuing quest loading...");
-        bool observedDisconnect = !_player.LoggedIn;
+        progress?.Report("Waiting for the login screen to clear and the game world to finish loading...");
+        bool observedDisconnect = !IsReadyForQuestLoading;
 
         while (!token.IsCancellationRequested)
         {
-            if (!_player.LoggedIn)
+            if (!IsReadyForQuestLoading)
                 observedDisconnect = true;
             else if (observedDisconnect)
                 return true;
@@ -325,7 +327,7 @@ public class QuestDataLoaderService : IQuestDataLoaderService
 
     private async Task<List<Quest>> RequestQuestRangeAsync(int startId, int endId, QuestRequestThrottle throttle, CancellationToken token, bool waitBeforeRequest = true)
     {
-        if (token.IsCancellationRequested || !_player.LoggedIn)
+        if (token.IsCancellationRequested || !IsReadyForQuestLoading)
             return new();
 
         Interlocked.Exchange(ref _reloginTriggered, 0);
@@ -333,7 +335,7 @@ public class QuestDataLoaderService : IQuestDataLoaderService
         if (waitBeforeRequest)
             await throttle.WaitAsync(token);
 
-        if (token.IsCancellationRequested || !_player.LoggedIn || Volatile.Read(ref _reloginTriggered) != 0)
+        if (token.IsCancellationRequested || !IsReadyForQuestLoading || Volatile.Read(ref _reloginTriggered) != 0)
             return new();
         _flash.SetGameObject("world.questTree", new ExpandoObject());
         _quests.Load(Enumerable.Range(startId, endId - startId + 1).ToArray());
