@@ -16,6 +16,7 @@ public class QuestDataLoaderService : IQuestDataLoaderService
         _flash = flash;
         _player = player;
         _wait = wait;
+        StrongReferenceMessenger.Default.Register<QuestDataLoaderService, PlayerDisconnectedMessage, int>(this, (int)MessageChannels.GameEvents, (recipient, message) => Volatile.Write(ref recipient._reloginTriggered, 1));
         StrongReferenceMessenger.Default.Register<QuestDataLoaderService, LogoutMessage, int>(this, (int)MessageChannels.GameEvents, (recipient, message) => Volatile.Write(ref recipient._reloginTriggered, 1));
         StrongReferenceMessenger.Default.Register<QuestDataLoaderService, ReloginTriggeredMessage, int>(this, (int)MessageChannels.GameEvents, (recipient, message) => Volatile.Write(ref recipient._reloginTriggered, 1));
     }
@@ -327,13 +328,13 @@ public class QuestDataLoaderService : IQuestDataLoaderService
         if (token.IsCancellationRequested || !_player.LoggedIn)
             return new();
 
+        Interlocked.Exchange(ref _reloginTriggered, 0);
+
         if (waitBeforeRequest)
             await throttle.WaitAsync(token);
 
-        if (token.IsCancellationRequested || !_player.LoggedIn)
+        if (token.IsCancellationRequested || !_player.LoggedIn || Volatile.Read(ref _reloginTriggered) != 0)
             return new();
-
-        Interlocked.Exchange(ref _reloginTriggered, 0);
         _flash.SetGameObject("world.questTree", new ExpandoObject());
         _quests.Load(Enumerable.Range(startId, endId - startId + 1).ToArray());
         _wait.ForQuestLoad(startId, endId, 100);
