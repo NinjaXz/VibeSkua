@@ -1,7 +1,9 @@
-﻿using Newtonsoft.Json;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using Newtonsoft.Json;
 using Skua.Core.Interfaces;
 using Skua.Core.Models;
 using Skua.Core.Models.Quests;
+using Skua.Core.Messaging;
 using System.Dynamic;
 
 namespace Skua.Core.Services;
@@ -14,12 +16,14 @@ public class QuestDataLoaderService : IQuestDataLoaderService
         _flash = flash;
         _player = player;
         _wait = wait;
+        StrongReferenceMessenger.Default.Register<QuestDataLoaderService, ReloginTriggeredMessage, int>(this, (int)MessageChannels.GameEvents, (recipient, message) => Volatile.Write(ref recipient._reloginTriggered, 1));
     }
 
     private readonly IScriptQuest _quests;
     private readonly IFlashUtil _flash;
     private readonly IScriptPlayer _player;
     private readonly IScriptWait _wait;
+    private int _reloginTriggered;
     private readonly Dictionary<string, List<QuestData>?> _cachedQuests = new();
 
     public void ClearCache()
@@ -85,7 +89,7 @@ public class QuestDataLoaderService : IQuestDataLoaderService
                 {
                     loadedQuests = await RequestQuestRangeAsync(i, rangeEnd, throttle, token);
                 }
-                catch (Exception ex) when (!_player.LoggedIn)
+                catch (Exception ex) when (WasDisconnected)
                 {
                     await RecordFailedRangeAsync(i, rangeEnd, progress);
                     if (!await WaitForReconnectAsync(progress, token))
@@ -94,7 +98,7 @@ public class QuestDataLoaderService : IQuestDataLoaderService
                     continue;
                 }
 
-                if (!_player.LoggedIn)
+                if (WasDisconnected)
                 {
                     await RecordFailedRangeAsync(i, rangeEnd, progress);
                     if (!await WaitForReconnectAsync(progress, token))
@@ -297,14 +301,24 @@ public class QuestDataLoaderService : IQuestDataLoaderService
         progress?.Report($"Disconnected while loading {startId}-{endId}. Saved range to QuestLoadFailures.txt.");
     }
 
+    private bool WasDisconnected => !_player.LoggedIn || Volatile.Read(ref _reloginTriggered) != 0;
+
     private async Task<bool> WaitForReconnectAsync(IProgress<string>? progress, CancellationToken token)
     {
         progress?.Report("Waiting for the player to reconnect before continuing quest loading...");
+        bool observedDisconnect = !_player.LoggedIn;
 
-        while (!_player.LoggedIn && !token.IsCancellationRequested)
-            await Task.Delay(1000, token);
+        while (!token.IsCancellationRequested)
+        {
+            if (!_player.LoggedIn)
+                observedDisconnect = true;
+            else if (observedDisconnect)
+                return true;
 
-        return _player.LoggedIn && !token.IsCancellationRequested;
+            await Task.Delay(250, token);
+        }
+
+        return false;
     }
 
     private async Task<List<Quest>> RequestQuestRangeAsync(int startId, int endId, QuestRequestThrottle throttle, CancellationToken token, bool waitBeforeRequest = true)
@@ -318,11 +332,12 @@ public class QuestDataLoaderService : IQuestDataLoaderService
         if (token.IsCancellationRequested || !_player.LoggedIn)
             return new();
 
+        Interlocked.Exchange(ref _reloginTriggered, 0);
         _flash.SetGameObject("world.questTree", new ExpandoObject());
         _quests.Load(Enumerable.Range(startId, endId - startId + 1).ToArray());
         _wait.ForQuestLoad(startId, endId, 100);
 
-        if (token.IsCancellationRequested || !_player.LoggedIn)
+        if (token.IsCancellationRequested || WasDisconnected)
             return new();
 
         return _quests.Tree.Where(q => q.ID >= startId && q.ID <= endId).ToList();
