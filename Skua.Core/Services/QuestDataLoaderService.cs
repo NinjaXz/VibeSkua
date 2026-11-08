@@ -80,11 +80,25 @@ public class QuestDataLoaderService : IQuestDataLoaderService
                 int rangeEnd = Math.Min(i + 28, safeMaximum);
                 progress?.Report($"Loading Quests {i}-{rangeEnd}...");
 
-                List<Quest> loadedQuests = await FetchRangeWithFallbackAsync(i, rangeEnd, throttle, token);
+                List<Quest> loadedQuests;
+                try
+                {
+                    loadedQuests = await RequestQuestRangeAsync(i, rangeEnd, throttle, token);
+                }
+                catch (Exception ex) when (!_player.LoggedIn)
+                {
+                    await RecordFailedRangeAsync(i, rangeEnd, progress);
+                    if (!await WaitForReconnectAsync(progress, token))
+                        break;
+
+                    continue;
+                }
+
                 if (!_player.LoggedIn)
                 {
-                    progress?.Report($"Disconnected while loading quests {i}-{rangeEnd}. Stopping without guessing which ID caused it.");
-                    break;
+                    await RecordFailedRangeAsync(i, rangeEnd, progress);
+                    if (!await WaitForReconnectAsync(progress, token))
+                        break;
                 }
 
                 if (token.IsCancellationRequested)
@@ -187,11 +201,25 @@ public class QuestDataLoaderService : IQuestDataLoaderService
                 int rangeEnd = i + questCount - 1;
                 progress?.Report($"Loading Quests {i}-{rangeEnd}...");
 
-                List<Quest> loadedQuests = await FetchRangeWithFallbackAsync(i, rangeEnd, throttle, token);
+                List<Quest> loadedQuests;
+                try
+                {
+                    loadedQuests = await RequestQuestRangeAsync(i, rangeEnd, throttle, token);
+                }
+                catch (Exception ex) when (!_player.LoggedIn)
+                {
+                    await RecordFailedRangeAsync(i, rangeEnd, progress);
+                    if (!await WaitForReconnectAsync(progress, token))
+                        break;
+
+                    continue;
+                }
+
                 if (!_player.LoggedIn)
                 {
-                    progress?.Report($"Disconnected while loading quests {i}-{rangeEnd}. Stopping.");
-                    break;
+                    await RecordFailedRangeAsync(i, rangeEnd, progress);
+                    if (!await WaitForReconnectAsync(progress, token))
+                        break;
                 }
 
                 if (token.IsCancellationRequested)
@@ -220,7 +248,6 @@ public class QuestDataLoaderService : IQuestDataLoaderService
     private const int DefaultKnownQuestMaxId = 10882;
     private const int MaxQuestProbeId = 13000;
     private const int MaxEmptyBatches = 10;
-    private const int QuestSubBatchSize = 5;
 
     private sealed class QuestRequestThrottle
     {
@@ -259,6 +286,23 @@ public class QuestDataLoaderService : IQuestDataLoaderService
         return Math.Max(DefaultKnownQuestMaxId, Math.Max(cachedMaximum, testedMaximum));
     }
 
+    private static async Task RecordFailedRangeAsync(int startId, int endId, IProgress<string>? progress)
+    {
+        string failedRangesPath = Path.Combine(ClientFileSources.SkuaDIR, "QuestLoadFailures.txt");
+        await File.AppendAllTextAsync(failedRangesPath, $"{startId}-{endId}{Environment.NewLine}", CancellationToken.None);
+        progress?.Report($"Disconnected while loading {startId}-{endId}. Saved range to QuestLoadFailures.txt.");
+    }
+
+    private async Task<bool> WaitForReconnectAsync(IProgress<string>? progress, CancellationToken token)
+    {
+        progress?.Report("Waiting for the player to reconnect before continuing quest loading...");
+
+        while (!_player.LoggedIn && !token.IsCancellationRequested)
+            await Task.Delay(1000, token);
+
+        return _player.LoggedIn && !token.IsCancellationRequested;
+    }
+
     private async Task<List<Quest>> RequestQuestRangeAsync(int startId, int endId, QuestRequestThrottle throttle, CancellationToken token, bool waitBeforeRequest = true)
     {
         if (token.IsCancellationRequested || !_player.LoggedIn)
@@ -278,35 +322,6 @@ public class QuestDataLoaderService : IQuestDataLoaderService
             return new();
 
         return _quests.Tree.Where(q => q.ID >= startId && q.ID <= endId).ToList();
-    }
-
-    private async Task<List<Quest>> FetchRangeWithFallbackAsync(int startId, int endId, QuestRequestThrottle throttle, CancellationToken token)
-    {
-        List<Quest> batch = await RequestQuestRangeAsync(startId, endId, throttle, token);
-        if (batch.Count > 0 || !_player.LoggedIn || token.IsCancellationRequested)
-            return batch;
-
-        List<Quest> found = new();
-        for (int subStart = startId; subStart <= endId && _player.LoggedIn && !token.IsCancellationRequested; subStart += QuestSubBatchSize)
-        {
-            int subEnd = Math.Min(subStart + QuestSubBatchSize - 1, endId);
-            List<Quest> subBatch = await RequestQuestRangeAsync(subStart, subEnd, throttle, token);
-
-            if (subBatch.Count > 0)
-            {
-                found.AddRange(subBatch);
-                continue;
-            }
-
-            for (int probeId = subStart; probeId <= subEnd && _player.LoggedIn && !token.IsCancellationRequested; probeId++)
-            {
-                List<Quest> single = await RequestQuestRangeAsync(probeId, probeId, throttle, token);
-                if (single.Count > 0)
-                    found.AddRange(single);
-            }
-        }
-
-        return found;
     }
 
     private async Task<List<QuestData>> ProbePastCeilingAsync(string fileName, List<QuestData> existingData, IProgress<string>? progress, CancellationToken token)
