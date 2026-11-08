@@ -220,22 +220,17 @@ public class QuestDataLoaderService : IQuestDataLoaderService
     private const int DefaultKnownQuestMaxId = 10882;
     private const int MaxQuestProbeId = 13000;
     private const int MaxEmptyBatches = 10;
+    private const int QuestSubBatchSize = 5;
 
     private sealed class QuestRequestThrottle
     {
-        private const int RequestDelayMilliseconds = 15000;
-        private const int CooldownEvery = 10;
-        private const int CooldownMilliseconds = 30000;
         private int _requestCount;
 
         public async Task WaitAsync(CancellationToken token)
         {
-            if (_requestCount > 0)
-                await Task.Delay(RequestDelayMilliseconds, token);
-
-            _requestCount++;
-            if (_requestCount % CooldownEvery == 0)
-                await Task.Delay(CooldownMilliseconds, token);
+            await Task.Delay(1500, token);
+            if (++_requestCount % 20 == 0)
+                await Task.Delay(5000, token);
         }
     }
 
@@ -277,12 +272,7 @@ public class QuestDataLoaderService : IQuestDataLoaderService
 
         _flash.SetGameObject("world.questTree", new ExpandoObject());
         _quests.Load(Enumerable.Range(startId, endId - startId + 1).ToArray());
-
-        // ForQuestLoad can complete against a stale tree-count increase, so it is
-        // only an early signal. Allow the response to finish populating the tree
-        // before taking the batch snapshot.
         _wait.ForQuestLoad(startId, endId, 100);
-        await Task.Delay(3000, token);
 
         if (token.IsCancellationRequested || !_player.LoggedIn)
             return new();
@@ -290,12 +280,33 @@ public class QuestDataLoaderService : IQuestDataLoaderService
         return _quests.Tree.Where(q => q.ID >= startId && q.ID <= endId).ToList();
     }
 
-    private Task<List<Quest>> FetchRangeWithFallbackAsync(int startId, int endId, QuestRequestThrottle throttle, CancellationToken token)
+    private async Task<List<Quest>> FetchRangeWithFallbackAsync(int startId, int endId, QuestRequestThrottle throttle, CancellationToken token)
     {
-        // Keep normal Loader updates to exactly one getQuests request per batch.
-        // Empty results are not retried with smaller batches because that multiplies
-        // packet traffic and can trigger the server's logout protection.
-        return RequestQuestRangeAsync(startId, endId, throttle, token);
+        List<Quest> batch = await RequestQuestRangeAsync(startId, endId, throttle, token);
+        if (batch.Count > 0 || !_player.LoggedIn || token.IsCancellationRequested)
+            return batch;
+
+        List<Quest> found = new();
+        for (int subStart = startId; subStart <= endId && _player.LoggedIn && !token.IsCancellationRequested; subStart += QuestSubBatchSize)
+        {
+            int subEnd = Math.Min(subStart + QuestSubBatchSize - 1, endId);
+            List<Quest> subBatch = await RequestQuestRangeAsync(subStart, subEnd, throttle, token);
+
+            if (subBatch.Count > 0)
+            {
+                found.AddRange(subBatch);
+                continue;
+            }
+
+            for (int probeId = subStart; probeId <= subEnd && _player.LoggedIn && !token.IsCancellationRequested; probeId++)
+            {
+                List<Quest> single = await RequestQuestRangeAsync(probeId, probeId, throttle, token);
+                if (single.Count > 0)
+                    found.AddRange(single);
+            }
+        }
+
+        return found;
     }
 
     private async Task<List<QuestData>> ProbePastCeilingAsync(string fileName, List<QuestData> existingData, IProgress<string>? progress, CancellationToken token)
