@@ -205,6 +205,11 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
                 _runScriptStoppingBool = false;
             }
 
+            // ScriptRunning is already true while compiling and configuring, so a pause (hotkey or button) can land
+            // before this run has a thread, or in a failed start or the last run's teardown. Start unpaused.
+            ScriptPaused = false;
+            ScriptPauseEvent.Set();
+
             Thread scriptThread = new(() =>
             {
                 Exception? exception = null;
@@ -320,6 +325,8 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
         catch (Exception e)
         {
             _diagnostics.RecordEvent("Script", "StartFailed", correlationId: scriptCorrelationId);
+            ScriptPaused = false;
+            ScriptPauseEvent.Set();
             lock (_threadLock)
             {
                 ScriptRunning = false;

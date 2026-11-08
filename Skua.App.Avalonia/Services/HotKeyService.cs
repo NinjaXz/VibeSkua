@@ -38,9 +38,14 @@ public class HotKeyService : IHotKeyService, IDisposable
     private Window? _mainWindow;
     private volatile bool _isMainWindowActive;
     private volatile bool _disposed;
+    // Keys currently held down. Auto-repeat sends more keydowns while a key is held; a hotkey runs only on the first,
+    // otherwise holding a toggle (start/stop, pause/resume) flips it back and forth. UI thread only.
+    private readonly HashSet<Key> _heldKeys = [];
 #if IS_WINDOWS
     private IntPtr _keyboardHook = IntPtr.Zero;
     private LowLevelKeyboardProc? _keyboardProc;
+    // Same for the keyboard hook, by virtual-key code. Its callback runs on the thread that installed it (UI thread).
+    private readonly HashSet<int> _heldVks = [];
 #endif
 
     public void Reload()
@@ -217,13 +222,17 @@ public class HotKeyService : IHotKeyService, IDisposable
             if (_mainWindow is not null)
             {
                 _mainWindow.RemoveHandler(InputElement.KeyDownEvent, MainWindowOnKeyDown);
+                _mainWindow.RemoveHandler(InputElement.KeyUpEvent, MainWindowOnKeyUp);
                 _mainWindow.Activated -= MainWindowOnActivated;
                 _mainWindow.Deactivated -= MainWindowOnDeactivated;
             }
 
             _mainWindow = desktop.MainWindow;
+            _heldKeys.Clear();
             _mainWindow.RemoveHandler(InputElement.KeyDownEvent, MainWindowOnKeyDown);
             _mainWindow.AddHandler(InputElement.KeyDownEvent, MainWindowOnKeyDown, RoutingStrategies.Tunnel, handledEventsToo: true);
+            _mainWindow.RemoveHandler(InputElement.KeyUpEvent, MainWindowOnKeyUp);
+            _mainWindow.AddHandler(InputElement.KeyUpEvent, MainWindowOnKeyUp, RoutingStrategies.Tunnel, handledEventsToo: true);
             _mainWindow.Activated += MainWindowOnActivated;
             _mainWindow.Deactivated += MainWindowOnDeactivated;
             _isMainWindowActive = _mainWindow.IsActive;
@@ -232,10 +241,19 @@ public class HotKeyService : IHotKeyService, IDisposable
 
     private void MainWindowOnActivated(object? sender, EventArgs e) => _isMainWindowActive = true;
 
-    private void MainWindowOnDeactivated(object? sender, EventArgs e) => _isMainWindowActive = false;
+    private void MainWindowOnDeactivated(object? sender, EventArgs e)
+    {
+        _isMainWindowActive = false;
+        // A key released while another window has focus never sends this window its keyup.
+        _heldKeys.Clear();
+    }
+
+    private void MainWindowOnKeyUp(object? sender, KeyEventArgs e) => _heldKeys.Remove(e.Key);
 
     private void MainWindowOnKeyDown(object? sender, KeyEventArgs e)
     {
+        bool repeat = !_heldKeys.Add(e.Key);
+
         HotKeyBinding[] bindings;
         lock (_bindingsLock)
             bindings = _bindings.ToArray();
@@ -249,7 +267,8 @@ public class HotKeyService : IHotKeyService, IDisposable
             if (!IsKeyMatch(binding.Key, e.Key) || binding.Modifiers != modifiers)
                 continue;
 
-            if (ExecuteBinding(binding))
+            // Held key: it ran on the first keydown; swallow the repeats.
+            if (repeat || ExecuteBinding(binding))
                 e.Handled = true;
             return;
         }
@@ -322,13 +341,19 @@ public class HotKeyService : IHotKeyService, IDisposable
             if (nCode >= 0 && (wParam == (IntPtr)WM_KEYDOWN || wParam == (IntPtr)WM_SYSKEYDOWN))
             {
                 int vkCode = Marshal.ReadInt32(lParam);
+                bool repeat = !_heldVks.Add(vkCode);
                 KeyModifiers modifiers = GetCurrentModifiers();
 
-                if (IsForegroundApplicable() && TryExecuteVirtualBinding(vkCode, modifiers))
+                // Match WPF behavior: consume hotkey once matched. A held key's repeats are consumed without running it.
+                if (IsForegroundApplicable() &&
+                    (repeat ? FindVirtualBinding(vkCode, modifiers) is not null : TryExecuteVirtualBinding(vkCode, modifiers)))
                 {
-                    // Match WPF behavior: consume hotkey once matched.
                     return (IntPtr)1;
                 }
+            }
+            else if (nCode >= 0 && (wParam == (IntPtr)WM_KEYUP || wParam == (IntPtr)WM_SYSKEYUP))
+            {
+                _heldVks.Remove(Marshal.ReadInt32(lParam));
             }
         }
         catch (Exception ex)
@@ -341,8 +366,18 @@ public class HotKeyService : IHotKeyService, IDisposable
 
     private bool TryExecuteVirtualBinding(int vkCode, KeyModifiers modifiers)
     {
-        if (_disposed)
+        HotKeyBinding? binding = FindVirtualBinding(vkCode, modifiers);
+        if (binding is null)
             return false;
+
+        Dispatcher.UIThread.Post(() => ExecuteBinding(binding), DispatcherPriority.Input);
+        return true;
+    }
+
+    private HotKeyBinding? FindVirtualBinding(int vkCode, KeyModifiers modifiers)
+    {
+        if (_disposed)
+            return null;
 
         HotKeyBinding[] bindings;
         lock (_bindingsLock)
@@ -356,11 +391,10 @@ public class HotKeyService : IHotKeyService, IDisposable
             if (!binding.Command.CanExecute(null))
                 continue;
 
-            Dispatcher.UIThread.Post(() => ExecuteBinding(binding), DispatcherPriority.Input);
-            return true;
+            return binding;
         }
 
-        return false;
+        return null;
     }
 
     private static bool IsVkMatch(int? bindingVk, int vkCode)
@@ -613,6 +647,7 @@ public class HotKeyService : IHotKeyService, IDisposable
         if (_mainWindow is not null)
         {
             _mainWindow.RemoveHandler(InputElement.KeyDownEvent, MainWindowOnKeyDown);
+            _mainWindow.RemoveHandler(InputElement.KeyUpEvent, MainWindowOnKeyUp);
             _mainWindow.Activated -= MainWindowOnActivated;
             _mainWindow.Deactivated -= MainWindowOnDeactivated;
         }
@@ -639,6 +674,8 @@ public class HotKeyService : IHotKeyService, IDisposable
     private const int WH_KEYBOARD_LL = 13;
     private const int WM_KEYDOWN = 0x0100;
     private const int WM_SYSKEYDOWN = 0x0104;
+    private const int WM_KEYUP = 0x0101;
+    private const int WM_SYSKEYUP = 0x0105;
     private const int VK_SHIFT = 0x10;
     private const int VK_CONTROL = 0x11;
     private const int VK_MENU = 0x12;
