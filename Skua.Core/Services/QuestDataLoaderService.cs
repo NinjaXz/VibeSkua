@@ -99,6 +99,8 @@ public class QuestDataLoaderService : IQuestDataLoaderService
                     await RecordFailedRangeAsync(i, rangeEnd, progress);
                     if (!await WaitForReconnectAsync(progress, token))
                         break;
+
+                    continue;
                 }
 
                 if (token.IsCancellationRequested)
@@ -220,6 +222,8 @@ public class QuestDataLoaderService : IQuestDataLoaderService
                     await RecordFailedRangeAsync(i, rangeEnd, progress);
                     if (!await WaitForReconnectAsync(progress, token))
                         break;
+
+                    continue;
                 }
 
                 if (token.IsCancellationRequested)
