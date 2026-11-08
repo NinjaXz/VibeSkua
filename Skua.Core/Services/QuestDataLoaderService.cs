@@ -16,6 +16,7 @@ public class QuestDataLoaderService : IQuestDataLoaderService
         _flash = flash;
         _player = player;
         _wait = wait;
+        StrongReferenceMessenger.Default.Register<QuestDataLoaderService, LogoutMessage, int>(this, (int)MessageChannels.GameEvents, (recipient, message) => Volatile.Write(ref recipient._reloginTriggered, 1));
         StrongReferenceMessenger.Default.Register<QuestDataLoaderService, ReloginTriggeredMessage, int>(this, (int)MessageChannels.GameEvents, (recipient, message) => Volatile.Write(ref recipient._reloginTriggered, 1));
     }
 
