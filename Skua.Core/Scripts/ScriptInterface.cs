@@ -340,6 +340,9 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
                 else
                 {
                     catching = false;
+                    if (wasPlaying || Manager.ScriptRunning)
+                        Messenger.Send<PlayerDisconnectedMessage, int>(new(), (int)MessageChannels.GameEvents);
+
                     if ((wasPlaying || Manager.ScriptRunning) && !_waitForLogin && !Servers.IsIntentionalLogout && Options.AutoRelogin && WatchdogEnabled)
                     {
                         wasPlaying = false;
@@ -419,6 +422,7 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
             return (Environment.TickCount, connDetail);
         if (connDetail.Contains("has been lost") && !_waitForLogin)
         {
+            Messenger.Send<PlayerDisconnectedMessage, int>(new(), (int)MessageChannels.GameEvents);
             if (!Servers.IsIntentionalLogout)
             {
                 Log("Connection lost detected. Triggering auto re-login.");
@@ -501,6 +505,7 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
                 break;
 
             case "connectionLost":
+                Messenger.Send<PlayerDisconnectedMessage, int>(new(), (int)MessageChannels.GameEvents);
                 Log("Flash socket connection lost event received.");
                 if (!_waitForLogin && !Servers.IsIntentionalLogout && Options.AutoRelogin && WatchdogEnabled)
                 {
