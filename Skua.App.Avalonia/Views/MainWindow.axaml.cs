@@ -90,6 +90,9 @@ public partial class MainWindow : Window
     private const int WM_SKUA_AUTO_ATTACK = 0x0400 + 459;
     private const int WM_SKUA_OPEN_BANK = 0x0400 + 460;
     private const int WM_SKUA_CHANGE_SERVER = 0x0400 + 465;
+    private const int WM_SKUA_CHILD_OPTION = 0x0400 + 466;
+    // Set while applying an option the host sent, so it isn't echoed back (host and tabs would ping-pong).
+    private bool _applyingHostOption;
 
     private static readonly TimeSpan MetricRefreshInterval = TimeSpan.FromSeconds(1);
 
@@ -125,6 +128,12 @@ public partial class MainWindow : Window
         _flash = Ioc.Default.GetRequiredService<IFlashUtil>();
         _options = Ioc.Default.GetRequiredService<IScriptOption>();
         _startup = Ioc.Default.GetRequiredService<SkuaStartupHandler>();
+        _options.PropertyChanged += (s, e) =>
+        {
+            // The tab host keeps Army Control's Show FPS checkbox; tell it when this tab changes ShowFPS itself.
+            if (e.PropertyName == nameof(IScriptOption.ShowFPS) && !_applyingHostOption && HotKeys.HostHwnd != IntPtr.Zero)
+                PostMessage(HotKeys.HostHwnd, WM_SKUA_CHILD_OPTION, new IntPtr(11), new IntPtr(_options.ShowFPS ? 1 : 0));
+        };
         
         DataContext = _mainViewModel;
         Skua.Shared.Avalonia.Controls.Shell.WindowTitleBar.SetArtworkPath(Ioc.Default.GetRequiredService<ISettingsService>().GetShared().TitleBarArtworkPath);
@@ -654,6 +663,11 @@ public partial class MainWindow : Window
                 case 8: options.UseFunctionBasedSkills = value; break;
                 case 9: options.StreamerMode = value; break;
                 case 10: options.AggroMonsters = value; break;
+                case 11:
+                    _applyingHostOption = true;
+                    try { options.ShowFPS = value; }
+                    finally { _applyingHostOption = false; }
+                    break;
                 case 99:
                     var sm = Ioc.Default.GetRequiredService<Skua.App.Avalonia.ViewModels.ScriptLoaderViewModel>();
                     var scheduler = Ioc.Default.GetRequiredService<Skua.Shared.Avalonia.ViewModels.ScriptSchedulerViewModel>();

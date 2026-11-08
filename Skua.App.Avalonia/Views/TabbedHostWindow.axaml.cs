@@ -46,6 +46,7 @@ public partial class TabbedHostWindow : Window
     private SubclassProc? _subclassProc;
     private const int WM_SKUA_CHILD_READY = 0x0400 + 440;
     private const int WM_SKUA_CHILD_DPICHANGED = 0x0400 + 441;
+    private const int WM_SKUA_CHILD_OPTION = 0x0400 + 466;
 
     [DllImport("user32.dll", SetLastError = true)]
     public static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
@@ -358,6 +359,12 @@ public partial class TabbedHostWindow : Window
         var options = Ioc.Default.GetRequiredService<IScriptOption>();
         MiscOptionsMenu.DataContext = options;
         options.PropertyChanged += Options_PropertyChanged;
+        // ShowFPS reads ui.mcFPS.visible from Flash, which the host doesn't have, so the host keeps this toggle's state itself.
+        MenuShowFps.PropertyChanged += (s, e) =>
+        {
+            if (e.Property == MenuItem.IsCheckedProperty)
+                BroadcastOption(11, MenuShowFps.IsChecked);
+        };
 
         Opened += TabbedHostWindow_Opened;
         PositionChanged += (s, e) => OnWindowPositionChanged(e.Point);
@@ -631,6 +638,20 @@ public partial class TabbedHostWindow : Window
             return IntPtr.Zero;
         }
 
+        // A tab changed ShowFPS itself (hotkey, its options window, a script): match the checkbox, which re-broadcasts
+        // it to every tab.
+        if (uMsg == WM_SKUA_CHILD_OPTION)
+        {
+            int optionId = wParam.ToInt32();
+            bool value = lParam.ToInt32() == 1;
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (!_isClosing && optionId == 11)
+                    MenuShowFps.IsChecked = value;
+            });
+            return IntPtr.Zero;
+        }
+
         // A child moved onto a monitor with another scale may have resized itself. Its new size is invisible to the
         // position cache, so place it again.
         if (uMsg == WM_SKUA_CHILD_DPICHANGED)
@@ -682,6 +703,10 @@ public partial class TabbedHostWindow : Window
         {
             PostMessage(childHwnd, WM_SKUA_GRIDVIEW, new IntPtr(1), IntPtr.Zero);
         }
+
+        // The tab re-applies it after it logs in (ScriptOption), so sending it before login is enough.
+        if (MenuShowFps.IsChecked)
+            PostMessage(childHwnd, WM_SKUA_SET_OPTION, new IntPtr(11), new IntPtr(1));
 
         DoReposition();
 
@@ -1212,11 +1237,14 @@ public partial class TabbedHostWindow : Window
         }
 
         if (optionId != -1)
-        {
-            foreach (var info in _tabs.Values)
-                if (info.ChildHwnd != IntPtr.Zero)
-                    PostMessage(info.ChildHwnd, WM_SKUA_SET_OPTION, new IntPtr(optionId), new IntPtr(val ? 1 : 0));
-        }
+            BroadcastOption(optionId, val);
+    }
+
+    private void BroadcastOption(int optionId, bool val)
+    {
+        foreach (var info in _tabs.Values)
+            if (info.ChildHwnd != IntPtr.Zero)
+                PostMessage(info.ChildHwnd, WM_SKUA_SET_OPTION, new IntPtr(optionId), new IntPtr(val ? 1 : 0));
     }
 
     private async void MenuItem_StartAllScripts_Click(object? sender, RoutedEventArgs e)
