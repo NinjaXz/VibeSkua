@@ -654,6 +654,7 @@ public partial class MainWindow : Window
                 case 8: options.UseFunctionBasedSkills = value; break;
                 case 9: options.StreamerMode = value; break;
                 case 10: options.AggroMonsters = value; break;
+                case 11: options.ShowFPS = value; break;
                 case 99:
                     var sm = Ioc.Default.GetRequiredService<Skua.App.Avalonia.ViewModels.ScriptLoaderViewModel>();
                     var scheduler = Ioc.Default.GetRequiredService<Skua.Shared.Avalonia.ViewModels.ScriptSchedulerViewModel>();

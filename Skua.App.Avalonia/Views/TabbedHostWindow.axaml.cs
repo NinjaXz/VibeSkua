@@ -358,6 +358,12 @@ public partial class TabbedHostWindow : Window
         var options = Ioc.Default.GetRequiredService<IScriptOption>();
         MiscOptionsMenu.DataContext = options;
         options.PropertyChanged += Options_PropertyChanged;
+        // ShowFPS reads ui.mcFPS.visible from Flash, which the host doesn't have, so the host keeps this toggle's state itself.
+        MenuShowFps.PropertyChanged += (s, e) =>
+        {
+            if (e.Property == MenuItem.IsCheckedProperty)
+                BroadcastOption(11, MenuShowFps.IsChecked);
+        };
 
         Opened += TabbedHostWindow_Opened;
         PositionChanged += (s, e) => OnWindowPositionChanged(e.Point);
@@ -1212,11 +1218,14 @@ public partial class TabbedHostWindow : Window
         }
 
         if (optionId != -1)
-        {
-            foreach (var info in _tabs.Values)
-                if (info.ChildHwnd != IntPtr.Zero)
-                    PostMessage(info.ChildHwnd, WM_SKUA_SET_OPTION, new IntPtr(optionId), new IntPtr(val ? 1 : 0));
-        }
+            BroadcastOption(optionId, val);
+    }
+
+    private void BroadcastOption(int optionId, bool val)
+    {
+        foreach (var info in _tabs.Values)
+            if (info.ChildHwnd != IntPtr.Zero)
+                PostMessage(info.ChildHwnd, WM_SKUA_SET_OPTION, new IntPtr(optionId), new IntPtr(val ? 1 : 0));
     }
 
     private async void MenuItem_StartAllScripts_Click(object? sender, RoutedEventArgs e)
