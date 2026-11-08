@@ -212,7 +212,7 @@ public class QuestDataLoaderService : IQuestDataLoaderService
                 {
                     loadedQuests = await RequestQuestRangeAsync(i, rangeEnd, throttle, token);
                 }
-                catch (Exception ex) when (!_player.LoggedIn)
+                catch (Exception ex) when (WasDisconnected)
                 {
                     await RecordFailedRangeAsync(i, rangeEnd, progress);
                     if (!await WaitForReconnectAsync(progress, token))
@@ -221,7 +221,7 @@ public class QuestDataLoaderService : IQuestDataLoaderService
                     continue;
                 }
 
-                if (!_player.LoggedIn)
+                if (WasDisconnected)
                 {
                     await RecordFailedRangeAsync(i, rangeEnd, progress);
                     if (!await WaitForReconnectAsync(progress, token))
