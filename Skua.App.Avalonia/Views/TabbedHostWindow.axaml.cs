@@ -548,11 +548,14 @@ public partial class TabbedHostWindow : Window
                 catch { }
             }
 
-            if ((updates.Count > 0 || locations.Count > 0) && !_isClosing)
+            if ((updates.Count > 0 || locations.Count > 0 || _streamerModeEnabled) && !_isClosing)
             {
                 Dispatcher.UIThread.Post(() =>
                 {
                     if (_isClosing) return;
+
+                    if (_streamerModeEnabled)
+                        ApplyStreamerModeToTabHeaders(true);
 
                     foreach (var (pid, location) in locations)
                         RecordClientLocation(pid, location);
@@ -2791,6 +2794,7 @@ public partial class TabbedHostWindow : Window
 
         #region Tab Header UI
 
+        string displayTabName = _streamerModeEnabled ? "VibeSkuaUser" : tabName;
         StackPanel headerPanel = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
 
         MaterialIcon tabIcon = new MaterialIcon
@@ -2805,7 +2809,7 @@ public partial class TabbedHostWindow : Window
 
         TextBox editTitle = new TextBox
         {
-            Text = tabName,
+            Text = displayTabName,
             IsVisible = false,
             MinWidth = 60,
             MaxWidth = 180,
@@ -2823,7 +2827,7 @@ public partial class TabbedHostWindow : Window
 
         TextBlock title = new TextBlock
         {
-            Text = tabName,
+            Text = displayTabName,
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(0, 0, 6, 0),
             FontWeight = FontWeight.SemiBold,
@@ -2859,7 +2863,10 @@ public partial class TabbedHostWindow : Window
         closeBtn.PointerEntered += (s, ev) => { closeTxt.Foreground = Brushes.White; closeBtn.Background = new SolidColorBrush(Color.Parse("#EF4444")); };
         closeBtn.PointerExited += (s, ev) => { closeTxt[!TextBlock.ForegroundProperty] = new global::Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SkuaMutedTextBrush"); closeBtn.Background = Brushes.Transparent; };
 
-        TabInfo info = new TabInfo();
+        TabInfo info = new TabInfo
+        {
+            StreamerModeOriginalTitle = _streamerModeEnabled ? tabName : null
+        };
 
         Action closeEditMode = () =>
         {
