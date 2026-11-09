@@ -567,14 +567,10 @@ public partial class TabbedHostWindow : Window
                             if (_tabs.TryGetValue(tab, out TabInfo? tInfo) && tInfo.IsCustomNamed)
                                 continue;
 
+                        if (titleBlock != null && (titleBlock.Text.StartsWith("User ") || titleBlock.Text.StartsWith("Skua ") || titleBlock.Text != username))
                         {
-                            var titleBlock = headerPanel.Children.OfType<TextBlock>().FirstOrDefault(tb => tb.Text != "✕");
-                            var editBox = headerPanel.Children.OfType<TextBox>().FirstOrDefault();
-                            if (titleBlock != null && (titleBlock.Text.StartsWith("User ") || titleBlock.Text.StartsWith("Skua ") || titleBlock.Text != username))
-                            {
-                                titleBlock.Text = username;
-                                if (editBox != null) editBox.Text = username;
-                            }
+                            titleBlock.Text = username;
+                            if (editBox != null) editBox.Text = username;
                         }
                     }
                 }, DispatcherPriority.Background);
