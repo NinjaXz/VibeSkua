@@ -225,6 +225,7 @@ public partial class TabbedHostWindow : Window
         public IntPtr ChildHwnd { get; set; } = IntPtr.Zero;
         public bool IsThrottled { get; set; } = false;
         public bool IsCustomNamed { get; set; } = false;
+        public string? StreamerModeOriginalTitle { get; set; }
     }
 
     private static readonly object ChildProcessExitLogLock = new();
@@ -238,6 +239,7 @@ public partial class TabbedHostWindow : Window
     private DateTime _lastGridViewToggleTime = DateTime.MinValue;
     private readonly TimeSpan _gridViewToggleCooldown = TimeSpan.FromMilliseconds(300);
     private bool _isClosing = false;
+    private bool _streamerModeEnabled;
     private readonly CancellationTokenSource _pipeCts = new();
     private bool _isGridViewEnabled = false;
     private GridLayoutMode _gridLayoutMode = GridLayoutMode.Auto;
@@ -448,6 +450,7 @@ public partial class TabbedHostWindow : Window
         catch { }
 
         var options = Ioc.Default.GetRequiredService<IScriptOption>();
+        _streamerModeEnabled = options.StreamerMode;
         MiscOptionsMenu.DataContext = options;
         options.PropertyChanged += Options_PropertyChanged;
 
@@ -549,10 +552,21 @@ public partial class TabbedHostWindow : Window
 
                     foreach (var (tab, username) in updates)
                     {
-                        if (_tabs.TryGetValue(tab, out TabInfo? tInfo) && tInfo.IsCustomNamed)
-                            continue;
-
                         if (tab.Header is StackPanel headerPanel)
+                        {
+                            TextBlock? titleBlock = headerPanel.Children.OfType<TextBlock>().FirstOrDefault(tb => tb.Text != "✕");
+                            TextBox? editBox = headerPanel.Children.OfType<TextBox>().FirstOrDefault();
+
+                            if (_streamerModeEnabled)
+                            {
+                                if (titleBlock != null) titleBlock.Text = "VibeSkuaUser";
+                                if (editBox != null) editBox.Text = "VibeSkuaUser";
+                                continue;
+                            }
+
+                            if (_tabs.TryGetValue(tab, out TabInfo? tInfo) && tInfo.IsCustomNamed)
+                                continue;
+
                         {
                             var titleBlock = headerPanel.Children.OfType<TextBlock>().FirstOrDefault(tb => tb.Text != "✕");
                             var editBox = headerPanel.Children.OfType<TextBox>().FirstOrDefault();
@@ -1298,10 +1312,47 @@ public partial class TabbedHostWindow : Window
         GlobeBorder[!Border.BackgroundProperty] = new global::Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SkuaSurfaceAltBrush");
     }
 
+    private void ApplyStreamerModeToTabHeaders(bool enabled)
+    {
+        foreach (KeyValuePair<TabItem, TabInfo> entry in _tabs)
+        {
+            if (entry.Key.Header is not StackPanel headerPanel)
+                continue;
+
+            TextBlock? titleBlock = headerPanel.Children.OfType<TextBlock>().FirstOrDefault(block => block.Text != "✕");
+            TextBox? editBox = headerPanel.Children.OfType<TextBox>().FirstOrDefault();
+
+            if (enabled)
+            {
+                if (entry.Value.StreamerModeOriginalTitle == null)
+                    entry.Value.StreamerModeOriginalTitle = titleBlock?.Text ?? string.Empty;
+
+                if (titleBlock != null) titleBlock.Text = "VibeSkuaUser";
+                if (editBox != null) editBox.Text = "VibeSkuaUser";
+                continue;
+            }
+
+            if (entry.Value.StreamerModeOriginalTitle is string originalTitle)
+            {
+                if (entry.Value.IsCustomNamed && titleBlock != null)
+                    titleBlock.Text = originalTitle;
+
+                if (editBox != null) editBox.Text = titleBlock?.Text ?? originalTitle;
+                entry.Value.StreamerModeOriginalTitle = null;
+            }
+        }
+    }
+
     private void Options_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         var options = sender as IScriptOption;
         if (options == null) return;
+
+        if (e.PropertyName == "StreamerMode")
+        {
+            _streamerModeEnabled = options.StreamerMode;
+            ApplyStreamerModeToTabHeaders(_streamerModeEnabled);
+        }
 
         int optionId = -1;
         bool val = false;
