@@ -271,7 +271,10 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
                         }
                     }
                     catch { }
-                    await Task.Delay(500, token);
+                    // Reapply the visual mask more frequently than the game's nameplate refreshes.
+                    // The game periodically rebuilds these text values from player data, which caused
+                    // the real name to flash between the 500ms corrections.
+                    await Task.Delay(100, token).ConfigureAwait(false);
                 }
             }, token);
         }
