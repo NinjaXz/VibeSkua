@@ -319,6 +319,11 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
                     flash.Call("setGameObject", "world.rootClass.ui.mcInterface.txtGold.visible", true);
                     flash.Call("setGameObject", "world.rootClass.ui.mcInterface.txtCoins.visible", true);
 
+                    // Restore the actual map title, including the house owner's username.
+                    string rawMapName = flash.GetGameObject("world.strMapName") ?? string.Empty;
+                    if (!string.IsNullOrEmpty(rawMapName) && rawMapName != "null")
+                        flash.Call("setGameObject", "ui.mcInterface.areaList.title.t1.text", rawMapName);
+
                     // Trigger a game UI refresh to accurately restore names
                     flash.CallGameFunction("world.setUserData");
                 }
