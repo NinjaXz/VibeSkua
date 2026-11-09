@@ -572,6 +572,7 @@ public partial class TabbedHostWindow : Window
                             titleBlock.Text = username;
                             if (editBox != null) editBox.Text = username;
                         }
+                        }
                     }
                 }, DispatcherPriority.Background);
             }
