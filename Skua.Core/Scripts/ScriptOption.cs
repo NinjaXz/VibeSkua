@@ -51,24 +51,29 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
 
         if (recipient.StreamerMode)
         {
-            Task.Run(async () => 
+            Task.Run(async () =>
             {
                 await Task.Delay(1000); // Give the Flash map UI time to load the string
                 try
                 {
-                    var rawMapName = recipient._lazyFlash.Value.GetGameObject("world.strMapName") ?? "";
+                    string rawMapName = recipient._lazyFlash.Value.GetGameObject("world.strMapName") ?? string.Empty;
                     if (!string.IsNullOrEmpty(rawMapName) && rawMapName != "null")
-                    {
-                        var cleanMapName = rawMapName.Length > 1 
-                            ? char.ToUpper(rawMapName[0]) + rawMapName.Substring(1).ToLower() 
-                            : rawMapName.ToUpper();
-                        
-                        recipient._lazyFlash.Value.Call("setGameObject", "ui.mcInterface.areaList.title.t1.text", cleanMapName);
-                    }
+                        recipient._lazyFlash.Value.Call("setGameObject", "ui.mcInterface.areaList.title.t1.text", GetStreamerMapTitle(rawMapName));
                 }
                 catch { }
             });
         }
+    }
+
+    private static string GetStreamerMapTitle(string rawMapName)
+    {
+        // House map titles can include the owner's username.
+        if (rawMapName.Contains("house", StringComparison.OrdinalIgnoreCase))
+            return "House";
+
+        return rawMapName.Length > 1
+            ? char.ToUpperInvariant(rawMapName[0]) + rawMapName[1..].ToLowerInvariant()
+            : rawMapName.ToUpperInvariant();
     }
 
     private void ScriptStopped(ScriptOption recipient, ScriptStoppedMessage message)
@@ -275,15 +280,9 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
                         flash.Call("setGameObject", "world.rootClass.ui.mcInterface.te.visible", false);
 
                         // Force map UI text cleanly
-                        var rawMapName = flash.GetGameObject("world.strMapName") ?? "";
+                        string rawMapName = flash.GetGameObject("world.strMapName") ?? string.Empty;
                         if (!string.IsNullOrEmpty(rawMapName) && rawMapName != "null")
-                        {
-                            var cleanMapName = rawMapName.Length > 1 
-                                ? char.ToUpper(rawMapName[0]) + rawMapName.Substring(1).ToLower() 
-                                : rawMapName.ToUpper();
-
-                            flash.Call("setGameObject", "ui.mcInterface.areaList.title.t1.text", cleanMapName);
-                        }
+                            flash.Call("setGameObject", "ui.mcInterface.areaList.title.t1.text", GetStreamerMapTitle(rawMapName));
                     }
                     catch { }
                     // Reapply the visual mask more frequently than the game's nameplate refreshes.
