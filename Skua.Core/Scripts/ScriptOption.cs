@@ -244,7 +244,6 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
 
             _originalHidePlayers = HidePlayers;
             HidePlayers = true;
-            CustomName = "VibeSkuaUser";
             CustomGuild = "Hidden";
 
             _streamerModeCts?.Cancel();
@@ -261,8 +260,8 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
                         var flash = _lazyFlash.Value;
                         if (flash == null) return;
 
-                        // Override visuals only, NEVER overwrite objData as it breaks shops/inventory
-                        flash.Call("setGameObject", "world.myAvatar.pMC.pname.ti.text", "VibeSkuaUser");
+                        // Keep the nameplate covered by the AS3 overlay instead of racing the game's text redraws.
+                        flash.Call("modEnable", "StreamerNameplate");
                         flash.Call("setGameObject", "world.myAvatar.pMC.pname.tg.text", "Hidden");
                         flash.Call("setGameObject", "world.rootClass.ui.mcPortrait.strName.text", "VibeSkuaUser");
                         flash.Call("setGameObject", "world.rootClass.ui.mcPortraitTarget.strName.text", "Hidden");
@@ -298,7 +297,6 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
             _streamerModeCts?.Dispose();
             _streamerModeCts = null;
 
-            CustomName = _originalName;
             CustomGuild = _originalGuild;
             HidePlayers = _originalHidePlayers;
 
@@ -307,6 +305,15 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
                 var flash = _lazyFlash.Value;
                 if (flash != null)
                 {
+                    // Remove the AS3 nameplate overlay and reveal the original game name field.
+                    flash.Call("modDisable", "StreamerNameplate");
+
+                    // Restore the portrait label without changing the underlying player identity.
+                    string originalName = _originalName;
+                    if (string.IsNullOrEmpty(originalName))
+                        originalName = flash.GetGameObject("world.myAvatar.objData.strUsername") ?? string.Empty;
+                    flash.Call("setGameObject", "world.rootClass.ui.mcPortrait.strName.text", originalName);
+
                     // Restore Chat
                     flash.Call("setGameObject", "world.rootClass.ui.mcInterface.t1.visible", true);
                     flash.Call("setGameObject", "world.rootClass.ui.mcInterface.te.visible", true);
