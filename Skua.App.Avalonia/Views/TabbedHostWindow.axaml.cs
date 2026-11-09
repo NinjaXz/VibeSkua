@@ -2847,6 +2847,12 @@ public partial class TabbedHostWindow : Window
 
         title.DoubleTapped += (s, ev) =>
         {
+            if (_streamerModeEnabled)
+            {
+                ev.Handled = true;
+                return;
+            }
+
             editTitle.Text = title.Text;
             title.IsVisible = false;
             editTitle.IsVisible = true;
