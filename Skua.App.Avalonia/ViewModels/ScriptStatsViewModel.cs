@@ -228,7 +228,7 @@ public class ScriptStatsViewModel : ObservableObject, IManagedWindow
     }
 
     public string ExperienceRateLabel => $"EXP {RateUnit}";
-    public string GoldRateLabel => $"Net gold {RateUnit}";
+    public string GoldRateLabel => $"Gold {RateUnit}";
     public string ItemsRateLabel => $"Items {RateUnit}";
     public string ClassPointsRateLabel => $"CP {RateUnit}";
     public string KillsRateLabel => $"Kills {RateUnit}";
