@@ -129,7 +129,6 @@ public partial class ScriptRepoViewModel : BotControlViewModelBase
 
     // Which part of a script the search looks in (Skua 1.4.5's scopes)
     public List<string> SearchScopes { get; } = new() { "All", "Name", "Tag", "Description", "File" };
-    public List<string> SortOptions { get; } = new() { SortByName, SortByDate };
 
     [ObservableProperty]
     private string _searchScope = "All";
@@ -150,14 +149,41 @@ public partial class ScriptRepoViewModel : BotControlViewModelBase
     public IRelayCommand OpenScriptFolderCommand { get; }
 
     private const string SortByName = "Name";
-    private const string SortByDate = "Date Added";
+    private const string SortByDate = "Date Created";
 
     private bool IsSortedByDate => SortBy == SortByDate;
 
     public string SortDirectionText => IsSortedByDate
         ? (SortDescending ? "Newest first" : "Oldest first")
         : (SortDescending ? "Name Z to A" : "Name A to Z");
-    public string SortDirectionIcon => SortDescending ? "SortDescending" : "SortAscending";
+    public string SortDirectionIcon => IsSortedByDate
+        ? "ClockOutline"
+        : (SortDescending ? "SortDescending" : "SortAscending");
+
+    // The button's lit state: off for A to Z and Newest, on for their reverses. It alternates on every click, as a
+    // ToggleButton does by itself, so the two stay in step through the four orders.
+    public bool IsSortReversed => IsSortedByDate ? !SortDescending : SortDescending;
+
+    // A to Z, Z to A, Newest, Oldest, and round again. Each step changes one property, so each sorts once.
+    [RelayCommand]
+    private void CycleSort()
+    {
+        if (IsSortedByDate)
+        {
+            if (SortDescending)
+                SortDescending = false;
+            else
+                SortBy = SortByName;
+        }
+        else if (SortDescending)
+        {
+            SortBy = SortByDate;
+        }
+        else
+        {
+            SortDescending = true;
+        }
+    }
 
     [RelayCommand]
     private void ClearSearch()
@@ -210,6 +236,7 @@ public partial class ScriptRepoViewModel : BotControlViewModelBase
     {
         OnPropertyChanged(nameof(SortDirectionText));
         OnPropertyChanged(nameof(SortDirectionIcon));
+        OnPropertyChanged(nameof(IsSortReversed));
         ApplySort();
     }
 

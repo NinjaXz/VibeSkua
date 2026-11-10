@@ -12,8 +12,8 @@
          counts and the bulk actions. The Manager hides Start. -->
     <Grid RowDefinitions="Auto,*,Auto" Margin="12" RowSpacing="10">
 
-        <!-- 1. Search, search scope, category, sort field and direction -->
-        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="8" IsEnabled="{Binding !IsBusy}">
+        <!-- 1. Search, what it looks in, category, order (name or date) -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8" IsEnabled="{Binding !IsBusy}">
             <TextBox Grid.Column="0" Watermark="Search scripts by name, path or tag" Text="{Binding SearchText, Mode=TwoWay}">
                 <TextBox.InnerLeftContent>
                     <materialIcons:MaterialIcon Kind="Magnify" Width="15" Height="15" Margin="10,0,0,0" Foreground="{DynamicResource SkuaMutedTextBrush}" />
@@ -31,11 +31,10 @@
                       ToolTip.Tip="Search in: all, name, tags, description or file path" />
             <ComboBox Grid.Column="2" Width="140" ItemsSource="{Binding FilterOptions}" SelectedItem="{Binding FilterBy, Mode=TwoWay}"
                       ToolTip.Tip="Category" />
-            <ComboBox Grid.Column="3" Width="130" ItemsSource="{Binding SortOptions}" SelectedItem="{Binding SortBy, Mode=TwoWay}"
-                      ToolTip.Tip="Sort scripts by name or original GitHub add date" />
-            <ToggleButton Grid.Column="4" Classes="app-toggle" Width="32" Padding="0" HorizontalContentAlignment="Center"
-                          IsChecked="{Binding SortDescending, Mode=TwoWay}"
-                          ToolTip.Tip="{Binding SortDirectionText, StringFormat='Sort: {0}'}">
+            <ToggleButton Grid.Column="3" Classes="app-toggle" Width="32" Padding="0" HorizontalContentAlignment="Center"
+                          IsChecked="{Binding IsSortReversed, Mode=OneWay}"
+                          Command="{Binding CycleSortCommand}"
+                          ToolTip.Tip="{Binding SortDirectionText, StringFormat='Order: {0}'}">
                 <materialIcons:MaterialIcon Kind="{Binding SortDirectionIcon}" Width="16" Height="16" />
             </ToggleButton>
         </Grid>
