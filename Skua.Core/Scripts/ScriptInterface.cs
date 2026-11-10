@@ -302,7 +302,9 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
                 // Track connected gameplay regardless of whether a script is running.
                 _limit.LimitedRun("gameplayStats", 1000, () =>
                 {
-                    if (!currentInGame)
+                    // Wait for the character data and inventory to finish loading before taking the first
+                    // snapshot. Otherwise the initial zero gold value is counted as earned gold on login.
+                    if (!currentInGame || !Player.Loaded)
                     {
                         Stats.UpdateGameplaySnapshot(0, 0, 0, 0, 0, 0, 0, 0, false);
                         return;
