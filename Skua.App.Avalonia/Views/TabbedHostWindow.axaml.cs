@@ -1,6 +1,5 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
@@ -226,10 +225,7 @@ public partial class TabbedHostWindow : Window
         public IntPtr ChildHwnd { get; set; } = IntPtr.Zero;
         public bool IsThrottled { get; set; } = false;
         public bool IsCustomNamed { get; set; } = false;
-        public string? StreamerModeOriginalTitle { get; set; }
     }
-
-    private static readonly object ChildProcessExitLogLock = new();
 
     private readonly string[] _initialArgs;
     private bool _initialInstanceStarted = false;
@@ -240,97 +236,9 @@ public partial class TabbedHostWindow : Window
     private DateTime _lastGridViewToggleTime = DateTime.MinValue;
     private readonly TimeSpan _gridViewToggleCooldown = TimeSpan.FromMilliseconds(300);
     private bool _isClosing = false;
-    private bool _streamerModeEnabled;
     private readonly CancellationTokenSource _pipeCts = new();
     private bool _isGridViewEnabled = false;
-    private GridLayoutMode _gridLayoutMode = GridLayoutMode.Auto;
     private TabItem? _lastSelectedTab;
-
-    // Game size presets inspired by Aeoniian's VibeSkuffle; this implementation is original.
-    private static readonly (int Width, int Height)[] GameSizes =
-    {
-        (640, 367),
-        (960, 550),
-        (1280, 720),
-        (1600, 900),
-        (1920, 1080)
-    };
-
-    private (int Width, int Height)? _gameSize;
-
-    private static (int Width, int Height)? ParseGameSize(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value) || value.Equals("auto", StringComparison.OrdinalIgnoreCase))
-            return null;
-
-        string[] parts = value.Split('x', StringSplitOptions.TrimEntries);
-        if (parts.Length == 2
-            && int.TryParse(parts[0], out int width)
-            && int.TryParse(parts[1], out int height)
-            && width is >= 320 and <= 7680
-            && height is >= 180 and <= 4320)
-            return (width, height);
-
-        return null;
-    }
-
-    private static (int X, int Y, int Width, int Height) FitGameSize(int x, int y, int width, int height, (int Width, int Height)? size)
-    {
-        if (size is not { } target || width <= 0 || height <= 0)
-            return (x, y, width, height);
-
-        double scale = Math.Min(1d, Math.Min((double)width / target.Width, (double)height / target.Height));
-        int gameWidth = Math.Max((int)(target.Width * scale), 1);
-        int gameHeight = Math.Max((int)(target.Height * scale), 1);
-        return (x + (width - gameWidth) / 2, y + (height - gameHeight) / 2, gameWidth, gameHeight);
-    }
-
-    private void UpdateGameSizeButton()
-    {
-        GameSizeText.Text = _gameSize is { } size ? $"Size: {size.Width}x{size.Height}" : "Size: Auto";
-        ToolTip.SetTip(GameSizeBorder, _gameSize is { } selected
-            ? $"Game size: {selected.Width} x {selected.Height}."
-            : "Game size: fills the available client area.");
-
-        GameSizeAutoMenuItem.IsChecked = _gameSize == null;
-        GameSize640MenuItem.IsChecked = _gameSize == GameSizes[0];
-        GameSize960MenuItem.IsChecked = _gameSize == GameSizes[1];
-        GameSize1280MenuItem.IsChecked = _gameSize == GameSizes[2];
-        GameSize1600MenuItem.IsChecked = _gameSize == GameSizes[3];
-        GameSize1920MenuItem.IsChecked = _gameSize == GameSizes[4];
-    }
-
-    private void GameSizeBorder_PointerPressed(object? sender, PointerPressedEventArgs e)
-    {
-        e.Handled = true;
-        FlyoutBase.ShowAttachedFlyout(GameSizeBorder);
-    }
-
-    private void GameSizeMenuItem_Click(object? sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem menuItem || menuItem.Tag is not string value)
-            return;
-
-        _gameSize = ParseGameSize(value);
-
-        Ioc.Default.GetService<ISettingsService>()?.Set("VibeSkuaGameSize", _gameSize is { } selected
-            ? $"{selected.Width}x{selected.Height}"
-            : "auto");
-
-        UpdateGameSizeButton();
-        _lastX = int.MinValue;
-        _lastY = int.MinValue;
-        _lastW = int.MinValue;
-        _lastH = int.MinValue;
-        ScheduleReposition();
-    }
-
-    private enum GridLayoutMode
-    {
-        Auto,
-        Horizontal,
-        Vertical
-    }
     private IntPtr _hostHwnd = IntPtr.Zero;
     private int _lastX = -99999, _lastY = -99999, _lastW = -99999, _lastH = -99999;
     private IntPtr _lastActiveHwnd = IntPtr.Zero;
@@ -423,8 +331,6 @@ public partial class TabbedHostWindow : Window
     {
         _initialArgs = initialArgs ?? Array.Empty<string>();
         InitializeComponent();
-        _gameSize = ParseGameSize(Ioc.Default.GetService<ISettingsService>()?.Get("VibeSkuaGameSize", "auto"));
-        UpdateGameSizeButton();
         LoadArmyJumpSettings();
         Title = $"VibeSkua V{Skua.Core.Models.ClientFileSources.DisplayVersion}";
         MainTitleBar.TitleText = Title;
@@ -451,7 +357,6 @@ public partial class TabbedHostWindow : Window
         catch { }
 
         var options = Ioc.Default.GetRequiredService<IScriptOption>();
-        _streamerModeEnabled = options.StreamerMode;
         MiscOptionsMenu.DataContext = options;
         options.PropertyChanged += Options_PropertyChanged;
         // ShowFPS reads ui.mcFPS.visible from Flash, which the host doesn't have, so the host keeps this toggle's state itself.
@@ -548,40 +453,29 @@ public partial class TabbedHostWindow : Window
                 catch { }
             }
 
-            if ((updates.Count > 0 || locations.Count > 0 || _streamerModeEnabled) && !_isClosing)
+            if ((updates.Count > 0 || locations.Count > 0) && !_isClosing)
             {
                 Dispatcher.UIThread.Post(() =>
                 {
                     if (_isClosing) return;
-
-                    if (_streamerModeEnabled)
-                        ApplyStreamerModeToTabHeaders(true);
 
                     foreach (var (pid, location) in locations)
                         RecordClientLocation(pid, location);
 
                     foreach (var (tab, username) in updates)
                     {
+                        if (_tabs.TryGetValue(tab, out TabInfo? tInfo) && tInfo.IsCustomNamed)
+                            continue;
+
                         if (tab.Header is StackPanel headerPanel)
                         {
-                            TextBlock? titleBlock = headerPanel.Children.OfType<TextBlock>().FirstOrDefault(tb => tb.Text != "✕");
-                            TextBox? editBox = headerPanel.Children.OfType<TextBox>().FirstOrDefault();
-
-                            if (_streamerModeEnabled)
+                            var titleBlock = headerPanel.Children.OfType<TextBlock>().FirstOrDefault(tb => tb.Text != "✕");
+                            var editBox = headerPanel.Children.OfType<TextBox>().FirstOrDefault();
+                            if (titleBlock != null && (titleBlock.Text.StartsWith("User ") || titleBlock.Text.StartsWith("Skua ") || titleBlock.Text != username))
                             {
-                                if (titleBlock != null) titleBlock.Text = "VibeSkuaUser";
-                                if (editBox != null) editBox.Text = "VibeSkuaUser";
-                                continue;
+                                titleBlock.Text = username;
+                                if (editBox != null) editBox.Text = username;
                             }
-
-                            if (_tabs.TryGetValue(tab, out TabInfo? tInfo) && tInfo.IsCustomNamed)
-                                continue;
-
-                        if (titleBlock != null && (titleBlock.Text.StartsWith("User ") || titleBlock.Text.StartsWith("Skua ") || titleBlock.Text != username))
-                        {
-                            titleBlock.Text = username;
-                            if (editBox != null) editBox.Text = username;
-                        }
                         }
                     }
                 }, DispatcherPriority.Background);
@@ -1203,20 +1097,6 @@ public partial class TabbedHostWindow : Window
         }
     }
 
-    // Grid Layout toolbar is temporarily hidden; restore its handler with the XAML control when re-enabled.
-    private void MenuItem_GridLayoutAuto_Click(object? sender, RoutedEventArgs e) => SetGridLayoutMode(GridLayoutMode.Auto);
-
-    private void MenuItem_GridLayoutHorizontal_Click(object? sender, RoutedEventArgs e) => SetGridLayoutMode(GridLayoutMode.Horizontal);
-
-    private void MenuItem_GridLayoutVertical_Click(object? sender, RoutedEventArgs e) => SetGridLayoutMode(GridLayoutMode.Vertical);
-
-    private void SetGridLayoutMode(GridLayoutMode mode)
-    {
-        _gridLayoutMode = mode;
-        if (_isGridViewEnabled)
-            ScheduleReposition();
-    }
-
     private void GridViewBorder_PointerEntered(object? sender, PointerEventArgs e)
     {
         if (!_isGridViewEnabled)
@@ -1337,47 +1217,10 @@ public partial class TabbedHostWindow : Window
         GlobeBorder[!Border.BackgroundProperty] = new global::Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SkuaSurfaceAltBrush");
     }
 
-    private void ApplyStreamerModeToTabHeaders(bool enabled)
-    {
-        foreach (KeyValuePair<TabItem, TabInfo> entry in _tabs)
-        {
-            if (entry.Key.Header is not StackPanel headerPanel)
-                continue;
-
-            TextBlock? titleBlock = headerPanel.Children.OfType<TextBlock>().FirstOrDefault(block => block.Text != "✕");
-            TextBox? editBox = headerPanel.Children.OfType<TextBox>().FirstOrDefault();
-
-            if (enabled)
-            {
-                if (entry.Value.StreamerModeOriginalTitle == null)
-                    entry.Value.StreamerModeOriginalTitle = titleBlock?.Text ?? string.Empty;
-
-                if (titleBlock != null) titleBlock.Text = "VibeSkuaUser";
-                if (editBox != null) editBox.Text = "VibeSkuaUser";
-                continue;
-            }
-
-            if (entry.Value.StreamerModeOriginalTitle is string originalTitle)
-            {
-                if (entry.Value.IsCustomNamed && titleBlock != null)
-                    titleBlock.Text = originalTitle;
-
-                if (editBox != null) editBox.Text = titleBlock?.Text ?? originalTitle;
-                entry.Value.StreamerModeOriginalTitle = null;
-            }
-        }
-    }
-
     private void Options_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         var options = sender as IScriptOption;
         if (options == null) return;
-
-        if (e.PropertyName == "StreamerMode")
-        {
-            _streamerModeEnabled = options.StreamerMode;
-            ApplyStreamerModeToTabHeaders(_streamerModeEnabled);
-        }
 
         int optionId = -1;
         bool val = false;
@@ -2306,9 +2149,6 @@ public partial class TabbedHostWindow : Window
 
     private void UpdateGridViewBorderColor()
     {
-        if (GameSizeBorder != null)
-            GameSizeBorder.IsVisible = !_isGridViewEnabled;
-
         if (_isGridViewEnabled)
         {
             GridViewBorder[!Border.BackgroundProperty] = new global::Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SkuaSelectionBrush");
@@ -2515,11 +2355,10 @@ public partial class TabbedHostWindow : Window
 
             if (w <= 1 || h <= 1) return;
 
-            (int gameX, int gameY, int gameWidth, int gameHeight) = FitGameSize(x, y, w, h, _gameSize);
-            _childOffsetX = (_isGridViewEnabled ? x : gameX) - Position.X;
-            _childOffsetY = (_isGridViewEnabled ? y : gameY) - Position.Y;
-            _childWidth = _isGridViewEnabled ? w : gameWidth;
-            _childHeight = _isGridViewEnabled ? h : gameHeight;
+            _childOffsetX = x - Position.X;
+            _childOffsetY = y - Position.Y;
+            _childWidth = w;
+            _childHeight = h;
             _lastFastX = Position.X;
             _lastFastY = Position.Y;
 
@@ -2550,12 +2389,7 @@ public partial class TabbedHostWindow : Window
             if (_isGridViewEnabled)
             {
                 int n = activeWindows.Count;
-                int cols = _gridLayoutMode switch
-                {
-                    GridLayoutMode.Horizontal => n,
-                    GridLayoutMode.Vertical => 1,
-                    _ => (int)Math.Ceiling(Math.Sqrt(n))
-                };
+                int cols = (int)Math.Ceiling(Math.Sqrt(n));
                 int rows = (int)Math.Ceiling((double)n / cols);
                 int cellW = w / cols;
                 int cellH = h / rows;
@@ -2602,22 +2436,22 @@ public partial class TabbedHostWindow : Window
                 }
                 HotKeys.ActiveChildHwnd = activeChildHwnd;
 
-                if (gameX == _lastX && gameY == _lastY && gameWidth == _lastW && gameHeight == _lastH &&
+                if (x == _lastX && y == _lastY && w == _lastW && h == _lastH &&
                     activeChildHwnd == _lastActiveHwnd && _lastGridViewState == _isGridViewEnabled)
                 {
                     return;
                 }
 
-                _lastX = gameX;
-                _lastY = gameY;
-                _lastW = gameWidth;
-                _lastH = gameHeight;
+                _lastX = x;
+                _lastY = y;
+                _lastW = w;
+                _lastH = h;
                 _lastActiveHwnd = activeChildHwnd;
                 _lastGridViewState = false;
 
                 if (activeChildHwnd != IntPtr.Zero)
                 {
-                    SetWindowPos(activeChildHwnd, IntPtr.Zero, gameX, gameY, gameWidth, gameHeight, baseFlags);
+                    SetWindowPos(activeChildHwnd, IntPtr.Zero, x, y, w, h, baseFlags);
                     ShowWindow(activeChildHwnd, SW_SHOW);
                     if (activeInfo != null && activeInfo.IsThrottled)
                     {
@@ -2794,7 +2628,6 @@ public partial class TabbedHostWindow : Window
 
         #region Tab Header UI
 
-        string displayTabName = _streamerModeEnabled ? "VibeSkuaUser" : tabName;
         StackPanel headerPanel = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
 
         MaterialIcon tabIcon = new MaterialIcon
@@ -2809,7 +2642,7 @@ public partial class TabbedHostWindow : Window
 
         TextBox editTitle = new TextBox
         {
-            Text = displayTabName,
+            Text = tabName,
             IsVisible = false,
             MinWidth = 60,
             MaxWidth = 180,
@@ -2827,7 +2660,7 @@ public partial class TabbedHostWindow : Window
 
         TextBlock title = new TextBlock
         {
-            Text = displayTabName,
+            Text = tabName,
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(0, 0, 6, 0),
             FontWeight = FontWeight.SemiBold,
@@ -2863,10 +2696,7 @@ public partial class TabbedHostWindow : Window
         closeBtn.PointerEntered += (s, ev) => { closeTxt.Foreground = Brushes.White; closeBtn.Background = new SolidColorBrush(Color.Parse("#EF4444")); };
         closeBtn.PointerExited += (s, ev) => { closeTxt[!TextBlock.ForegroundProperty] = new global::Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SkuaMutedTextBrush"); closeBtn.Background = Brushes.Transparent; };
 
-        TabInfo info = new TabInfo
-        {
-            StreamerModeOriginalTitle = _streamerModeEnabled ? tabName : null
-        };
+        TabInfo info = new TabInfo();
 
         Action closeEditMode = () =>
         {
@@ -2883,12 +2713,6 @@ public partial class TabbedHostWindow : Window
 
         title.DoubleTapped += (s, ev) =>
         {
-            if (_streamerModeEnabled)
-            {
-                ev.Handled = true;
-                return;
-            }
-
             editTitle.Text = title.Text;
             title.IsVisible = false;
             editTitle.IsVisible = true;
@@ -2967,36 +2791,12 @@ public partial class TabbedHostWindow : Window
             p.EnableRaisingEvents = true;
             p.Exited += (s, e) =>
             {
-                string exitCode;
-                try
-                {
-                    exitCode = p.ExitCode.ToString();
-                }
-                catch (Exception exception)
-                {
-                    exitCode = $"unavailable ({exception.GetType().Name}: {exception.Message})";
-                }
-
                 Dispatcher.UIThread.Post(() =>
                 {
-                    bool tabStillRegistered = _tabs.ContainsKey(newTab);
-                    string logEntry = $"{DateTimeOffset.UtcNow:O} | Tab='{tabName}' | PID={p.Id} | ExitCode={exitCode} | HostClosing={_isClosing} | TabRegistered={tabStillRegistered} | ChildHwnd=0x{info.ChildHwnd.ToInt64():X}";
-                    try
+                    if (!_isClosing)
                     {
-                        string logDirectory = Path.Combine(Path.GetTempPath(), "VibeSkuaTabs");
-                        Directory.CreateDirectory(logDirectory);
-                        lock (ChildProcessExitLogLock)
-                            File.AppendAllText(Path.Combine(logDirectory, "process-exits.log"), logEntry + Environment.NewLine);
-                    }
-                    catch (Exception exception)
-                    {
-                        Trace.WriteLine($"VibeSkua child process exit log failed: {exception}");
-                    }
-
-                    Trace.WriteLine($"VibeSkua child process exited: {logEntry}");
-
-                    if (!_isClosing && tabStillRegistered)
                         CloseTab(newTab);
+                    }
                 });
             };
 
