@@ -99,6 +99,9 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
     private string _experienceProgressText = "0 / 0 XP";
 
     [ObservableProperty]
+    private bool _isMaxLevel;
+
+    [ObservableProperty]
     private double _classRank10Progress;
 
     [ObservableProperty]
@@ -124,6 +127,9 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
 
     [ObservableProperty]
     private int _currentClassRank;
+
+    [ObservableProperty]
+    private bool _isMaxClassRank;
 
     [ObservableProperty]
     private int _classPointsPerHour;
@@ -181,6 +187,7 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
                 _sessionStopwatch.Start();
             }
     
+            IsMaxLevel = level >= 100;
             ExperienceProgress = requiredExperience > 0
                 ? Math.Clamp(experience / (double)requiredExperience * 100d, 0d, 100d)
                 : 0d;
@@ -246,6 +253,7 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
             _lastClassRank = 0;
             CurrentClassPoints = 0;
             CurrentClassRank = 0;
+            IsMaxClassRank = false;
             ClassRank10Progress = 0;
             ClassRank10ProgressText = $"0 / {ClassPointsForRankTen:N0} CP";
             ClassPointsPerHour = 0;
@@ -297,6 +305,7 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
         }
 
         CurrentClassRank = Math.Max(0, classRank);
+        IsMaxClassRank = CurrentClassRank >= 10;
         CurrentClassPoints = GetClassRankBasePoints(classRank) + Math.Max(0, classPoints);
         ClassRank10Progress = Math.Clamp(CurrentClassPoints / (double)ClassPointsForRankTen * 100d, 0d, 100d);
         ClassRank10ProgressText = $"{Math.Min(CurrentClassPoints, ClassPointsForRankTen):N0} / {ClassPointsForRankTen:N0} CP";
@@ -379,6 +388,8 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
         ItemsPerHour = 0;
         CurrentClassPoints = 0;
         CurrentClassRank = 0;
+        IsMaxClassRank = false;
+        IsMaxLevel = false;
         ClassPointsPerHour = 0;
         TimeToLevel = null;
         TimeToClassRank10 = null;
