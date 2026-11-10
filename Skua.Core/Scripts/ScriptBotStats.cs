@@ -102,6 +102,9 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
     private bool _isMaxLevel;
 
     [ObservableProperty]
+    private bool _isLevelProgressVisible = true;
+
+    [ObservableProperty]
     private double _classRank10Progress;
 
     [ObservableProperty]
@@ -130,6 +133,9 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
 
     [ObservableProperty]
     private bool _isMaxClassRank;
+
+    [ObservableProperty]
+    private bool _isClassRankProgressVisible = true;
 
     [ObservableProperty]
     private int _classPointsPerHour;
@@ -188,6 +194,7 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
             }
     
             IsMaxLevel = level >= 100;
+            IsLevelProgressVisible = !IsMaxLevel;
             ExperienceProgress = requiredExperience > 0
                 ? Math.Clamp(experience / (double)requiredExperience * 100d, 0d, 100d)
                 : 0d;
@@ -254,6 +261,7 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
             CurrentClassPoints = 0;
             CurrentClassRank = 0;
             IsMaxClassRank = false;
+            IsClassRankProgressVisible = true;
             ClassRank10Progress = 0;
             ClassRank10ProgressText = $"0 / {ClassPointsForRankTen:N0} CP";
             ClassPointsPerHour = 0;
@@ -306,6 +314,7 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
 
         CurrentClassRank = Math.Max(0, classRank);
         IsMaxClassRank = CurrentClassRank >= 10;
+        IsClassRankProgressVisible = !IsMaxClassRank;
         CurrentClassPoints = GetClassRankBasePoints(classRank) + Math.Max(0, classPoints);
         ClassRank10Progress = Math.Clamp(CurrentClassPoints / (double)ClassPointsForRankTen * 100d, 0d, 100d);
         ClassRank10ProgressText = $"{Math.Min(CurrentClassPoints, ClassPointsForRankTen):N0} / {ClassPointsForRankTen:N0} CP";
@@ -389,7 +398,9 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
         CurrentClassPoints = 0;
         CurrentClassRank = 0;
         IsMaxClassRank = false;
+        IsClassRankProgressVisible = true;
         IsMaxLevel = false;
+        IsLevelProgressVisible = true;
         ClassPointsPerHour = 0;
         TimeToLevel = null;
         TimeToClassRank10 = null;
