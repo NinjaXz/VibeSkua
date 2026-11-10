@@ -55,6 +55,9 @@ public interface IScriptBotStats : INotifyPropertyChanged
     /// <summary>Formatted current and required experience for the player's level.</summary>
     string ExperienceProgressText { get; }
 
+    /// <summary>Whether the player has reached level 100.</summary>
+    bool IsMaxLevel { get; }
+
     /// <summary>Progress toward the cumulative class rank 10 target, from 0 to 100.</summary>
     double ClassRank10Progress { get; }
 
@@ -81,6 +84,9 @@ public interface IScriptBotStats : INotifyPropertyChanged
 
     /// <summary>Current equipped class rank.</summary>
     int CurrentClassRank { get; }
+
+    /// <summary>Whether the equipped class has reached rank 10.</summary>
+    bool IsMaxClassRank { get; }
 
     /// <summary>Class points gained per hour for the currently equipped class.</summary>
     int ClassPointsPerHour { get; }
