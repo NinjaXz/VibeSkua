@@ -114,7 +114,7 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
     private int _experiencePerHour;
 
     [ObservableProperty]
-    private int _goldPerHour;
+    private long _goldPerHour;
 
     [ObservableProperty]
     private double _killsPerMinute;
@@ -221,7 +221,7 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
             if (experienceGained > 0)
                 _earnedExperience += experienceGained;
     
-            _earnedGold += (long)gold - _lastGold;
+            _earnedGold += Math.Max(0L, (long)gold - _lastGold);
     
             _sessionKills += Math.Max(0, Kills - _lastKills);
             _sessionDeaths += Math.Max(0, Deaths - _lastDeaths);
@@ -237,7 +237,7 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
             double hours = elapsed.TotalHours;
             double minutes = elapsed.TotalMinutes;
             ExperiencePerHour = (int)Math.Round(_earnedExperience / hours);
-            GoldPerHour = (int)Math.Round(_earnedGold / hours);
+            GoldPerHour = (long)Math.Round(_earnedGold / hours);
             KillsPerMinute = _sessionKills / minutes;
             DeathsPerMinute = _sessionDeaths / minutes;
             ItemsPerHour = (int)Math.Round(_sessionItems / hours);
