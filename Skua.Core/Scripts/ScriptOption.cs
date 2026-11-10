@@ -51,29 +51,24 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
 
         if (recipient.StreamerMode)
         {
-            Task.Run(async () =>
+            Task.Run(async () => 
             {
                 await Task.Delay(1000); // Give the Flash map UI time to load the string
                 try
                 {
-                    string rawMapName = recipient._lazyFlash.Value.GetGameObject("world.strMapName") ?? string.Empty;
+                    var rawMapName = recipient._lazyFlash.Value.GetGameObject("world.strMapName") ?? "";
                     if (!string.IsNullOrEmpty(rawMapName) && rawMapName != "null")
-                        recipient._lazyFlash.Value.Call("setGameObject", "ui.mcInterface.areaList.title.t1.text", GetStreamerMapTitle(rawMapName));
+                    {
+                        var cleanMapName = rawMapName.Length > 1 
+                            ? char.ToUpper(rawMapName[0]) + rawMapName.Substring(1).ToLower() 
+                            : rawMapName.ToUpper();
+                        
+                        recipient._lazyFlash.Value.Call("setGameObject", "ui.mcInterface.areaList.title.t1.text", cleanMapName);
+                    }
                 }
                 catch { }
             });
         }
-    }
-
-    private static string GetStreamerMapTitle(string rawMapName)
-    {
-        // House map titles can include the owner's username.
-        if (rawMapName.Contains("house", StringComparison.OrdinalIgnoreCase))
-            return "House";
-
-        return rawMapName.Length > 1
-            ? char.ToUpperInvariant(rawMapName[0]) + rawMapName[1..].ToLowerInvariant()
-            : rawMapName.ToUpperInvariant();
     }
 
     private void ScriptStopped(ScriptOption recipient, ScriptStoppedMessage message)
@@ -244,6 +239,7 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
 
             _originalHidePlayers = HidePlayers;
             HidePlayers = true;
+            CustomName = "VibeSkuaUser";
             CustomGuild = "Hidden";
 
             _streamerModeCts?.Cancel();
@@ -260,8 +256,8 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
                         var flash = _lazyFlash.Value;
                         if (flash == null) return;
 
-                        // Keep the nameplate covered by the AS3 overlay instead of racing the game's text redraws.
-                        flash.Call("modEnable", "StreamerNameplate");
+                        // Override visuals only, NEVER overwrite objData as it breaks shops/inventory
+                        flash.Call("setGameObject", "world.myAvatar.pMC.pname.ti.text", "VibeSkuaUser");
                         flash.Call("setGameObject", "world.myAvatar.pMC.pname.tg.text", "Hidden");
                         flash.Call("setGameObject", "world.rootClass.ui.mcPortrait.strName.text", "VibeSkuaUser");
                         flash.Call("setGameObject", "world.rootClass.ui.mcPortraitTarget.strName.text", "Hidden");
@@ -279,15 +275,18 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
                         flash.Call("setGameObject", "world.rootClass.ui.mcInterface.te.visible", false);
 
                         // Force map UI text cleanly
-                        string rawMapName = flash.GetGameObject("world.strMapName") ?? string.Empty;
+                        var rawMapName = flash.GetGameObject("world.strMapName") ?? "";
                         if (!string.IsNullOrEmpty(rawMapName) && rawMapName != "null")
-                            flash.Call("setGameObject", "ui.mcInterface.areaList.title.t1.text", GetStreamerMapTitle(rawMapName));
+                        {
+                            var cleanMapName = rawMapName.Length > 1 
+                                ? char.ToUpper(rawMapName[0]) + rawMapName.Substring(1).ToLower() 
+                                : rawMapName.ToUpper();
+
+                            flash.Call("setGameObject", "ui.mcInterface.areaList.title.t1.text", cleanMapName);
+                        }
                     }
                     catch { }
-                    // Reapply the visual mask more frequently than the game's nameplate refreshes.
-                    // The game periodically rebuilds these text values from player data, which caused
-                    // the real name to flash between the 500ms corrections.
-                    await Task.Delay(100, token).ConfigureAwait(false);
+                    await Task.Delay(500, token);
                 }
             }, token);
         }
@@ -297,6 +296,7 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
             _streamerModeCts?.Dispose();
             _streamerModeCts = null;
 
+            CustomName = _originalName;
             CustomGuild = _originalGuild;
             HidePlayers = _originalHidePlayers;
 
@@ -305,15 +305,6 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
                 var flash = _lazyFlash.Value;
                 if (flash != null)
                 {
-                    // Remove the AS3 nameplate overlay and reveal the original game name field.
-                    flash.Call("modDisable", "StreamerNameplate");
-
-                    // Restore the portrait label without changing the underlying player identity.
-                    string originalName = _originalName;
-                    if (string.IsNullOrEmpty(originalName))
-                        originalName = flash.GetGameObject("world.myAvatar.objData.strUsername") ?? string.Empty;
-                    flash.Call("setGameObject", "world.rootClass.ui.mcPortrait.strName.text", originalName);
-
                     // Restore Chat
                     flash.Call("setGameObject", "world.rootClass.ui.mcInterface.t1.visible", true);
                     flash.Call("setGameObject", "world.rootClass.ui.mcInterface.te.visible", true);
@@ -325,11 +316,6 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
                     flash.Call("setGameObject", "world.rootClass.ui.mcInterface.strCoins.visible", true);
                     flash.Call("setGameObject", "world.rootClass.ui.mcInterface.txtGold.visible", true);
                     flash.Call("setGameObject", "world.rootClass.ui.mcInterface.txtCoins.visible", true);
-
-                    // Restore the actual map title, including the house owner's username.
-                    string rawMapName = flash.GetGameObject("world.strMapName") ?? string.Empty;
-                    if (!string.IsNullOrEmpty(rawMapName) && rawMapName != "null")
-                        flash.Call("setGameObject", "ui.mcInterface.areaList.title.t1.text", rawMapName);
 
                     // Trigger a game UI refresh to accurately restore names
                     flash.CallGameFunction("world.setUserData");
