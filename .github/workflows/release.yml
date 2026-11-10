@@ -120,7 +120,9 @@ jobs:
               gh release upload $tag $files --clobber
               if ($LASTEXITCODE -ne 0) { throw "Failed to upload release assets." }
               if (Test-Path $notesFile) {
-                  gh release edit $tag --notes-file $notesFile
+                  gh release edit $tag --notes-file $notesFile --draft=false
+              } else {
+                  gh release edit $tag --draft=false
               }
           } else {
               Write-Host "Creating new release for $tag..."
