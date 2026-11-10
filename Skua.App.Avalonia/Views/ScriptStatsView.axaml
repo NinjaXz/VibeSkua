@@ -261,9 +261,10 @@
             <materialIcons:MaterialIcon Kind="StarFourPointsOutline" Width="14" Height="14" Foreground="{DynamicResource SkuaSuccessBrush}" VerticalAlignment="Center" />
             <TextBlock Classes="row-label" Text="Level" />
           </StackPanel>
-          <ProgressBar Grid.Row="0" Grid.Column="1" Classes="bar" Maximum="100" Value="{Binding ScriptStats.ExperienceProgress}" Foreground="{DynamicResource SkuaSuccessBrush}" />
-          <TextBlock Grid.Row="0" Grid.Column="2" Classes="num" Text="{Binding ScriptStats.ExperienceProgressText}" />
-          <StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="4" Margin="0,0,0,8">
+          <ProgressBar Grid.Row="0" Grid.Column="1" Classes="bar" Maximum="100" Value="{Binding ScriptStats.ExperienceProgress}" Foreground="{DynamicResource SkuaSuccessBrush}" IsVisible="{Binding ScriptStats.IsLevelProgressVisible}" />
+          <TextBlock Grid.Row="0" Grid.Column="2" Classes="num" Text="{Binding ScriptStats.ExperienceProgressText}" IsVisible="{Binding ScriptStats.IsLevelProgressVisible}" />
+          <TextBlock Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Classes="num" Text="MAX LEVEL" IsVisible="{Binding ScriptStats.IsMaxLevel}" />
+          <StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="4" Margin="0,0,0,8" IsVisible="{Binding ScriptStats.IsLevelProgressVisible}">
             <TextBlock Classes="hint">
               <TextBlock.Text>
                 <MultiBinding Converter="{StaticResource RatePerUnitConverter}">
@@ -281,9 +282,10 @@
             <materialIcons:MaterialIcon Kind="TrophyOutline" Width="14" Height="14" Foreground="{DynamicResource SkuaWarningBrush}" VerticalAlignment="Center" />
             <TextBlock Classes="row-label" Text="{Binding ScriptStats.CurrentClassRank, StringFormat=Rank {0}}" ToolTip.Tip="Current class rank; the bar runs to rank 10" />
           </StackPanel>
-          <ProgressBar Grid.Row="2" Grid.Column="1" Classes="bar" Maximum="100" Value="{Binding ScriptStats.ClassRank10Progress}" Foreground="{DynamicResource SkuaWarningBrush}" />
-          <TextBlock Grid.Row="2" Grid.Column="2" Classes="num" Text="{Binding ScriptStats.ClassRank10ProgressText}" />
-          <StackPanel Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="4">
+          <ProgressBar Grid.Row="2" Grid.Column="1" Classes="bar" Maximum="100" Value="{Binding ScriptStats.ClassRank10Progress}" Foreground="{DynamicResource SkuaWarningBrush}" IsVisible="{Binding ScriptStats.IsClassRankProgressVisible}" />
+          <TextBlock Grid.Row="2" Grid.Column="2" Classes="num" Text="{Binding ScriptStats.ClassRank10ProgressText}" IsVisible="{Binding ScriptStats.IsClassRankProgressVisible}" />
+          <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Classes="num" Text="MAX RANK" IsVisible="{Binding ScriptStats.IsMaxClassRank}" />
+          <StackPanel Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="4" IsVisible="{Binding ScriptStats.IsClassRankProgressVisible}">
             <TextBlock Classes="hint">
               <TextBlock.Text>
                 <MultiBinding Converter="{StaticResource RatePerUnitConverter}">

@@ -99,6 +99,12 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
     private string _experienceProgressText = "0 / 0 XP";
 
     [ObservableProperty]
+    private bool _isMaxLevel;
+
+    [ObservableProperty]
+    private bool _isLevelProgressVisible = true;
+
+    [ObservableProperty]
     private double _classRank10Progress;
 
     [ObservableProperty]
@@ -108,7 +114,7 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
     private int _experiencePerHour;
 
     [ObservableProperty]
-    private int _goldPerHour;
+    private long _goldPerHour;
 
     [ObservableProperty]
     private double _killsPerMinute;
@@ -124,6 +130,12 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
 
     [ObservableProperty]
     private int _currentClassRank;
+
+    [ObservableProperty]
+    private bool _isMaxClassRank;
+
+    [ObservableProperty]
+    private bool _isClassRankProgressVisible = true;
 
     [ObservableProperty]
     private int _classPointsPerHour;
@@ -181,6 +193,8 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
                 _sessionStopwatch.Start();
             }
     
+            IsMaxLevel = level >= 100;
+            IsLevelProgressVisible = !IsMaxLevel;
             ExperienceProgress = requiredExperience > 0
                 ? Math.Clamp(experience / (double)requiredExperience * 100d, 0d, 100d)
                 : 0d;
@@ -207,7 +221,7 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
             if (experienceGained > 0)
                 _earnedExperience += experienceGained;
     
-            _earnedGold += (long)gold - _lastGold;
+            _earnedGold += Math.Max(0L, (long)gold - _lastGold);
     
             _sessionKills += Math.Max(0, Kills - _lastKills);
             _sessionDeaths += Math.Max(0, Deaths - _lastDeaths);
@@ -223,7 +237,7 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
             double hours = elapsed.TotalHours;
             double minutes = elapsed.TotalMinutes;
             ExperiencePerHour = (int)Math.Round(_earnedExperience / hours);
-            GoldPerHour = (int)Math.Round(_earnedGold / hours);
+            GoldPerHour = (long)Math.Round(_earnedGold / hours);
             KillsPerMinute = _sessionKills / minutes;
             DeathsPerMinute = _sessionDeaths / minutes;
             ItemsPerHour = (int)Math.Round(_sessionItems / hours);
@@ -246,6 +260,8 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
             _lastClassRank = 0;
             CurrentClassPoints = 0;
             CurrentClassRank = 0;
+            IsMaxClassRank = false;
+            IsClassRankProgressVisible = true;
             ClassRank10Progress = 0;
             ClassRank10ProgressText = $"0 / {ClassPointsForRankTen:N0} CP";
             ClassPointsPerHour = 0;
@@ -297,6 +313,8 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
         }
 
         CurrentClassRank = Math.Max(0, classRank);
+        IsMaxClassRank = CurrentClassRank >= 10;
+        IsClassRankProgressVisible = !IsMaxClassRank;
         CurrentClassPoints = GetClassRankBasePoints(classRank) + Math.Max(0, classPoints);
         ClassRank10Progress = Math.Clamp(CurrentClassPoints / (double)ClassPointsForRankTen * 100d, 0d, 100d);
         ClassRank10ProgressText = $"{Math.Min(CurrentClassPoints, ClassPointsForRankTen):N0} / {ClassPointsForRankTen:N0} CP";
@@ -379,6 +397,10 @@ public partial class ScriptBotStats : ObservableObject, IScriptBotStats, IAsyncD
         ItemsPerHour = 0;
         CurrentClassPoints = 0;
         CurrentClassRank = 0;
+        IsMaxClassRank = false;
+        IsClassRankProgressVisible = true;
+        IsMaxLevel = false;
+        IsLevelProgressVisible = true;
         ClassPointsPerHour = 0;
         TimeToLevel = null;
         TimeToClassRank10 = null;

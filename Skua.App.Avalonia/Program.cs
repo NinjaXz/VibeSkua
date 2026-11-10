@@ -15,11 +15,48 @@ namespace Skua.App.Avalonia;
 
 internal static class Program
 {
+    private static string? _embeddedLifecycleLogPath;
+
     [STAThread]
     public static void Main(string[] args)
     {
+        if (args.Any(argument => string.Equals(argument, "--embed", StringComparison.OrdinalIgnoreCase)))
+        {
+            try
+            {
+                string directory = Path.Combine(Path.GetTempPath(), "VibeSkuaTabs");
+                Directory.CreateDirectory(directory);
+                _embeddedLifecycleLogPath = Path.Combine(directory, $"{Environment.ProcessId}.lifecycle.log");
+                LogEmbeddedProcessEvent("Program.Main");
+                AppDomain.CurrentDomain.ProcessExit += (_, _) => LogEmbeddedProcessEvent("ProcessExit");
+                AppDomain.CurrentDomain.UnhandledException += (_, eventArgs) =>
+                    LogEmbeddedProcessEvent($"UnhandledException (IsTerminating={eventArgs.IsTerminating}): {eventArgs.ExceptionObject}");
+            }
+            catch (Exception exception)
+            {
+                System.Diagnostics.Trace.WriteLine($"Embedded startup logging failed: {exception}");
+            }
+        }
+
         InitializeAssemblyResolvers();
         RunApp(args);
+    }
+
+    private static void LogEmbeddedProcessEvent(string eventName)
+    {
+        if (_embeddedLifecycleLogPath is null)
+            return;
+
+        try
+        {
+            File.AppendAllText(
+                _embeddedLifecycleLogPath,
+                $"{DateTimeOffset.UtcNow:O} | PID={Environment.ProcessId} | {eventName}{Environment.NewLine}");
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Trace.WriteLine($"Embedded process logging failed: {exception}");
+        }
     }
 
     [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]

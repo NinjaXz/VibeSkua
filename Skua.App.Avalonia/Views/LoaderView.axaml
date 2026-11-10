@@ -91,7 +91,8 @@
           <TextBlock Text="{Binding ProgressReport}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource SkuaMutedTextBrush}" VerticalAlignment="Center" />
           <Button Classes="skua-button small skua-danger-soft w84" Content="Cancel" Command="{Binding CancelQuestLoadCommand}" />
         </StackPanel>
-        <Border Grid.Column="3" Width="1" Height="16" Background="{DynamicResource SkuaBorderBrush}" Margin="2,0" />
+        <CheckBox Grid.Column="3" Content="Probe newer IDs" IsChecked="{Binding ProbePastCeiling, Mode=TwoWay}" IsVisible="{Binding !IsLoading}" VerticalAlignment="Center"
+                  ToolTip.Tip="Probe beyond the known quest ceiling one ID at a time. The rejected ID can disconnect the game, but will be remembered so normal updates stop before it." />
         <TextBox Grid.Column="4" Height="26" Watermark="Range, e.g. 2566, 2599" Text="{Binding QuestRange, Mode=TwoWay}" />
         <Button Grid.Column="5" Classes="skua-button small w112" Content="Update range" Command="{Binding UpdateQuestsRangeCommand}" />
       </Grid>

@@ -55,6 +55,12 @@ public interface IScriptBotStats : INotifyPropertyChanged
     /// <summary>Formatted current and required experience for the player's level.</summary>
     string ExperienceProgressText { get; }
 
+    /// <summary>Whether the player has reached level 100.</summary>
+    bool IsMaxLevel { get; }
+
+    /// <summary>Whether level progress details should be displayed.</summary>
+    bool IsLevelProgressVisible { get; }
+
     /// <summary>Progress toward the cumulative class rank 10 target, from 0 to 100.</summary>
     double ClassRank10Progress { get; }
 
@@ -65,7 +71,7 @@ public interface IScriptBotStats : INotifyPropertyChanged
     int ExperiencePerHour { get; }
 
     /// <summary>Net gold balance change per hour during the current session, including spending.</summary>
-    int GoldPerHour { get; }
+    long GoldPerHour { get; }
 
     /// <summary>Monster kills per minute during the current session.</summary>
     double KillsPerMinute { get; }
@@ -81,6 +87,12 @@ public interface IScriptBotStats : INotifyPropertyChanged
 
     /// <summary>Current equipped class rank.</summary>
     int CurrentClassRank { get; }
+
+    /// <summary>Whether the equipped class has reached rank 10.</summary>
+    bool IsMaxClassRank { get; }
+
+    /// <summary>Whether class rank progress details should be displayed.</summary>
+    bool IsClassRankProgressVisible { get; }
 
     /// <summary>Class points gained per hour for the currently equipped class.</summary>
     int ClassPointsPerHour { get; }

@@ -5,6 +5,7 @@ using Skua.Core.Models.Shops;
 namespace Skua.Core.Messaging;
 
 public sealed record LogoutMessage();
+public sealed record PlayerDisconnectedMessage();
 public sealed record LogoutRequestedMessage();
 public sealed record LoginMessage(string Username);
 public sealed record PlayerDeathMessage();

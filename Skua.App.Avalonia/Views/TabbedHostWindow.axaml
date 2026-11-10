@@ -299,6 +299,63 @@
                             <TextBlock x:Name="GridViewText" Text="Grid View" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SkuaTextBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Border>
+
+                    <!-- Game size presets inspired by Aeoniian's VibeSkuffle; implemented independently. -->
+                    <Border x:Name="GameSizeBorder"
+                            Cursor="Hand"
+                            Height="28"
+                            BorderThickness="1"
+                            BorderBrush="{DynamicResource SkuaBorderBrush}"
+                            Background="{DynamicResource SkuaSurfaceAltBrush}"
+                            CornerRadius="6"
+                            Padding="9,0"
+                            VerticalAlignment="Center"
+                            PointerPressed="GameSizeBorder_PointerPressed">
+                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="ResizeBottomRight" Width="14" Height="14" Foreground="{DynamicResource SkuaTextBrush}" />
+                            <TextBlock x:Name="GameSizeText" Text="Size: Auto" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SkuaTextBrush}" VerticalAlignment="Center" />
+                            <materialIcons:MaterialIcon Kind="ChevronDown" Width="12" Height="12" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+                        </StackPanel>
+                        <FlyoutBase.AttachedFlyout>
+                            <MenuFlyout Placement="Bottom">
+                                <MenuItem x:Name="GameSizeAutoMenuItem" Header="Auto" Tag="auto" Click="GameSizeMenuItem_Click" />
+                                <Separator />
+                                <MenuItem x:Name="GameSize640MenuItem" Header="640 × 367" Tag="640x367" Click="GameSizeMenuItem_Click" />
+                                <MenuItem x:Name="GameSize960MenuItem" Header="960 × 550" Tag="960x550" Click="GameSizeMenuItem_Click" />
+                                <MenuItem x:Name="GameSize1280MenuItem" Header="1280 × 720" Tag="1280x720" Click="GameSizeMenuItem_Click" />
+                                <MenuItem x:Name="GameSize1600MenuItem" Header="1600 × 900" Tag="1600x900" Click="GameSizeMenuItem_Click" />
+                                <MenuItem x:Name="GameSize1920MenuItem" Header="1920 × 1080" Tag="1920x1080" Click="GameSizeMenuItem_Click" />
+                            </MenuFlyout>
+                        </FlyoutBase.AttachedFlyout>
+                    </Border>
+
+                    <!-- Grid Layout selector temporarily hidden; implementation retained for later.
+
+                    <Border x:Name="GridLayoutBorder"
+                            Cursor="Hand"
+                            Height="28"
+                            BorderThickness="1"
+                            BorderBrush="{DynamicResource SkuaBorderBrush}"
+                            Background="{DynamicResource SkuaSurfaceAltBrush}"
+                            CornerRadius="6"
+                            Padding="9,0"
+                            VerticalAlignment="Center"
+                            PointerPressed="GridLayoutBorder_PointerPressed">
+                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="ViewGridOutline" Width="14" Height="14" Foreground="{DynamicResource SkuaTextBrush}" />
+                            <TextBlock Text="Layout" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SkuaTextBrush}" VerticalAlignment="Center" />
+                            <materialIcons:MaterialIcon Kind="ChevronDown" Width="11" Height="11" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+
+                        </StackPanel>
+                        <FlyoutBase.AttachedFlyout>
+                            <MenuFlyout Placement="Bottom">
+                                <MenuItem Header="Auto (balanced)" Click="MenuItem_GridLayoutAuto_Click" />
+                                <MenuItem Header="Side-by-side" Click="MenuItem_GridLayoutHorizontal_Click" />
+                                <MenuItem Header="Stacked" Click="MenuItem_GridLayoutVertical_Click" />
+                            </MenuFlyout>
+                        </FlyoutBase.AttachedFlyout>
+                    </Border>
+                    -->
                 </StackPanel>
             </Grid>
         </Border>

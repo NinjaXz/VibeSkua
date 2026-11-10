@@ -1,0 +1,191 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vms="clr-namespace:Skua.App.Avalonia.ViewModels"
+             x:Class="Skua.App.Avalonia.Views.CalendarView"
+             x:DataType="vms:CalendarViewModel"
+             Background="{DynamicResource SkuaPageBrush}"
+             mc:Ignorable="d" d:DesignHeight="640" d:DesignWidth="520">
+
+  <UserControl.Styles>
+    <Style Selector="Border.cal-card">
+      <Setter Property="Background" Value="{DynamicResource SkuaSurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SkuaBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="12,10" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="TextBlock.cal-heading">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource SkuaAccentBrush}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBlock.cal-big">
+      <Setter Property="FontSize" Value="28" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource SkuaTextBrush}" />
+    </Style>
+    <Style Selector="TextBlock.cal-big.urgent">
+      <Setter Property="Foreground" Value="{DynamicResource SkuaWarningBrush}" />
+    </Style>
+
+    <!-- Rounded tile behind a heading icon -->
+    <Style Selector="Border.cal-tile">
+      <Setter Property="Width" Value="26" />
+      <Setter Property="Height" Value="26" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- Progress bars: thin and round, the fill colour set per use -->
+    <Style Selector="ProgressBar.cal-bar">
+      <Setter Property="Height" Value="7" />
+      <Setter Property="MinHeight" Value="7" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="CornerRadius" Value="3.5" />
+      <Setter Property="Background" Value="{DynamicResource SkuaSurfaceAltBrush}" />
+    </Style>
+    <Style Selector="ProgressBar.cal-bar.blue"><Setter Property="Foreground" Value="#4C8DFF" /></Style>
+    <Style Selector="ProgressBar.cal-bar.green"><Setter Property="Foreground" Value="{DynamicResource SkuaSuccessBrush}" /></Style>
+    <Style Selector="ProgressBar.cal-bar.ending"><Setter Property="Foreground" Value="{DynamicResource SkuaWarningBrush}" /></Style>
+
+    <!-- A boost row: an icon tile, the name, the time and a bar -->
+    <Style Selector="Border.boost-row">
+      <Setter Property="Background" Value="{DynamicResource SkuaSurfaceAltBrush}" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="10,8,10,8" />
+      <Setter Property="Margin" Value="0,3" />
+    </Style>
+    <Style Selector="TextBlock.boost-time">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBlock.boost-time.on"><Setter Property="Foreground" Value="{DynamicResource SkuaSuccessBrush}" /></Style>
+    <Style Selector="TextBlock.boost-time.ending"><Setter Property="Foreground" Value="{DynamicResource SkuaWarningBrush}" /></Style>
+    <Style Selector="TextBlock.boost-time.soon"><Setter Property="Foreground" Value="{DynamicResource SkuaWarningBrush}" /></Style>
+  </UserControl.Styles>
+
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="12" Spacing="10">
+      <!-- Server time (US Eastern) -->
+      <Border Classes="cal-card">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+          <Border Classes="cal-tile" Background="#334C8DFF">
+            <materialIcons:MaterialIcon Kind="ClockOutline" Width="15" Height="15" Foreground="#4C8DFF" />
+          </Border>
+          <StackPanel Grid.Column="1" Spacing="2">
+            <TextBlock Classes="cal-heading" Text="SERVER TIME" HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding ServerTime}" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center"
+                       FontFamily="Cascadia Mono,Consolas,Courier New,monospace" Foreground="{DynamicResource SkuaTextBrush}" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- The two resets side by side; icons and bars have fixed colours; only the headings follow the Application Theme (accent); green / yellow mean ON and coming up -->
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+        <Border Grid.Column="0" Classes="cal-card">
+          <StackPanel Spacing="7">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Border Classes="cal-tile" Background="#33F5A524">
+                <materialIcons:MaterialIcon Kind="WhiteBalanceSunny" Width="15" Height="15" Foreground="#F5A524" />
+              </Border>
+              <TextBlock Classes="cal-heading" Text="DAILY RESET" />
+            </StackPanel>
+            <TextBlock Classes="cal-big" Classes.urgent="{Binding DailyUrgent}" Text="{Binding DailyText}" />
+            <ProgressBar Classes="cal-bar blue" Minimum="0" Maximum="1" Value="{Binding DailyProgress}" />
+          </StackPanel>
+        </Border>
+        <Border Grid.Column="1" Classes="cal-card">
+          <StackPanel Spacing="7">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Border Classes="cal-tile" Background="#339F7AEA">
+                <materialIcons:MaterialIcon Kind="CalendarWeek" Width="15" Height="15" Foreground="#9F7AEA" />
+              </Border>
+              <TextBlock Classes="cal-heading" Text="WEEKLY RESET" />
+            </StackPanel>
+            <TextBlock Classes="cal-big" Classes.urgent="{Binding WeeklyUrgent}" Text="{Binding WeeklyText}" />
+            <ProgressBar Classes="cal-bar blue" Minimum="0" Maximum="1" Value="{Binding WeeklyProgress}" />
+          </StackPanel>
+        </Border>
+      </Grid>
+
+      <!-- Boosts -->
+      <Border Classes="cal-card">
+        <StackPanel Spacing="6">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Border Classes="cal-tile" Background="#3334C759">
+                <materialIcons:MaterialIcon Kind="LightningBolt" Width="15" Height="15" Foreground="#34C759" />
+              </Border>
+              <TextBlock Classes="cal-heading" Text="BOOSTS" />
+            </StackPanel>
+            <Button Grid.Column="1" Classes="skua-button small" Command="{Binding RefreshCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="5">
+                <materialIcons:MaterialIcon Kind="Refresh" Width="14" Height="14" />
+                <TextBlock Text="Refresh" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </Grid>
+          <TextBlock Text="{Binding UpdatedText}" FontSize="11" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+          <TextBlock Text="{Binding Note}" IsVisible="{Binding HasNote}" TextWrapping="Wrap" Foreground="{DynamicResource SkuaWarningBrush}" FontSize="12" />
+          <TextBlock Text="No boosts listed." IsVisible="{Binding HasNoBoosts}" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+
+          <!-- Running now: green -->
+          <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,8,0,0" IsVisible="{Binding HasActive}">
+            <materialIcons:MaterialIcon Kind="PlayCircle" Width="15" Height="15" Foreground="{DynamicResource SkuaSuccessBrush}" />
+            <TextBlock Classes="cal-heading" Text="ACTIVE NOW" Foreground="{DynamicResource SkuaSuccessBrush}" />
+          </StackPanel>
+          <ItemsControl ItemsSource="{Binding ActiveBoosts}" IsVisible="{Binding HasActive}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vms:CalendarBoost">
+                <Border Classes="boost-row on">
+                  <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="10">
+                    <Border Grid.RowSpan="2" Classes="cal-tile" Background="#3334C759">
+                      <materialIcons:MaterialIcon Kind="LightningBolt" Width="15" Height="15" Foreground="#34C759" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="7">
+                      <TextBlock Text="{Binding Name}" VerticalAlignment="Center" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource SkuaTextBrush}" />
+                      <Border Classes="chip success"><TextBlock Text="ON" /></Border>
+                    </StackPanel>
+                    <TextBlock Grid.Column="2" Classes="boost-time on" Classes.ending="{Binding EndingSoon}" Text="{Binding Status}" />
+                    <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Detail}" FontSize="11" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+                    <ProgressBar Grid.Row="2" Grid.ColumnSpan="3" Margin="0,7,0,0" Classes="cal-bar green" Classes.ending="{Binding EndingSoon}" Minimum="0" Maximum="1" Value="{Binding Progress}" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <!-- Coming: amber -->
+          <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,8,0,0" IsVisible="{Binding HasUpcoming}">
+            <materialIcons:MaterialIcon Kind="ClockFast" Width="15" Height="15" Foreground="{DynamicResource SkuaWarningBrush}" />
+            <TextBlock Classes="cal-heading" Text="COMING UP" Foreground="{DynamicResource SkuaWarningBrush}" />
+          </StackPanel>
+          <ItemsControl ItemsSource="{Binding UpcomingBoosts}" IsVisible="{Binding HasUpcoming}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vms:CalendarBoost">
+                <Border Classes="boost-row soon">
+                  <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="10">
+                    <Border Grid.RowSpan="2" Classes="cal-tile" Background="#334C8DFF">
+                      <materialIcons:MaterialIcon Kind="ClockOutline" Width="15" Height="15" Foreground="#4C8DFF" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="7">
+                      <TextBlock Text="{Binding Name}" VerticalAlignment="Center" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource SkuaTextBrush}" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="2" Classes="boost-time soon" Text="{Binding Status}" />
+                    <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Detail}" FontSize="11" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

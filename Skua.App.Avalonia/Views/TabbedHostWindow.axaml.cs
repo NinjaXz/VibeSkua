@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
@@ -239,6 +240,91 @@ public partial class TabbedHostWindow : Window
     private readonly CancellationTokenSource _pipeCts = new();
     private bool _isGridViewEnabled = false;
     private TabItem? _lastSelectedTab;
+    // Game size presets inspired by Aeoniian's VibeSkuffle; this implementation is original.
+    private static readonly (int Width, int Height)[] GameSizes =
+    {
+        (640, 367),
+        (960, 550),
+        (1280, 720),
+        (1600, 900),
+        (1920, 1080)
+    };
+
+    private (int Width, int Height)? _gameSize;
+
+    private static (int Width, int Height)? ParseGameSize(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.Equals("auto", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        string[] parts = value.Split('x', StringSplitOptions.TrimEntries);
+        if (parts.Length == 2
+            && int.TryParse(parts[0], out int width)
+            && int.TryParse(parts[1], out int height)
+            && width is >= 320 and <= 7680
+            && height is >= 180 and <= 4320)
+            return (width, height);
+
+        return null;
+    }
+
+    private static (int X, int Y, int Width, int Height) FitGameSize(int x, int y, int width, int height, (int Width, int Height)? size)
+    {
+        if (size is not { } target || width <= 0 || height <= 0)
+            return (x, y, width, height);
+
+        double scale = Math.Min(1d, Math.Min((double)width / target.Width, (double)height / target.Height));
+        int gameWidth = Math.Max((int)(target.Width * scale), 1);
+        int gameHeight = Math.Max((int)(target.Height * scale), 1);
+        return (x + (width - gameWidth) / 2, y + (height - gameHeight) / 2, gameWidth, gameHeight);
+    }
+
+    private void UpdateGameSizeButton()
+    {
+        GameSizeText.Text = _gameSize is { } size ? $"Size: {size.Width}x{size.Height}" : "Size: Auto";
+        ToolTip.SetTip(GameSizeBorder, _gameSize is { } selected
+            ? $"Game size: {selected.Width} x {selected.Height}."
+            : "Game size: fills the available client area.");
+
+        GameSizeAutoMenuItem.IsChecked = _gameSize == null;
+        GameSize640MenuItem.IsChecked = _gameSize == GameSizes[0];
+        GameSize960MenuItem.IsChecked = _gameSize == GameSizes[1];
+        GameSize1280MenuItem.IsChecked = _gameSize == GameSizes[2];
+        GameSize1600MenuItem.IsChecked = _gameSize == GameSizes[3];
+        GameSize1920MenuItem.IsChecked = _gameSize == GameSizes[4];
+    }
+
+    private void GameSizeBorder_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        e.Handled = true;
+        FlyoutBase.ShowAttachedFlyout(GameSizeBorder);
+    }
+
+    private void GameSizeMenuItem_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not string value)
+            return;
+
+        _gameSize = ParseGameSize(value);
+
+        Ioc.Default.GetService<ISettingsService>()?.Set("VibeSkuaGameSize", _gameSize is { } selected
+            ? $"{selected.Width}x{selected.Height}"
+            : "auto");
+
+        UpdateGameSizeButton();
+        _lastX = int.MinValue;
+        _lastY = int.MinValue;
+        _lastW = int.MinValue;
+        _lastH = int.MinValue;
+        ScheduleReposition();
+    }
+
+    private enum GridLayoutMode
+    {
+        Auto,
+        Horizontal,
+        Vertical
+    }
     private IntPtr _hostHwnd = IntPtr.Zero;
     private int _lastX = -99999, _lastY = -99999, _lastW = -99999, _lastH = -99999;
     private IntPtr _lastActiveHwnd = IntPtr.Zero;
@@ -331,6 +417,8 @@ public partial class TabbedHostWindow : Window
     {
         _initialArgs = initialArgs ?? Array.Empty<string>();
         InitializeComponent();
+        _gameSize = ParseGameSize(Ioc.Default.GetService<ISettingsService>()?.Get("VibeSkuaGameSize", "auto"));
+        UpdateGameSizeButton();
         LoadArmyJumpSettings();
         Title = $"VibeSkua V{Skua.Core.Models.ClientFileSources.DisplayVersion}";
         MainTitleBar.TitleText = Title;
@@ -2149,6 +2237,9 @@ public partial class TabbedHostWindow : Window
 
     private void UpdateGridViewBorderColor()
     {
+        if (GameSizeBorder != null)
+            GameSizeBorder.IsVisible = !_isGridViewEnabled;
+
         if (_isGridViewEnabled)
         {
             GridViewBorder[!Border.BackgroundProperty] = new global::Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SkuaSelectionBrush");
@@ -2354,6 +2445,12 @@ public partial class TabbedHostWindow : Window
             int h = Math.Max(screenBR.Y - screenTL.Y, 1);
 
             if (w <= 1 || h <= 1) return;
+
+            (int gameX, int gameY, int gameWidth, int gameHeight) = FitGameSize(x, y, w, h, _gameSize);
+            _childOffsetX = (_isGridViewEnabled ? x : gameX) - Position.X;
+            _childOffsetY = (_isGridViewEnabled ? y : gameY) - Position.Y;
+            _childWidth = _isGridViewEnabled ? w : gameWidth;
+            _childHeight = _isGridViewEnabled ? h : gameHeight;
 
             _childOffsetX = x - Position.X;
             _childOffsetY = y - Position.Y;

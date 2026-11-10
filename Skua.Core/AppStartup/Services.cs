@@ -6,6 +6,7 @@ using Skua.Core.Interfaces.Services;
 using Skua.Core.Scripts;
 using Skua.Core.Services;
 using Skua.Core.Utils;
+using System.IO.Compression;
 using System.Reflection;
 using System.Reflection.PortableExecutable;
 
@@ -128,6 +129,7 @@ public static class Services
                         typeof(Enumerable).Assembly.Location,
                         typeof(ScriptManager).Assembly.Location,
                         typeof(System.Text.RegularExpressions.Regex).Assembly.Location,
+                        typeof(ZipArchive).Assembly.Location,
                     };
 
                     foreach (string path in refPaths)
