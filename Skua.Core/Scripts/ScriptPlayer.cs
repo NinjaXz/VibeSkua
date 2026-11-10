@@ -1,3 +1,4 @@
+using System.IO;
 using Skua.Core.Flash;
 using Skua.Core.Interfaces;
 using Skua.Core.Models;
@@ -51,11 +52,140 @@ public partial class ScriptPlayer : IScriptPlayer
 
     public bool Playing => LoggedIn && Alive;
 
-    [CallBinding("isLoggedIn")]
-    private bool _loggedIn;
+    public bool LoggedIn
+    {
+        get
+        {
+            try
+            {
+                if (Flash.Call<bool>("isLoggedIn"))
+                    return true;
+            }
+            catch { }
 
-    [ObjectBinding("loginInfo.strUsername", IsStatic = true)]
-    private string _username;
+            try
+            {
+                if (!Flash.IsNull("world.myAvatar"))
+                    return true;
+            }
+            catch { }
+
+            try
+            {
+                if (Flash.IsWorldLoaded)
+                {
+                    int hp = Flash.GetGameObject<int>("world.myAvatar.dataLeaf.intHP");
+                    if (hp > 0)
+                        return true;
+
+                    hp = Flash.GetGameObject<int>("world.myAvatar.objData.intHP");
+                    if (hp > 0)
+                        return true;
+
+                    string? u = Flash.GetGameObject<string>("world.myAvatar.objData.strUsername");
+                    if (!string.IsNullOrWhiteSpace(u) && u != "null")
+                        return true;
+                }
+            }
+            catch { }
+
+            try
+            {
+                string? sfcUser = Flash.GetGameObject<string>("sfc.myUserName");
+                if (!string.IsNullOrWhiteSpace(sfcUser) && sfcUser != "null")
+                    return true;
+            }
+            catch { }
+
+            try
+            {
+                string dir = Path.Combine(Path.GetTempPath(), "VibeSkuaTabs");
+                string userFile = Path.Combine(dir, $"{Environment.ProcessId}.txt");
+                if (File.Exists(userFile))
+                {
+                    string u = File.ReadAllText(userFile).Trim();
+                    if (!string.IsNullOrWhiteSpace(u) && !u.StartsWith("User ") && !u.StartsWith("Skua "))
+                        return true;
+                }
+
+                string locFile = Path.Combine(dir, $"{Environment.ProcessId}.location.json");
+                if (File.Exists(locFile))
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(locFile));
+                    if (doc.RootElement.TryGetProperty("LoggedIn", out var li) && li.GetBoolean())
+                        return true;
+                }
+            }
+            catch { }
+
+            return false;
+        }
+    }
+
+    public string Username
+    {
+        get
+        {
+            try
+            {
+                string? u = Flash.GetGameObjectStatic<string>("loginInfo.strUsername");
+                if (!string.IsNullOrWhiteSpace(u) && u != "loginInfo.strUsername" && u != "null")
+                    return u.Trim('\"');
+            }
+            catch { }
+
+            try
+            {
+                string? u = Flash.GetGameObject<string>("world.myAvatar.objData.strUsername");
+                if (!string.IsNullOrWhiteSpace(u) && u != "null")
+                    return u.Trim('\"');
+            }
+            catch { }
+
+            try
+            {
+                string? u = Flash.GetGameObject<string>("world.strUsername");
+                if (!string.IsNullOrWhiteSpace(u) && u != "null")
+                    return u.Trim('\"');
+            }
+            catch { }
+
+            try
+            {
+                string? u = Flash.GetGameObject<string>("sfc.myUserName");
+                if (!string.IsNullOrWhiteSpace(u) && u != "null")
+                    return u.Trim('\"');
+            }
+            catch { }
+
+            try
+            {
+                string dir = Path.Combine(Path.GetTempPath(), "VibeSkuaTabs");
+                string userFile = Path.Combine(dir, $"{Environment.ProcessId}.txt");
+                if (File.Exists(userFile))
+                {
+                    string u = File.ReadAllText(userFile).Trim();
+                    if (!string.IsNullOrWhiteSpace(u) && !u.StartsWith("User ") && !u.StartsWith("Skua "))
+                        return u;
+                }
+
+                string locFile = Path.Combine(dir, $"{Environment.ProcessId}.location.json");
+                if (File.Exists(locFile))
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(locFile));
+                    if (doc.RootElement.TryGetProperty("Username", out var unProp) && !string.IsNullOrWhiteSpace(unProp.GetString()))
+                    {
+                        string un = unProp.GetString()!.Trim();
+                        if (!un.StartsWith("User ") && !un.StartsWith("Skua ") && un != "Unknown")
+                            return un;
+                    }
+                }
+            }
+            catch { }
+
+            return string.Empty;
+        }
+    }
 
     [ObjectBinding("loginInfo.strPassword", IsStatic = true)]
     private string _password;
@@ -81,20 +211,85 @@ public partial class ScriptPlayer : IScriptPlayer
     public bool IsMember => Flash.GetGameObject<int>("world.myAvatar.objData.iUpgDays") >= 0;
     public bool Alive => State > 0;
 
-    [ObjectBinding("world.myAvatar.dataLeaf.intHP")]
-    private int _health;
+    public int Health
+    {
+        get
+        {
+            try
+            {
+                int val = Flash.GetGameObject<int>("world.myAvatar.dataLeaf.intHP");
+                if (val > 0) return val;
+                val = Flash.GetGameObject<int>("world.myAvatar.objData.intHP");
+                if (val > 0) return val;
+            }
+            catch { }
+            return 0;
+        }
+    }
 
-    [ObjectBinding("world.myAvatar.dataLeaf.intHPMax")]
-    private int _maxHealth;
+    public int MaxHealth
+    {
+        get
+        {
+            try
+            {
+                int val = Flash.GetGameObject<int>("world.myAvatar.dataLeaf.intHPMax");
+                if (val > 0) return val;
+                val = Flash.GetGameObject<int>("world.myAvatar.objData.intHPMax");
+                if (val > 0) return val;
+            }
+            catch { }
+            return 0;
+        }
+    }
 
-    [ObjectBinding("world.myAvatar.objData.intMP")]
-    private int _mana;
+    public int Mana
+    {
+        get
+        {
+            try
+            {
+                int val = Flash.GetGameObject<int>("world.myAvatar.dataLeaf.intMP");
+                if (val > 0) return val;
+                val = Flash.GetGameObject<int>("world.myAvatar.objData.intMP");
+                if (val > 0) return val;
+            }
+            catch { }
+            return 0;
+        }
+    }
 
-    [ObjectBinding("world.myAvatar.dataLeaf.intMPMax")]
-    private int _maxMana;
+    public int MaxMana
+    {
+        get
+        {
+            try
+            {
+                int val = Flash.GetGameObject<int>("world.myAvatar.dataLeaf.intMPMax");
+                if (val > 0) return val;
+                val = Flash.GetGameObject<int>("world.myAvatar.objData.intMPMax");
+                if (val > 0) return val;
+            }
+            catch { }
+            return 100;
+        }
+    }
 
-    [ObjectBinding("world.myAvatar.dataLeaf.intLevel")]
-    private int _level;
+    public int Level
+    {
+        get
+        {
+            try
+            {
+                int val = Flash.GetGameObject<int>("world.myAvatar.dataLeaf.intLevel");
+                if (val > 0) return val;
+                val = Flash.GetGameObject<int>("world.myAvatar.objData.intLevel");
+                if (val > 0) return val;
+            }
+            catch { }
+            return 0;
+        }
+    }
 
     [ObjectBinding("world.myAvatar.objData.intGold")]
     private int _gold;

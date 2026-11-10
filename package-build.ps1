@@ -19,6 +19,10 @@ if (Test-Path $LegacyAnyCPU) {
 $Targets = @(
     (Join-Path $RootDir "Build")
 )
+$LocalCurrent = Join-Path $env:LOCALAPPDATA "VibeSkua\current"
+if (Test-Path $LocalCurrent) {
+    $Targets += $LocalCurrent
+}
 
 foreach ($Target in $Targets) {
     if (-not (Test-Path $Target)) {
@@ -43,7 +47,11 @@ foreach ($Target in $Targets) {
     foreach ($file in $RootAppFiles) {
         $src = Join-Path $AppBin $file
         if (Test-Path $src) {
-            Copy-Item $src (Join-Path $Target $file) -Force
+            try {
+                Copy-Item $src (Join-Path $Target $file) -Force -ErrorAction Stop
+            } catch {
+                Write-Warning "File in use, skipped copying $file to $Target"
+            }
         } elseif ($file -eq "ScriptDates.json" -and (Test-Path (Join-Path $CoreDir "ScriptDates.json"))) {
             Copy-Item (Join-Path $CoreDir "ScriptDates.json") (Join-Path $Target $file) -Force
         }
@@ -54,7 +62,11 @@ foreach ($Target in $Targets) {
     foreach ($file in $RootManagerFiles) {
         $src = Join-Path $ManagerBin $file
         if (Test-Path $src) {
-            Copy-Item $src (Join-Path $Target $file) -Force
+            try {
+                Copy-Item $src (Join-Path $Target $file) -Force -ErrorAction Stop
+            } catch {
+                Write-Warning "File in use, skipped copying $file to $Target"
+            }
         }
     }
 
@@ -67,15 +79,15 @@ foreach ($Target in $Targets) {
 
     # 4. Copy all DLLs and XMLs into Assemblies (excluding root DLLs)
     $ExcludedDlls = @("VibeSkua.dll", "VibeSkua.Manager.dll", "Skua.dll", "Skua.Manager.dll")
-    $AppDlls = Get-ChildItem -Path $AppBin -Filter "*.dll" -File
-    foreach ($dll in $AppDlls) {
+    $ManagerDlls = Get-ChildItem -Path $ManagerBin -Filter "*.dll" -File
+    foreach ($dll in $ManagerDlls) {
         if ($ExcludedDlls -notcontains $dll.Name) {
             Copy-Item $dll.FullName (Join-Path $AssembliesDir $dll.Name) -Force
         }
     }
 
-    $ManagerDlls = Get-ChildItem -Path $ManagerBin -Filter "*.dll" -File
-    foreach ($dll in $ManagerDlls) {
+    $AppDlls = Get-ChildItem -Path $AppBin -Filter "*.dll" -File
+    foreach ($dll in $AppDlls) {
         if ($ExcludedDlls -notcontains $dll.Name) {
             Copy-Item $dll.FullName (Join-Path $AssembliesDir $dll.Name) -Force
         }

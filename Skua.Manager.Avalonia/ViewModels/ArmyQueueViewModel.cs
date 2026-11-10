@@ -710,10 +710,53 @@ public partial class ArmyQueueViewModel : ObservableRecipient
 
         if (_dialogService.ShowMessageBox("Are you sure you want to stop the running Army Queue?", "Stop Queue", true) == true)
         {
-            _pauseTcs?.TrySetCanceled();
-            _queueCts?.Cancel();
-            IsPaused = false;
-            StatusText = "Stopping Army Queue...";
+            StopQueueDirect();
+        }
+    }
+
+    public void StopQueueDirect()
+    {
+        if (!IsRunning || _queueCts == null)
+            return;
+
+        _pauseTcs?.TrySetCanceled();
+        _queueCts?.Cancel();
+        IsPaused = false;
+        StatusText = "Stopping Army Queue...";
+    }
+
+    public void PauseResumeQueue()
+    {
+        if (!IsRunning) return;
+        if (IsPaused)
+            ResumeQueue();
+        else
+            PauseQueue();
+    }
+
+    public void SetStepScriptDirect(int stepIndex, string? scriptPath)
+    {
+        if (stepIndex >= 0 && stepIndex < Steps.Count)
+        {
+            Steps[stepIndex].StepScriptPath = scriptPath;
+            AutoSave();
+        }
+    }
+
+    public void AddStepDirect(string squadName)
+    {
+        ArmyQueueStepViewModel step = new(string.IsNullOrWhiteSpace(squadName) ? ("Squad " + (Steps.Count + 1)) : squadName);
+        AttachStepEvents(step);
+        Steps.Add(step);
+        SelectedStep = step;
+        AutoSave();
+    }
+
+    public void RemoveStepDirect(int stepIndex)
+    {
+        if (stepIndex >= 0 && stepIndex < Steps.Count)
+        {
+            RemoveStepSpecific(Steps[stepIndex]);
         }
     }
 

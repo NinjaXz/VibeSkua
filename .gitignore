@@ -409,6 +409,12 @@ skua_global_*.txt
 .env.*
 *.env
 
+# Aider files
+.aider*
+.aider.chat.history.md
+.aider.input.history.txt
+.aider.tags.cache.v3/
+
 # Critical: Ensure pre-built Flash SWF is tracked (overrides [Bb]in/ rule)
 !Skua.AS3/skua/bin/
 !Skua.AS3/skua/bin/skua.swf

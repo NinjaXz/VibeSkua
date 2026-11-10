@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/layoutAccountItem"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="@drawable/bg_box"
+    android:padding="12dp"
+    android:layout_marginBottom="8dp"
+    android:clickable="true"
+    android:focusable="true">
+
+    <!-- Leader Crown Icon -->
+    <ImageView
+        android:id="@+id/ivAccountLeaderCrown"
+        android:layout_width="22dp"
+        android:layout_height="22dp"
+        android:src="@drawable/ic_crown"
+        android:layout_marginEnd="8dp"
+        android:visibility="gone" />
+
+    <!-- Status Geometric Circle -->
+    <View
+        android:id="@+id/viewAccountStatusDot"
+        android:layout_width="9dp"
+        android:layout_height="9dp"
+        android:background="@drawable/shape_status_online"
+        android:layout_marginEnd="10dp" />
+
+    <!-- Info Column -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tvAccountUsername"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Skua 1"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvAccountPid"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="[PID 1234]"
+                android:textColor="@color/text_muted"
+                android:textSize="11sp"
+                android:layout_marginStart="6dp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvAccountDetails"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Lvl 100 | ArchMage | Artix"
+            android:textColor="@color/text_muted"
+            android:textSize="11sp"
+            android:layout_marginTop="2dp" />
+
+        <TextView
+            android:id="@+id/tvAccountScriptStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="RUNNING - CoreBots.cs"
+            android:textColor="@color/primary"
+            android:textSize="11sp"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
+
+    <!-- Focus On PC Button -->
+    <Button
+        android:id="@+id/btnItemFocusPc"
+        android:layout_width="wrap_content"
+        android:layout_height="34dp"
+        android:background="@drawable/bg_card"
+        android:text="FOCUS PC"
+        android:textColor="@color/white"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        android:layout_marginStart="8dp" />
+
+</LinearLayout>

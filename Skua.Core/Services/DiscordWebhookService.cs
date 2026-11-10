@@ -152,7 +152,7 @@ public class DiscordWebhookService : IDiscordWebhookService, IDisposable
             EnqueueAction(async () => await SendEmbedAsync("Script Started", $"**{GetBotName()}** has begun execution of **{scriptName}**.", 0x00FF00)); // Green
         }
 
-        // Send an initial dashboard snapshot to Skua Nexus if configured
+        // Send an initial dashboard snapshot to Skua Nexus or Remote Webhook if configured
         if (settings != null && !string.IsNullOrWhiteSpace(settings.NexusWebhookUrl))
         {
             EnqueueAction(async () =>

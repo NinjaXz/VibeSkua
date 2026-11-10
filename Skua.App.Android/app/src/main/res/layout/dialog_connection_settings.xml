@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:overScrollMode="never"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/bg_card"
+        android:padding="20dp">
+
+        <!-- Header Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="SETTINGS &amp; CONTROLS"
+                android:textColor="@color/white"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btnSettingsClose"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:background="@drawable/bg_box"
+                android:text="X"
+                android:textColor="@color/text_muted"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Connection Status Banner -->
+        <TextView
+            android:id="@+id/tvSettingsStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_box"
+            android:padding="12dp"
+            android:text="STATUS: Ready to Connect"
+            android:textColor="@color/white"
+            android:textSize="13sp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Host IP -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="PC Host IP"
+            android:textColor="@color/text_muted"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <EditText
+            android:id="@+id/editHost"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@drawable/edittext_bg"
+            android:hint="192.168.X.X or localhost"
+            android:textColor="@color/white"
+            android:textColorHint="@color/text_muted"
+            android:inputType="textUri"
+            android:imeOptions="actionDone"
+            android:singleLine="true"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Port -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Port (Default: 8088)"
+            android:textColor="@color/text_muted"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <EditText
+            android:id="@+id/editPort"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@drawable/edittext_bg"
+            android:hint="8088"
+            android:textColor="@color/white"
+            android:textColorHint="@color/text_muted"
+            android:inputType="number"
+            android:imeOptions="actionDone"
+            android:singleLine="true"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Connection Action Buttons -->
+        <Button
+            android:id="@+id/btnConnect"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@drawable/btn_green"
+            android:text="CONNECT TO PC"
+            android:textColor="@color/white"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/btnScanLan"
+            android:layout_width="match_parent"
+            android:layout_height="46dp"
+            android:background="@drawable/bg_box"
+            android:text="AUTO-SCAN LAN"
+            android:textColor="@color/white"
+            android:textSize="13sp"
+            android:layout_marginBottom="18dp" />
+
+        <!-- SECTION: UX & PERFORMANCE -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#222"
+            android:layout_marginBottom="14dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="POLLING FREQUENCY"
+            android:textColor="@color/text_muted"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+
+            <Button
+                android:id="@+id/btnPollFast"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_account_pill"
+                android:text="1s (Fast)"
+                android:textColor="@color/white"
+                android:textSize="11sp"
+                android:layout_marginEnd="4dp" />
+
+            <Button
+                android:id="@+id/btnPollNormal"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_box"
+                android:text="2s (Normal)"
+                android:textColor="@color/text_muted"
+                android:textSize="11sp"
+                android:layout_marginStart="2dp"
+                android:layout_marginEnd="2dp" />
+
+            <Button
+                android:id="@+id/btnPollSaver"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_box"
+                android:text="5s (Saver)"
+                android:textColor="@color/text_muted"
+                android:textSize="11sp"
+                android:layout_marginStart="4dp" />
+        </LinearLayout>
+
+        <CheckBox
+            android:id="@+id/chkAutoReconnect"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Auto-reconnect on disconnect"
+            android:textColor="@color/white"
+            android:textSize="13sp"
+            android:checked="true"
+            android:layout_marginBottom="16dp" />
+
+        <!-- SECTION: PUSH NOTIFICATIONS -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#222"
+            android:layout_marginBottom="14dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="PUSH NOTIFICATIONS"
+            android:textColor="@color/text_muted"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Filter By Account Spinner -->
+        <Spinner
+            android:id="@+id/spinnerNotifyAccounts"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_box"
+            android:layout_marginBottom="10dp" />
+
+        <CheckBox
+            android:id="@+id/chkNotifyMuteAll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Mute all notifications"
+            android:textColor="@color/white"
+            android:textSize="13sp"
+            android:layout_marginBottom="4dp" />
+
+        <CheckBox
+            android:id="@+id/chkNotifyScriptStopped"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Script stopped or finished"
+            android:textColor="@color/white"
+            android:textSize="13sp"
+            android:checked="true"
+            android:layout_marginBottom="4dp" />
+
+        <CheckBox
+            android:id="@+id/chkNotifyPlayerDeath"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Player died"
+            android:textColor="@color/white"
+            android:textSize="13sp"
+            android:checked="true"
+            android:layout_marginBottom="4dp" />
+
+        <CheckBox
+            android:id="@+id/chkNotifyDisconnect"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Disconnected / Relogin required"
+            android:textColor="@color/white"
+            android:textSize="13sp"
+            android:checked="true"
+            android:layout_marginBottom="4dp" />
+
+        <CheckBox
+            android:id="@+id/chkNotifyItemDrop"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Rare item drop detected"
+            android:textColor="@color/white"
+            android:textSize="13sp"
+            android:checked="true"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/btnTestNotification"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_box"
+            android:text="TEST NOTIFICATION ALERT"
+            android:textColor="@color/white"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="16dp" />
+
+        <!-- SECTION: DIAGNOSTICS & SYSTEM LOGS -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#222"
+            android:layout_marginBottom="14dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="DIAGNOSTICS &amp; LOGS"
+            android:textColor="@color/text_muted"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/btnViewAppLogs"
+            android:layout_width="match_parent"
+            android:layout_height="46dp"
+            android:background="@drawable/bg_account_pill"
+            android:text="VIEW APP ACTIVITY &amp; ERROR LOGS"
+            android:textColor="@color/white"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+</ScrollView>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="@drawable/bg_card"
+    android:padding="12dp"
+    android:layout_marginBottom="6dp">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvPickerScriptName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Script Name"
+            android:textColor="@color/white"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/tvPickerScriptCategory"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Story | Path"
+            android:textColor="@color/text_muted"
+            android:textSize="11sp"
+            android:maxLines="1"
+            android:ellipsize="middle"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btnPickerScriptAction"
+        android:layout_width="wrap_content"
+        android:layout_height="36dp"
+        android:background="@drawable/btn_primary"
+        android:text="QUEUE"
+        android:textColor="@color/white"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:paddingLeft="14dp"
+        android:paddingRight="14dp"
+        android:layout_marginStart="8dp" />
+
+</LinearLayout>

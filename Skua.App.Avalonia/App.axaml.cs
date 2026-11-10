@@ -162,6 +162,7 @@ public partial class App : Application
             Environment.SetEnvironmentVariable("VIBESKUA_EMBED", "1");
 
         _parentHostProcessId = hasEmbedFlag ? hostPid : 0;
+        Skua.Core.AppStartup.HotKeys.ParentHostProcessId = _parentHostProcessId;
         if (_parentHostProcessId > 0)
             Skua.Shared.Avalonia.Controls.Shell.WindowTitleBar.ArtworkPathChanged += OnTitleBarArtworkPathChanged;
         if (_parentHostProcessId > 0 && themeService is AvaloniaThemeService initialTheme)
@@ -405,6 +406,15 @@ public partial class App : Application
 
         try
         {
+            Ioc.Default.GetService<IRemoteControlService>()?.Start();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Startup remote control init failed: {ex.GetType().Name}: {ex.Message}");
+        }
+
+        try
+        {
             IGetScriptsService? getScripts = Ioc.Default.GetService<IGetScriptsService>();
             if (getScripts is null)
                 return;
@@ -475,6 +485,7 @@ public partial class App : Application
                 {
                     try { await Ioc.Default.GetRequiredService<IDiagnosticsService>().DisposeAsync(); } catch { }
                     try { Ioc.Default.GetRequiredService<ICaptureProxy>().Stop(); } catch { }
+                    try { Ioc.Default.GetService<IRemoteControlService>()?.Stop(); } catch { }
                     try
                     {
                         await ((IAsyncDisposable)Ioc.Default.GetRequiredService<IScriptBoost>()).DisposeAsync();

@@ -91,6 +91,26 @@ internal class Options
             new CommandOptionItemViewModel<IRelayCommand>("Test Skua Nexus Webhook", new AsyncRelayCommand(async () => {
                 await Ioc.Default.GetRequiredService<IDiscordWebhookService>().TestNexusWebhookAsync();
             })) { ActionText = "Test" },
+            new CommandOptionItemViewModel<bool>("Remote Control Server Enabled", "Run local HTTP server for Android controller and mobile dashboard connectivity", "RemoteControlServerEnabled", new RelayCommand<bool>(enabled =>
+            {
+                Ioc.Default.GetRequiredService<ISettingsService>().Set("RemoteControlServerEnabled", enabled);
+                var remoteService = Ioc.Default.GetService<IRemoteControlService>();
+                if (enabled)
+                    remoteService?.Start();
+                else
+                    remoteService?.Stop();
+            }), s.GetRequiredService<ISettingsService>().Get<bool>("RemoteControlServerEnabled")),
+            new CommandOptionItemViewModel<int>("Remote Control Server Port", "Port for mobile controller and dashboard (default: 8088)", "RemoteControlPort", "Port", new RelayCommand<string>(value =>
+            {
+                if (!int.TryParse(value, out int result) || result < 1024 || result > 65535) return;
+                Ioc.Default.GetRequiredService<ISettingsService>().Set("RemoteControlPort", result);
+                var remoteService = Ioc.Default.GetService<IRemoteControlService>();
+                if (remoteService != null && remoteService.IsRunning)
+                {
+                    remoteService.Stop();
+                    remoteService.Start();
+                }
+            }), s.GetRequiredService<ISettingsService>().Get<int>("RemoteControlPort")),
             CreateSettingOptionItem<bool>("Notify on Script Started", "Send alerts and initial statistics when a script starts running", "WebhookNotifyStarted"),
             CreateSettingOptionItem<bool>("Notify on Script Stopped", "Send session summary and statistics when a script finishes or stops", "WebhookNotifyStopped"),
             CreateSettingOptionItem<bool>("Notify on Script Crashed", "Send alerts when a script crashes with an error", "WebhookNotifyCrashed"),

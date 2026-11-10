@@ -14,6 +14,7 @@ using Skua.Core.Utils;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -21,6 +22,7 @@ using System.Security;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
+using global::Avalonia.Threading;
 
 public class FlashUtil : IFlashUtil
 {
@@ -197,7 +199,7 @@ public class FlashUtil : IFlashUtil
         try
         {
             if (Flash is null)
-                return default!;
+                return DefaultProvider.GetDefault(type)!;
 
             StringBuilder req = new StringBuilder().Append($"<invoke name=\"{function}\" returntype=\"xml\">");
             if (args.Length > 0)
@@ -215,7 +217,14 @@ public class FlashUtil : IFlashUtil
                 try
                 {
                     Stopwatch callTimer = Stopwatch.StartNew();
-                    result = Flash.CallFunction(req.ToString());
+                    if (Dispatcher.UIThread.CheckAccess())
+                    {
+                        result = Flash.CallFunction(req.ToString());
+                    }
+                    else
+                    {
+                        result = Dispatcher.UIThread.Invoke(() => Flash?.CallFunction(req.ToString()));
+                    }
                     callTimer.Stop();
 
                     if (callTimer.ElapsedMilliseconds >= 250)
@@ -225,31 +234,115 @@ public class FlashUtil : IFlashUtil
                 }
                 catch (COMException comEx) when (attempt < maxRetries && IsTransientComError(comEx.HResult))
                 {
-                    Thread.Sleep(10 * (attempt + 1));
+                    Thread.Sleep(15 * (attempt + 1));
+                }
+                catch (Exception ex) when (attempt < maxRetries && IsCrossThreadOrComError(ex))
+                {
+                    Thread.Sleep(15 * (attempt + 1));
                 }
             }
 
             if (string.IsNullOrWhiteSpace(result))
-                return default!;
+                return DefaultProvider.GetDefault(type)!;
 
             XElement el = XElement.Parse(result);
-            if (el.FirstNode is null)
-                return default!;
-
-            object? value = Convert.ChangeType(el.FirstNode.ToString(), type);
-            return value ?? default!;
+            object? rawValue = FromFlashXml(el);
+            return ConvertParsedValue(rawValue, type) ?? DefaultProvider.GetDefault(type)!;
         }
         catch (Exception e)
         {
             if (function != "isKicked")
                 _messenger.Send<FlashErrorMessage>(new(e, function, args));
-            return default!;
+            return DefaultProvider.GetDefault(type)!;
         }
+    }
+
+    private static object? ConvertParsedValue(object? rawValue, Type type)
+    {
+        if (rawValue is null)
+            return DefaultProvider.GetDefault(type);
+
+        if (type.IsInstanceOfType(rawValue))
+            return rawValue;
+
+        if (type == typeof(bool))
+        {
+            if (rawValue is bool b) return b;
+            string s = rawValue.ToString()?.Trim() ?? string.Empty;
+            if (bool.TryParse(s, out bool parsedBool)) return parsedBool;
+            if (int.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out int intVal)) return intVal != 0;
+            return s.Equals("true", StringComparison.OrdinalIgnoreCase) || s == "1";
+        }
+
+        if (type == typeof(int))
+        {
+            if (rawValue is int i) return i;
+            if (rawValue is IConvertible)
+            {
+                try { return Convert.ToInt32(rawValue, CultureInfo.InvariantCulture); } catch { }
+            }
+            string s = rawValue.ToString()?.Trim() ?? string.Empty;
+            if (int.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out int parsedInt)) return parsedInt;
+            return 0;
+        }
+
+        if (type == typeof(float))
+        {
+            if (rawValue is float f) return f;
+            if (rawValue is IConvertible)
+            {
+                try { return Convert.ToSingle(rawValue, CultureInfo.InvariantCulture); } catch { }
+            }
+            string s = rawValue.ToString()?.Trim() ?? string.Empty;
+            if (float.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out float parsedFloat)) return parsedFloat;
+            return 0f;
+        }
+
+        if (type == typeof(double))
+        {
+            if (rawValue is double d) return d;
+            if (rawValue is IConvertible)
+            {
+                try { return Convert.ToDouble(rawValue, CultureInfo.InvariantCulture); } catch { }
+            }
+            string s = rawValue.ToString()?.Trim() ?? string.Empty;
+            if (double.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out double parsedDouble)) return parsedDouble;
+            return 0d;
+        }
+
+        if (type == typeof(string))
+        {
+            return rawValue.ToString() ?? string.Empty;
+        }
+
+        try
+        {
+            return Convert.ChangeType(rawValue, type, CultureInfo.InvariantCulture);
+        }
+        catch
+        {
+            return DefaultProvider.GetDefault(type);
+        }
+    }
+
+    private static bool IsCrossThreadOrComError(Exception ex)
+    {
+        if (ex is InvalidOperationException)
+            return true;
+        if (ex is COMException comEx && IsTransientComError(comEx.HResult))
+            return true;
+        if (ex.GetType().Name == "InvalidActiveXStateException")
+            return true;
+        return false;
     }
 
     private static bool IsTransientComError(int hresult)
     {
-        return hresult == unchecked((int)0x8001010A) || hresult == unchecked((int)0x80010001);
+        return hresult == unchecked((int)0x8001010A)  // RPC_E_SERVERCALL_RETRYLATER
+            || hresult == unchecked((int)0x80010001)  // RPC_E_CALL_REJECTED
+            || hresult == unchecked((int)0x8001010E)  // RPC_E_WRONG_THREAD
+            || hresult == unchecked((int)0x80004005)  // E_FAIL
+            || hresult == unchecked((int)0x800706BE); // RPC_S_CALL_FAILED
     }
 
     public static string ToFlashXml(object o)
@@ -289,10 +382,14 @@ public class FlashUtil : IFlashUtil
 
     public object FromFlashXml(XElement el)
     {
-        switch (el.Name.ToString())
+        switch (el.Name.LocalName)
         {
             case "number":
-                return int.TryParse(el.Value, out int i) ? i : float.TryParse(el.Value, out float f) ? f : 0;
+                return int.TryParse(el.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out int i)
+                    ? i
+                    : float.TryParse(el.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out float f)
+                        ? f
+                        : 0;
 
             case "true":
                 return true;
@@ -301,6 +398,7 @@ public class FlashUtil : IFlashUtil
                 return false;
 
             case "null":
+            case "undefined":
                 return null!;
 
             case "array":
@@ -310,6 +408,9 @@ public class FlashUtil : IFlashUtil
                 dynamic d = new ExpandoObject();
                 el.Elements().ForEach(e => d[e.Attribute("id")!.Value] = FromFlashXml(e.Elements().First()));
                 return d;
+
+            case "string":
+                return el.Value;
 
             default:
                 return el.Value;

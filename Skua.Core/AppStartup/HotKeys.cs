@@ -29,6 +29,7 @@ public class HotKeys
     private static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
 
     public static bool IsHostProcess { get; set; } = false;
+    public static int ParentHostProcessId { get; set; } = 0;
     public static IntPtr ActiveChildHwnd { get; set; } = IntPtr.Zero;
     public static IntPtr HostHwnd { get; set; } = IntPtr.Zero;
     public static Func<uint, IntPtr>? GetChildHwndForPid { get; set; }

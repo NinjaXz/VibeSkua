@@ -19,6 +19,7 @@ public static class Services
         
         services.AddSingleton<AccountManagerViewModel>();
         services.AddSingleton<ArmyQueueViewModel>();
+        services.AddSingleton<IRemoteControlService, RemoteControlService>();
         services.AddSingleton<LauncherViewModel>();
         services.AddSingleton<AppUpdaterViewModel>();
         services.AddSingleton<ScriptUpdaterViewModel>();

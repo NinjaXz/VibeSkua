@@ -274,6 +274,15 @@ public class ClientSettings
     [JsonPropertyName("NexusWebhookUrl")]
     public string NexusWebhookUrl { get; set; } = string.Empty;
 
+    [JsonPropertyName("RemoteControlServerEnabled")]
+    public bool RemoteControlServerEnabled { get; set; } = true;
+
+    [JsonPropertyName("RemoteControlPort")]
+    public int RemoteControlPort { get; set; } = 8088;
+
+    [JsonPropertyName("RemoteControlAuthToken")]
+    public string RemoteControlAuthToken { get; set; } = string.Empty;
+
     [JsonPropertyName("WebhookNotifyStarted")]
     public bool WebhookNotifyStarted { get; set; } = true;
 
@@ -347,6 +356,8 @@ public class ClientSettings
         StatsRateUnit = string.IsNullOrWhiteSpace(StatsRateUnit) ? "/hr" : StatsRateUnit;
         StatsRateHistory ??= new();
         InventoryGoals ??= new();
+        if (RemoteControlPort <= 0)
+            RemoteControlPort = 8088;
 
         if (FastTravels == null || FastTravels.Count == 0)
         {

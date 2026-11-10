@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="@drawable/bg_box"
+    android:padding="10dp"
+    android:layout_marginBottom="6dp"
+    android:gravity="center_vertical">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tvItemName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@color/text_main"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:maxLines="2"
+                android:ellipsize="end"
+                android:text="Item Name" />
+
+            <TextView
+                android:id="@+id/tvBadgeAc"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" AC "
+                android:textColor="@color/gold"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:background="@drawable/bg_pill"
+                android:layout_marginStart="6dp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvBadgeUpgrade"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" MEM "
+                android:textColor="@color/orange"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:background="@drawable/bg_pill"
+                android:layout_marginStart="6dp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvBadgeEquipped"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" EQUIPPED "
+                android:textColor="@color/green"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:background="@drawable/bg_pill"
+                android:layout_marginStart="6dp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvItemDetails"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/text_muted"
+            android:textSize="12sp"
+            android:layout_marginTop="2dp"
+            android:text="Qty: 1 / 1 | Item" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <Button
+            android:id="@+id/btnEquip"
+            android:layout_width="62dp"
+            android:layout_height="36dp"
+            android:background="@drawable/btn_green"
+            android:text="Equip"
+            android:textColor="@color/white"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textAllCaps="false"
+            android:layout_marginEnd="6dp" />
+
+        <Button
+            android:id="@+id/btnItemAction"
+            android:layout_width="74dp"
+            android:layout_height="36dp"
+            android:background="@drawable/btn_primary"
+            android:text="To Bank"
+            android:textColor="@color/white"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textAllCaps="false" />
+    </LinearLayout>
+
+</LinearLayout>

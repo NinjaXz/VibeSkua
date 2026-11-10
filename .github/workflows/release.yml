@@ -75,16 +75,31 @@ jobs:
         run: |
           $ver = "${{ steps.get_version.outputs.version }}"
           $tag = "v$ver"
-          $files = Get-ChildItem -Path "Build\Releases" -File | ForEach-Object FullName
+          $files = @(Get-ChildItem -Path "Build\Releases" -File | ForEach-Object FullName)
           if (-not $files) {
               throw "No release artifacts were found in Build\Releases."
+          }
+
+          $rootApk = Join-Path $PWD "skua-remote.apk"
+          if (Test-Path $rootApk) {
+              Write-Host "Adding root APK to release assets: $rootApk"
+              $files += $rootApk
+          } else {
+              $anyApk = Get-ChildItem -Path "." -Filter "*.apk" -File | Select-Object -First 1
+              if ($anyApk) {
+                  Write-Host "Adding APK to release assets: $($anyApk.FullName)"
+                  $files += $anyApk.FullName
+              } elseif (Test-Path "Skua.App.Android\skua-remote.apk") {
+                  Write-Host "Adding Android APK to release assets: Skua.App.Android\skua-remote.apk"
+                  $files += (Resolve-Path "Skua.App.Android\skua-remote.apk").Path
+              }
           }
 
           Write-Host "Publishing assets to tag $tag..."
           $notesFile = "RELEASE_NOTES.md"
           if (Test-Path "RELEASE_NOTES.md") {
               $content = Get-Content "RELEASE_NOTES.md" -Raw
-              if ($content -match "(?s)(##\s+VibeSkua\s+v?$ver\b.*?)(?=\r?\n##\s+VibeSkua\s+v\d|\Z)") {
+              if ($content -match "(?s)(#+\s+VibeSkua[:\s]+v?$ver\b.*?)(?=\r?\n#+\s+VibeSkua|\Z)") {
                   $extracted = $Matches[1].Trim()
                   if ($content -match "(?s)(###\s+Installation\s+&.*)") {
                       if (-not ($extracted -match "###\s+Installation")) {

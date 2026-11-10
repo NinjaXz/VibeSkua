@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg_dark">#0A0A0A</color>
+    <color name="surface">#121212</color>
+    <color name="surface_alt">#181818</color>
+    <color name="surface_elevated">#1E1E1E</color>
+    <color name="border">#282828</color>
+    <color name="border_strong">#3A3A3A</color>
+    <color name="primary">#10B981</color>
+    <color name="primary_dark">#059669</color>
+    <color name="primary_pressed">#047857</color>
+    <color name="accent">#34D399</color>
+    <color name="text_main">#F5F5F5</color>
+    <color name="text_muted">#A3A3A3</color>
+    <color name="green">#10B981</color>
+    <color name="red">#EF4444</color>
+    <color name="red_dark">#DC2626</color>
+    <color name="orange">#FBBF24</color>
+    <color name="gold">#FFD700</color>
+    <color name="mana">#29B6F6</color>
+    <color name="nav_chip">#1C1C1C</color>
+    <color name="white">#FFFFFF</color>
+
+    <!-- Minimal Dark Button Themes (Maintains dark mode with white text & crisp accent borders) -->
+    <color name="btn_green_bg">#14231A</color>
+    <color name="btn_green_bg_pressed">#22382A</color>
+    <color name="btn_green_border">#10B981</color>
+
+    <color name="btn_orange_bg">#231B10</color>
+    <color name="btn_orange_bg_pressed">#352A18</color>
+    <color name="btn_orange_border">#FBBF24</color>
+
+    <color name="btn_red_bg">#231416</color>
+    <color name="btn_red_bg_pressed">#371E21</color>
+    <color name="btn_red_border">#EF4444</color>
+
+    <color name="btn_primary_bg">#14231A</color>
+    <color name="btn_primary_bg_pressed">#22382A</color>
+    <color name="btn_primary_border">#10B981</color>
+</resources>
+

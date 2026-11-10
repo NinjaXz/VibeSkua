@@ -1,0 +1,2499 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_dark">
+
+    <!-- ========================================== -->
+    <!-- TOP APP BAR (Slim 56dp Native Header)      -->
+    <!-- ========================================== -->
+    <LinearLayout
+        android:id="@+id/topAppBar"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@drawable/bg_top_bar"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp">
+
+        <!-- App Icon -->
+        <ImageView
+            android:id="@+id/ivAppLogo"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@mipmap/ic_launcher"
+            android:contentDescription="VibeSkua Logo"
+            android:layout_marginEnd="6dp" />
+
+        <!-- App Title -->
+        <TextView
+            android:id="@+id/tvAppTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/app_name"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:singleLine="true"
+            android:ellipsize="end" />
+
+        <!-- Active Account Pill Selector -->
+        <LinearLayout
+            android:id="@+id/btnAccountSelector"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_account_pill"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:id="@+id/ivTopLeaderCrown"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:src="@drawable/ic_crown"
+                android:layout_marginEnd="4dp"
+                android:visibility="gone" />
+
+            <View
+                android:id="@+id/viewTopStatusDot"
+                android:layout_width="7dp"
+                android:layout_height="7dp"
+                android:background="@drawable/shape_status_online"
+                android:layout_marginEnd="6dp" />
+
+            <TextView
+                android:id="@+id/tvAccountStatusDot"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvActiveAccountName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxWidth="65dp"
+                android:text="HERO"
+                android:textColor="@color/white"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <!-- Streamer Mode Button -->
+        <ImageButton
+            android:id="@+id/btnToggleStreamer"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="4dp"
+            android:background="@drawable/bg_box"
+            android:src="@drawable/ic_eye"
+            android:scaleType="centerInside"
+            android:padding="6dp"
+            android:contentDescription="Streamer Mode" />
+
+        <!-- Focus on PC Button -->
+        <ImageButton
+            android:id="@+id/btnFocusPc"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="4dp"
+            android:background="@drawable/bg_box"
+            android:src="@drawable/ic_focus_pc"
+            android:scaleType="centerInside"
+            android:padding="6dp"
+            android:contentDescription="Bring to Front on PC" />
+
+        <!-- Connection Settings Button -->
+        <ImageButton
+            android:id="@+id/btnOpenSettings"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="4dp"
+            android:background="@drawable/bg_box"
+            android:src="@drawable/ic_settings"
+            android:scaleType="centerInside"
+            android:padding="6dp"
+            android:contentDescription="Connection Settings" />
+
+    </LinearLayout>
+
+    <!-- Stub Views for Connection Status & Switcher Compatibility -->
+    <LinearLayout
+        android:id="@+id/panelConnection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView android:id="@+id/tvConnectionStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" />
+        <Button android:id="@+id/btnToggleHostPanel" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        
+        <EditText android:id="@+id/editHost" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        <EditText android:id="@+id/editPort" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        <Button android:id="@+id/btnConnect" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        <Button android:id="@+id/btnScanLan" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/panelQuickSwitcher"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <LinearLayout android:id="@+id/layoutAccountChips" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        <TextView android:id="@+id/tvNoTabsWarning" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        <Button android:id="@+id/btnBroadcastToggle" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <!-- Legacy Tab Buttons compatibility stub (hidden) -->
+    <LinearLayout
+        android:id="@+id/legacyTabsStub"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone">
+        <Button android:id="@+id/tabBtnDashboard" android:layout_width="0dp" android:layout_height="0dp" />
+        <Button android:id="@+id/tabBtnFleet" android:layout_width="0dp" android:layout_height="0dp" />
+        <Button android:id="@+id/tabBtnScripts" android:layout_width="0dp" android:layout_height="0dp" />
+        <Button android:id="@+id/tabBtnControls" android:layout_width="0dp" android:layout_height="0dp" />
+        <Button android:id="@+id/tabBtnDrops" android:layout_width="0dp" android:layout_height="0dp" />
+        <Button android:id="@+id/tabBtnInventory" android:layout_width="0dp" android:layout_height="0dp" />
+    </LinearLayout>
+
+    <!-- ========================================== -->
+    <!-- MAIN CONTENT FRAME                         -->
+    <!-- ========================================== -->
+    <FrameLayout
+        android:id="@+id/containerMainPages"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <!-- ========================================== -->
+        <!-- 1. DASHBOARD PAGE                          -->
+        <!-- ========================================== -->
+        <ScrollView
+            android:id="@+id/tabDashboard"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:overScrollMode="never">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Hero Vitals Card -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_card"
+                    android:padding="16dp"
+                    android:layout_marginBottom="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/tvPlayerName"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Not Logged In"
+                                android:textColor="@color/white"
+                                android:textSize="17sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvPlayerClass"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Unknown Class | Rank 0"
+                                android:textColor="@color/text_muted"
+                                android:textSize="12sp"
+                                android:layout_marginTop="2dp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- HP Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="4dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="HP"
+                            android:textColor="#EF4444"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvHp"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="end"
+                            android:text="0 / 0 (0%)"
+                            android:textColor="@color/white"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <ProgressBar
+                        android:id="@+id/progressBarHp"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="8dp"
+                        android:max="100"
+                        android:progress="0"
+                        android:progressDrawable="@drawable/progress_hp"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- MP Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="4dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="MP"
+                            android:textColor="#29B6F6"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvMp"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="end"
+                            android:text="0 / 0 (0%)"
+                            android:textColor="@color/white"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <ProgressBar
+                        android:id="@+id/progressBarMp"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="8dp"
+                        android:max="100"
+                        android:progress="0"
+                        android:progressDrawable="@drawable/progress_mp" />
+                </LinearLayout>
+
+                <!-- Active Script Hero Card -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_card"
+                    android:padding="16dp"
+                    android:layout_marginBottom="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="SCRIPT RUNTIME"
+                            android:textColor="@color/text_muted"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvScriptStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_box"
+                            android:text="[STOPPED]"
+                            android:textColor="@color/text_muted"
+                            android:textSize="11sp"
+                            android:paddingLeft="8dp"
+                            android:paddingRight="8dp"
+                            android:paddingTop="3dp"
+                            android:paddingBottom="3dp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvScriptName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="No script running"
+                        android:textColor="@color/white"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvScriptPath"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Load a script from the Scripts tab"
+                        android:textColor="@color/text_muted"
+                        android:textSize="12sp"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginBottom="12dp"
+                        android:ellipsize="middle"
+                        android:singleLine="true" />
+
+                    <!-- Progress / Step Details -->
+                    <LinearLayout
+                        android:id="@+id/containerScriptProgress"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/bg_box"
+                        android:padding="12dp"
+                        android:layout_marginBottom="12dp">
+
+                        <TextView
+                            android:id="@+id/tvScriptCurrentStep"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Step: Idle"
+                            android:textColor="@color/white"
+                            android:textSize="12sp"
+                            android:layout_marginBottom="4dp" />
+
+                        <TextView
+                            android:id="@+id/tvScriptLocation"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Location: -"
+                            android:textColor="@color/text_muted"
+                            android:textSize="12sp"
+                            android:layout_marginBottom="4dp" />
+
+                        <TextView
+                            android:id="@+id/tvScriptQuests"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Quests: -"
+                            android:textColor="@color/text_muted"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <!-- Control Buttons -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="10dp">
+
+                        <Button
+                            android:id="@+id/btnStartScript"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/btn_green"
+                            android:text="START"
+                            android:textColor="@color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:layout_marginEnd="4dp" />
+
+                        <Button
+                            android:id="@+id/btnPauseScript"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/btn_orange"
+                            android:text="PAUSE"
+                            android:textColor="@color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp" />
+
+                        <Button
+                            android:id="@+id/btnStopScript"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/btn_red"
+                            android:text="STOP"
+                            android:textColor="@color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:layout_marginStart="4dp" />
+                    </LinearLayout>
+
+                    <!-- Script Logs Container -->
+                    <LinearLayout
+                        android:id="@+id/containerScriptLogs"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/bg_box"
+                        android:padding="10dp"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="LATEST LOGS"
+                            android:textColor="@color/text_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:layout_marginBottom="4dp" />
+
+                        <TextView
+                            android:id="@+id/tvScriptLogs"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="No logs recorded."
+                            android:textColor="#34D399"
+                            android:textSize="11sp"
+                            android:fontFamily="monospace"
+                            android:maxLines="6" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Session Metrics Grid -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_card"
+                    android:padding="16dp"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="SESSION METRICS"
+                        android:textColor="@color/text_muted"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Row 1: Gold & ACs -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="8dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:background="@drawable/bg_box"
+                            android:padding="10dp"
+                            android:layout_marginEnd="4dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="GOLD"
+                                android:textColor="@color/gold"
+                                android:textSize="10sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvStatGold"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0"
+                                android:textColor="@color/white"
+                                android:textSize="15sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="2dp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:background="@drawable/bg_box"
+                            android:padding="10dp"
+                            android:layout_marginStart="4dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="ADVENTURE COINS"
+                                android:textColor="@color/accent"
+                                android:textSize="10sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvStatAcs"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0"
+                                android:textColor="@color/white"
+                                android:textSize="15sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="2dp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Row 2: Kills & Drops -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="8dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:background="@drawable/bg_box"
+                            android:padding="10dp"
+                            android:layout_marginEnd="4dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="MONSTER KILLS"
+                                android:textColor="@color/text_muted"
+                                android:textSize="10sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvStatKills"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0"
+                                android:textColor="@color/white"
+                                android:textSize="15sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="2dp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:background="@drawable/bg_box"
+                            android:padding="10dp"
+                            android:layout_marginStart="4dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="ITEM DROPS"
+                                android:textColor="@color/text_muted"
+                                android:textSize="10sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvStatDrops"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0"
+                                android:textColor="@color/white"
+                                android:textSize="15sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="2dp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Row 3: Quests & Uptime -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="8dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:background="@drawable/bg_box"
+                            android:padding="10dp"
+                            android:layout_marginEnd="4dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="QUESTS COMPLETED"
+                                android:textColor="@color/text_muted"
+                                android:textSize="10sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvStatQuests"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0"
+                                android:textColor="@color/white"
+                                android:textSize="15sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="2dp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:background="@drawable/bg_box"
+                            android:padding="10dp"
+                            android:layout_marginStart="4dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="SESSION UPTIME"
+                                android:textColor="@color/text_muted"
+                                android:textSize="10sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvStatUptime"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="00:00:00"
+                                android:textColor="@color/white"
+                                android:textSize="15sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="2dp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Map Info -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/bg_box"
+                        android:padding="10dp"
+                        android:layout_marginBottom="8dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="MAP &amp; CELL LOCATION"
+                            android:textColor="@color/text_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvStatMap"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Not in World"
+                            android:textColor="@color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+
+                    <!-- Current Target -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/bg_box"
+                        android:padding="10dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="CURRENT TARGET"
+                            android:textColor="@color/text_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginTop="2dp">
+
+                            <TextView
+                                android:id="@+id/tvTargetName"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="No Target"
+                                android:textColor="@color/white"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvTargetHp"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0 / 0 HP"
+                                android:textColor="@color/text_muted"
+                                android:textSize="12sp"
+                                android:fontFamily="monospace" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- ========================================== -->
+        <!-- 2. ARMY PAGE (Formerly Fleet)              -->
+        <!-- ========================================== -->
+        <ScrollView
+            android:id="@+id/tabFleet"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:visibility="gone"
+            android:overScrollMode="never">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Army Command Center Card -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_card"
+                    android:padding="16dp"
+                    android:layout_marginBottom="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="ARMY COMMAND CENTER"
+                        android:textColor="@color/white"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="4dp" />
+
+                    <TextView
+                        android:id="@+id/tvFleetSummaryCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0 Accounts Running | 0 Active Scripts"
+                        android:textColor="@color/text_muted"
+                        android:textSize="12sp"
+                        android:layout_marginBottom="8dp" />
+
+                    <TextView
+                        android:id="@+id/tvFleetBroadcastIndicator"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/btn_red"
+                        android:padding="8dp"
+                        android:text="[MIRROR ACTIVE] Mirroring commands to ALL accounts"
+                        android:textColor="@color/white"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:visibility="gone"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Quick Batch Action Grid -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="8dp">
+
+                        <Button
+                            android:id="@+id/btnFleetStartAll"
+                            android:layout_width="0dp"
+                            android:layout_height="46dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/btn_green"
+                            android:text="START ALL"
+                            android:textColor="@color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:layout_marginEnd="4dp" />
+
+                        <Button
+                            android:id="@+id/btnFleetStopAll"
+                            android:layout_width="0dp"
+                            android:layout_height="46dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/btn_red"
+                            android:text="STOP ALL"
+                            android:textColor="@color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:layout_marginStart="4dp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="8dp">
+
+                        <Button
+                            android:id="@+id/btnFleetLoadScriptAll"
+                            android:layout_width="0dp"
+                            android:layout_height="46dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/btn_primary"
+                            android:text="LOAD SCRIPT"
+                            android:textColor="@color/white"
+                            android:textSize="13sp"
+                            android:layout_marginEnd="4dp" />
+
+                        <Button
+                            android:id="@+id/btnFleetReloginAll"
+                            android:layout_width="0dp"
+                            android:layout_height="46dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_box"
+                            android:text="RELOGIN ALL"
+                            android:textColor="@color/white"
+                            android:textSize="13sp"
+                            android:layout_marginStart="4dp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <Button
+                            android:id="@+id/btnFleetHeadlessAll"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_box"
+                            android:text="HEADLESS ALL"
+                            android:textColor="@color/white"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginEnd="4dp" />
+
+                        <Button
+                            android:id="@+id/btnReloadFleet"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_box"
+                            android:text="REFRESH ROSTER"
+                            android:textColor="@color/text_muted"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginStart="4dp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Active Running Accounts Deck -->
+                <LinearLayout
+                    android:id="@+id/cardActiveArmyRoster"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_card"
+                    android:padding="16dp"
+                    android:layout_marginBottom="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="10dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="ACTIVE ARMY ROSTER"
+                            android:textColor="@color/white"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvRosterCountBadge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="ALL ACCOUNTS"
+                            android:textColor="@color/accent"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvEmptyFleet"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="No connected tabs running on PC.\nLaunch accounts from the section below or PC manager."
+                        android:textColor="@color/text_muted"
+                        android:textSize="13sp"
+                        android:gravity="center"
+                        android:padding="20dp" />
+
+                    <LinearLayout
+                        android:id="@+id/layoutFleetRoster"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+                </LinearLayout>
+
+                <!-- Dedicated Army Script Scheduler Card -->
+                <LinearLayout
+                    android:id="@+id/cardArmyScheduler"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_card"
+                    android:padding="16dp"
+                    android:layout_marginBottom="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="6dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="ARMY SCRIPT SCHEDULER"
+                            android:textColor="@color/white"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvSchedulerStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_box"
+                            android:paddingLeft="8dp"
+                            android:paddingRight="8dp"
+                            android:paddingTop="3dp"
+                            android:paddingBottom="3dp"
+                            android:text="[IDLE]"
+                            android:textColor="@color/text_muted"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Queue multiple scripts to execute sequentially across all army accounts."
+                        android:textColor="@color/text_muted"
+                        android:textSize="12sp"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Scheduler Control Buttons -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="8dp">
+
+                        <Button
+                            android:id="@+id/btnSchedulerStart"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/btn_green"
+                            android:text="START SCHEDULER"
+                            android:textColor="@color/white"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginEnd="4dp" />
+
+                        <Button
+                            android:id="@+id/btnSchedulerStop"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/btn_red"
+                            android:text="STOP SCHEDULER"
+                            android:textColor="@color/white"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginStart="4dp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="12dp">
+
+                        <Button
+                            android:id="@+id/btnSchedulerQueueScript"
+                            android:layout_width="0dp"
+                            android:layout_height="42dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/btn_primary"
+                            android:text="+ QUEUE SCRIPT"
+                            android:textColor="@color/white"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginEnd="4dp" />
+
+                        <Button
+                            android:id="@+id/btnSchedulerClear"
+                            android:layout_width="0dp"
+                            android:layout_height="42dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_box"
+                            android:text="CLEAR QUEUE"
+                            android:textColor="@color/text_muted"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginStart="4dp" />
+                    </LinearLayout>
+
+                    <!-- Queued Scripts List Container -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="QUEUED SCRIPTS"
+                        android:textColor="@color/text_muted"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="6dp" />
+
+                    <LinearLayout
+                        android:id="@+id/layoutSchedulerQueue"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvEmptySchedulerQueue"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="No scripts in queue. Tap '+ QUEUE SCRIPT' to add."
+                            android:textColor="@color/text_muted"
+                            android:textSize="12sp"
+                            android:gravity="center"
+                            android:padding="16dp"
+                            android:background="@drawable/bg_box" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Dedicated Army Queue (Manager Squads) Card -->
+                <LinearLayout
+                    android:id="@+id/cardArmyQueue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_card"
+                    android:padding="16dp"
+                    android:layout_marginBottom="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="4dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="ARMY QUEUE (MANAGER)"
+                            android:textColor="@color/white"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvArmyQueueBadge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_box"
+                            android:paddingLeft="8dp"
+                            android:paddingRight="8dp"
+                            android:paddingTop="3dp"
+                            android:paddingBottom="3dp"
+                            android:text="[IDLE]"
+                            android:textColor="@color/text_muted"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvArmyQueueStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ready to start queue."
+                        android:textColor="@color/text_muted"
+                        android:textSize="12sp"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Army Queue Controls -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="8dp">
+
+                        <Button
+                            android:id="@+id/btnArmyQueueStart"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/btn_green"
+                            android:text="START QUEUE"
+                            android:textColor="@color/white"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginEnd="4dp" />
+
+                        <Button
+                            android:id="@+id/btnArmyQueuePause"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/btn_orange"
+                            android:text="PAUSE / RESUME"
+                            android:textColor="@color/white"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            android:layout_marginStart="2dp"
+                            android:layout_marginEnd="2dp" />
+
+                        <Button
+                            android:id="@+id/btnArmyQueueStop"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/btn_red"
+                            android:text="STOP QUEUE"
+                            android:textColor="@color/white"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginStart="4dp" />
+                    </LinearLayout>
+
+                    <Button
+                        android:id="@+id/btnArmyQueueRefresh"
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:background="@drawable/bg_box"
+                        android:text="SYNC QUEUE WITH MANAGER"
+                        android:textColor="@color/text_muted"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="10dp" />
+
+                    <!-- Squads & Members Container -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="CONFIGURED SQUADS &amp; MEMBERS"
+                        android:textColor="@color/text_muted"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="6dp" />
+
+                    <LinearLayout
+                        android:id="@+id/layoutArmyQueueSquads"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvEmptyArmyQueue"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="No squads configured in VibeSkua Manager."
+                            android:textColor="@color/text_muted"
+                            android:textSize="12sp"
+                            android:gravity="center"
+                            android:padding="16dp"
+                            android:background="@drawable/bg_box" />
+                    </LinearLayout>
+                </LinearLayout>
+
+
+
+                <!-- Saved Groups & Accounts Card -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_card"
+                    android:padding="16dp"
+                    android:layout_marginBottom="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="ACCOUNT MANAGEMENT"
+                            android:textColor="@color/text_muted"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+
+                        <Button
+                            android:id="@+id/btnQuickLaunch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:background="@drawable/btn_primary"
+                            android:text="+ Launch"
+                            android:textColor="@color/white"
+                            android:textSize="12sp"
+                            android:paddingLeft="12dp"
+                            android:paddingRight="12dp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Saved Groups"
+                        android:textColor="@color/white"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="4dp" />
+
+                    <TextView
+                        android:id="@+id/tvNoSavedGroups"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="No saved groups found."
+                        android:textColor="@color/text_muted"
+                        android:textSize="12sp"
+                        android:layout_marginBottom="10dp" />
+
+                    <LinearLayout
+                        android:id="@+id/layoutSavedGroups"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginBottom="12dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Saved Accounts"
+                        android:textColor="@color/white"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="4dp" />
+
+                    <TextView
+                        android:id="@+id/tvNoSavedAccounts"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="No saved accounts found."
+                        android:textColor="@color/text_muted"
+                        android:textSize="12sp"
+                        android:layout_marginBottom="10dp" />
+
+                    <LinearLayout
+                        android:id="@+id/layoutSavedAccounts"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- ========================================== -->
+        <!-- 3. SCRIPTS PAGE                            -->
+        <!-- ========================================== -->
+        <LinearLayout
+            android:id="@+id/tabScripts"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:visibility="gone">
+
+            <!-- Search & Reload Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="10dp">
+
+                <EditText
+                    android:id="@+id/editScriptSearch"
+                    android:layout_width="0dp"
+                    android:layout_height="46dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/edittext_bg"
+                    android:hint="Search scripts..."
+                    android:textColor="@color/white"
+                    android:textColorHint="@color/text_muted"
+                    android:singleLine="true"
+                    android:imeOptions="actionDone"
+                    android:textSize="13sp" />
+
+                <Button
+                    android:id="@+id/btnUpdateScripts"
+                    android:layout_width="68dp"
+                    android:layout_height="46dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_account_pill"
+                    android:text="UPDATE"
+                    android:textColor="@color/white"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/btnSortScripts"
+                    android:layout_width="wrap_content"
+                    android:layout_height="46dp"
+                    android:layout_marginStart="8dp"
+                    android:paddingLeft="10dp"
+                    android:paddingRight="10dp"
+                    android:background="@drawable/bg_box"
+                    android:text="SORT: A-Z"
+                    android:textColor="@color/accent"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Category Filter Pills -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:layout_marginBottom="10dp">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <Button android:id="@+id/btnCatAll" android:layout_width="wrap_content" android:layout_height="36dp" android:text="All" android:background="@drawable/btn_primary" android:textColor="@color/white" android:textSize="12sp" android:layout_marginEnd="6dp" />
+                    <Button android:id="@+id/btnCatArmy" android:layout_width="wrap_content" android:layout_height="36dp" android:text="Army" android:background="@drawable/bg_box" android:textColor="@color/text_muted" android:textSize="12sp" android:layout_marginEnd="6dp" />
+                    <Button android:id="@+id/btnCatClasses" android:layout_width="wrap_content" android:layout_height="36dp" android:text="Classes" android:background="@drawable/bg_box" android:textColor="@color/text_muted" android:textSize="12sp" android:layout_marginEnd="6dp" />
+                    <Button android:id="@+id/btnCatDailies" android:layout_width="wrap_content" android:layout_height="36dp" android:text="Dailies" android:background="@drawable/bg_box" android:textColor="@color/text_muted" android:textSize="12sp" android:layout_marginEnd="6dp" />
+                    <Button android:id="@+id/btnCatEvil" android:layout_width="wrap_content" android:layout_height="36dp" android:text="Evil" android:background="@drawable/bg_box" android:textColor="@color/text_muted" android:textSize="12sp" android:layout_marginEnd="6dp" />
+                    <Button android:id="@+id/btnCatFarm" android:layout_width="wrap_content" android:layout_height="36dp" android:text="Farm" android:background="@drawable/bg_box" android:textColor="@color/text_muted" android:textSize="12sp" android:layout_marginEnd="6dp" />
+                    <Button android:id="@+id/btnCatGood" android:layout_width="wrap_content" android:layout_height="36dp" android:text="Good" android:background="@drawable/bg_box" android:textColor="@color/text_muted" android:textSize="12sp" android:layout_marginEnd="6dp" />
+                    <Button android:id="@+id/btnCatLegion" android:layout_width="wrap_content" android:layout_height="36dp" android:text="Legion" android:background="@drawable/bg_box" android:textColor="@color/text_muted" android:textSize="12sp" android:layout_marginEnd="6dp" />
+                    <Button android:id="@+id/btnCatLocal" android:layout_width="wrap_content" android:layout_height="36dp" android:text="Local" android:background="@drawable/bg_box" android:textColor="@color/text_muted" android:textSize="12sp" android:layout_marginEnd="6dp" />
+                    <Button android:id="@+id/btnCatNation" android:layout_width="wrap_content" android:layout_height="36dp" android:text="Nation" android:background="@drawable/bg_box" android:textColor="@color/text_muted" android:textSize="12sp" android:layout_marginEnd="6dp" />
+                    <Button android:id="@+id/btnCatOther" android:layout_width="wrap_content" android:layout_height="36dp" android:text="Other" android:background="@drawable/bg_box" android:textColor="@color/text_muted" android:textSize="12sp" android:layout_marginEnd="6dp" />
+                    <Button android:id="@+id/btnCatRep" android:layout_width="wrap_content" android:layout_height="36dp" android:text="Rep" android:background="@drawable/bg_box" android:textColor="@color/text_muted" android:textSize="12sp" android:layout_marginEnd="6dp" />
+                    <Button android:id="@+id/btnCatSeasonal" android:layout_width="wrap_content" android:layout_height="36dp" android:text="Seasonal" android:background="@drawable/bg_box" android:textColor="@color/text_muted" android:textSize="12sp" android:layout_marginEnd="6dp" />
+                    <Button android:id="@+id/btnCatStory" android:layout_width="wrap_content" android:layout_height="36dp" android:text="Story" android:background="@drawable/bg_box" android:textColor="@color/text_muted" android:textSize="12sp" android:layout_marginEnd="6dp" />
+                    <Button android:id="@+id/btnCatUltras" android:layout_width="wrap_content" android:layout_height="36dp" android:text="Ultras" android:background="@drawable/bg_box" android:textColor="@color/text_muted" android:textSize="12sp" />
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerScripts"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:overScrollMode="never" />
+
+        </LinearLayout>
+
+        <!-- ========================================== -->
+        <!-- 4. CONTROLS PAGE                           -->
+        <!-- ========================================== -->
+        <ScrollView
+            android:id="@+id/tabControls"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:visibility="gone"
+            android:overScrollMode="never">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Quick Actions Toolbar -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:background="@drawable/bg_card"
+                    android:padding="12dp"
+                    android:layout_marginBottom="14dp">
+
+                    <Button
+                        android:id="@+id/btnOpenBank"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_box"
+                        android:text="OPEN BANK"
+                        android:textColor="@color/white"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:layout_marginEnd="4dp" />
+
+                    <Button
+                        android:id="@+id/btnRelog"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_box"
+                        android:text="RELOGIN"
+                        android:textColor="@color/white"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:layout_marginStart="4dp"
+                        android:layout_marginEnd="4dp" />
+
+                    <Button
+                        android:id="@+id/btnRest"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_box"
+                        android:text="REST"
+                        android:textColor="@color/white"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:layout_marginStart="4dp" />
+                </LinearLayout>
+
+                <!-- Combat Skillpad -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_card"
+                    android:padding="16dp"
+                    android:layout_marginBottom="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="COMBAT SKILLPAD"
+                        android:textColor="@color/text_muted"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="12dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <Button
+                            android:id="@+id/btnSkill1"
+                            android:layout_width="0dp"
+                            android:layout_height="54dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_box"
+                            android:text="1"
+                            android:textColor="@color/white"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:layout_marginEnd="4dp" />
+
+                        <Button
+                            android:id="@+id/btnSkill2"
+                            android:layout_width="0dp"
+                            android:layout_height="54dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_box"
+                            android:text="2"
+                            android:textColor="@color/white"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:layout_marginStart="2dp"
+                            android:layout_marginEnd="2dp" />
+
+                        <Button
+                            android:id="@+id/btnSkill3"
+                            android:layout_width="0dp"
+                            android:layout_height="54dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_box"
+                            android:text="3"
+                            android:textColor="@color/white"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:layout_marginStart="2dp"
+                            android:layout_marginEnd="2dp" />
+
+                        <Button
+                            android:id="@+id/btnSkill4"
+                            android:layout_width="0dp"
+                            android:layout_height="54dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_box"
+                            android:text="4"
+                            android:textColor="@color/white"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:layout_marginStart="2dp"
+                            android:layout_marginEnd="2dp" />
+
+                        <Button
+                            android:id="@+id/btnSkill5"
+                            android:layout_width="0dp"
+                            android:layout_height="54dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_box"
+                            android:text="5"
+                            android:textColor="@color/white"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:layout_marginStart="4dp" />
+                    </LinearLayout>
+
+                    <!-- Target Actions -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="10dp">
+
+                        <Button
+                            android:id="@+id/btnAttackTarget"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/btn_green"
+                            android:text="ATTACK TARGET"
+                            android:textColor="@color/white"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginEnd="4dp" />
+
+                        <Button
+                            android:id="@+id/btnClearTarget"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_box"
+                            android:text="CLEAR TARGET"
+                            android:textColor="@color/text_muted"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginStart="4dp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- World Navigation Card -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_card"
+                    android:padding="16dp"
+                    android:layout_marginBottom="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="WORLD NAVIGATION"
+                        android:textColor="@color/text_muted"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="10dp" />
+
+                    <!-- Join Map -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="10dp">
+
+                        <EditText
+                            android:id="@+id/editJoinMap"
+                            android:layout_width="0dp"
+                            android:layout_height="46dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/edittext_bg"
+                            android:hint="Map name (e.g. yulgar-1234)"
+                            android:textColor="@color/white"
+                            android:textColorHint="@color/text_muted"
+                            android:singleLine="true"
+                            android:imeOptions="actionDone"
+                            android:textSize="13sp" />
+
+                        <Button
+                            android:id="@+id/btnJoinMap"
+                            android:layout_width="wrap_content"
+                            android:layout_height="46dp"
+                            android:layout_marginStart="8dp"
+                            android:background="@drawable/btn_green"
+                            android:text="Join"
+                            android:textColor="@color/white"
+                            android:textStyle="bold"
+                            android:textSize="13sp"
+                            android:paddingLeft="14dp"
+                            android:paddingRight="14dp" />
+                    </LinearLayout>
+
+                    <!-- Cell & Pad Jump -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="10dp">
+
+                        <EditText
+                            android:id="@+id/editCell"
+                            android:layout_width="0dp"
+                            android:layout_height="46dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/edittext_bg"
+                            android:hint="Cell (e.g. Enter)"
+                            android:textColor="@color/white"
+                            android:textColorHint="@color/text_muted"
+                            android:singleLine="true"
+                            android:imeOptions="actionDone"
+                            android:textSize="13sp"
+                            android:layout_marginEnd="4dp" />
+
+                        <EditText
+                            android:id="@+id/editPad"
+                            android:layout_width="0dp"
+                            android:layout_height="46dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/edittext_bg"
+                            android:hint="Pad (e.g. Spawn)"
+                            android:textColor="@color/white"
+                            android:textColorHint="@color/text_muted"
+                            android:singleLine="true"
+                            android:imeOptions="actionDone"
+                            android:textSize="13sp"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="8dp" />
+
+                        <Button
+                            android:id="@+id/btnJump"
+                            android:layout_width="wrap_content"
+                            android:layout_height="46dp"
+                            android:background="@drawable/btn_primary"
+                            android:text="Jump"
+                            android:textColor="@color/white"
+                            android:textStyle="bold"
+                            android:textSize="13sp"
+                            android:paddingLeft="14dp"
+                            android:paddingRight="14dp" />
+                    </LinearLayout>
+
+                    <!-- Player Goto -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <EditText
+                            android:id="@+id/editGoto"
+                            android:layout_width="0dp"
+                            android:layout_height="46dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/edittext_bg"
+                            android:hint="Goto player username"
+                            android:textColor="@color/white"
+                            android:textColorHint="@color/text_muted"
+                            android:singleLine="true"
+                            android:imeOptions="actionDone"
+                            android:textSize="13sp" />
+
+                        <Button
+                            android:id="@+id/btnGoto"
+                            android:layout_width="wrap_content"
+                            android:layout_height="46dp"
+                            android:layout_marginStart="8dp"
+                            android:background="@drawable/btn_primary"
+                            android:text="Goto"
+                            android:textColor="@color/white"
+                            android:textStyle="bold"
+                            android:textSize="13sp"
+                            android:paddingLeft="14dp"
+                            android:paddingRight="14dp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- In-Game Chat Card -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_card"
+                    android:padding="16dp"
+                    android:layout_marginBottom="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="IN-GAME CHAT"
+                            android:textColor="@color/text_muted"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvChatCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="LIVE FEED"
+                            android:textColor="#34D399"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Scrollable Chat Feed -->
+                    <ScrollView
+                        android:id="@+id/scrollChat"
+                        android:layout_width="match_parent"
+                        android:layout_height="180dp"
+                        android:background="@drawable/bg_box"
+                        android:padding="10dp"
+                        android:overScrollMode="never"
+                        android:layout_marginBottom="10dp">
+
+                        <LinearLayout
+                            android:id="@+id/layoutChatFeed"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/tvChatFeed"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="sans-serif"
+                                android:text="No messages yet."
+                                android:textColor="@color/text_muted"
+                                android:textSize="12sp"
+                                android:lineSpacingExtra="4dp" />
+                        </LinearLayout>
+                    </ScrollView>
+
+                    <!-- Quick Channel Selector Bar -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="8dp">
+
+                        <Button
+                            android:id="@+id/btnChatChanZone"
+                            android:layout_width="0dp"
+                            android:layout_height="32dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_account_pill"
+                            android:text="ZONE"
+                            android:textColor="@color/white"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:layout_marginEnd="3dp" />
+
+                        <Button
+                            android:id="@+id/btnChatChanParty"
+                            android:layout_width="0dp"
+                            android:layout_height="32dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_box"
+                            android:text="PARTY"
+                            android:textColor="@color/text_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:layout_marginStart="2dp"
+                            android:layout_marginEnd="2dp" />
+
+                        <Button
+                            android:id="@+id/btnChatChanGuild"
+                            android:layout_width="0dp"
+                            android:layout_height="32dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_box"
+                            android:text="GUILD"
+                            android:textColor="@color/text_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:layout_marginStart="2dp"
+                            android:layout_marginEnd="2dp" />
+
+                        <Button
+                            android:id="@+id/btnChatChanWhisper"
+                            android:layout_width="0dp"
+                            android:layout_height="32dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_box"
+                            android:text="WHISPER"
+                            android:textColor="@color/text_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:layout_marginStart="3dp" />
+                    </LinearLayout>
+
+                    <!-- Message Input & Send -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <EditText
+                            android:id="@+id/editChat"
+                            android:layout_width="0dp"
+                            android:layout_height="46dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/edittext_bg"
+                            android:hint="Type message or /w user..."
+                            android:textColor="@color/white"
+                            android:textColorHint="@color/text_muted"
+                            android:singleLine="true"
+                            android:imeOptions="actionDone"
+                            android:textSize="13sp" />
+
+                        <Button
+                            android:id="@+id/btnSendChat"
+                            android:layout_width="wrap_content"
+                            android:layout_height="46dp"
+                            android:layout_marginStart="8dp"
+                            android:background="@drawable/btn_primary"
+                            android:text="SEND"
+                            android:textColor="@color/white"
+                            android:textStyle="bold"
+                            android:textSize="13sp"
+                            android:paddingLeft="14dp"
+                            android:paddingRight="14dp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Essential Engine Toggles Card (Cleaned 5 essentials) -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_card"
+                    android:padding="16dp"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="ESSENTIAL ENGINE TOGGLES"
+                        android:textColor="@color/text_muted"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="12dp" />
+
+                    <Button
+                        android:id="@+id/btnToggleLagKiller"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_box"
+                        android:text="Lag Killer"
+                        android:textColor="@color/white"
+                        android:textSize="13sp"
+                        android:layout_marginBottom="8dp" />
+
+                    <Button
+                        android:id="@+id/btnToggleAutoRelogin"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_box"
+                        android:text="Auto Relogin"
+                        android:textColor="@color/white"
+                        android:textSize="13sp"
+                        android:layout_marginBottom="8dp" />
+
+                    <Button
+                        android:id="@+id/btnToggleInfiniteRange"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_box"
+                        android:text="Infinite Range"
+                        android:textColor="@color/white"
+                        android:textSize="13sp"
+                        android:layout_marginBottom="8dp" />
+
+                    <Button
+                        android:id="@+id/btnToggleHeadlessMode"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_box"
+                        android:text="Headless Mode"
+                        android:textColor="@color/white"
+                        android:textSize="13sp"
+                        android:layout_marginBottom="8dp" />
+
+                    <Button
+                        android:id="@+id/btnToggleStreamerMode"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_box"
+                        android:text="Streamer Mode"
+                        android:textColor="@color/white"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- ========================================== -->
+        <!-- 5. VAULT PAGE (Unified Bag, Bank, Quests, Drops) -->
+        <!-- ========================================== -->
+        <LinearLayout
+            android:id="@+id/tabInventory"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:visibility="gone">
+
+            <!-- 4-Segmented Vault Pills -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:orientation="horizontal"
+                android:background="@drawable/bg_segmented_container"
+                android:layout_marginBottom="12dp">
+
+                <Button
+                    android:id="@+id/subTabBtnInventory"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@drawable/btn_primary"
+                    android:text="BAG"
+                    android:textColor="@color/white"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/subTabBtnBank"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_box"
+                    android:text="BANK"
+                    android:textColor="@color/text_muted"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:layout_marginStart="3dp" />
+
+                <Button
+                    android:id="@+id/subTabBtnQuests"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_box"
+                    android:text="QUESTS"
+                    android:textColor="@color/text_muted"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:layout_marginStart="3dp" />
+
+                <Button
+                    android:id="@+id/subTabBtnDrops"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_box"
+                    android:text="DROPS"
+                    android:textColor="@color/text_muted"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:layout_marginStart="3dp" />
+
+                <!-- Compatibility subTabBtnTempDrops (hidden) -->
+                <Button android:id="@+id/subTabBtnTempDrops" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            </LinearLayout>
+
+            <!-- A. INVENTORY & BANK HUB -->
+            <LinearLayout
+                android:id="@+id/containerInventoryHub"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <!-- Search & Actions Row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <EditText
+                        android:id="@+id/editInventorySearch"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/edittext_bg"
+                        android:hint="Search items..."
+                        android:textColor="@color/white"
+                        android:textColorHint="@color/text_muted"
+                        android:singleLine="true"
+                        android:imeOptions="actionDone"
+                        android:textSize="13sp" />
+
+                    <Button
+                        android:id="@+id/btnInvSort"
+                        android:layout_width="wrap_content"
+                        android:layout_height="44dp"
+                        android:layout_marginStart="6dp"
+                        android:background="@drawable/bg_box"
+                        android:text="SORT"
+                        android:textColor="@color/white"
+                        android:textSize="12sp"
+                        android:paddingLeft="10dp"
+                        android:paddingRight="10dp" />
+                </LinearLayout>
+
+                <!-- Slots Counter & Open Bank in Game Action -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:id="@+id/tvInventoryCount"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Slots: 0 / 0"
+                        android:textColor="@color/white"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <Button
+                        android:id="@+id/btnOpenBankInv"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:background="@drawable/btn_green"
+                        android:text="OPEN BANK IN GAME"
+                        android:textColor="@color/white"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:paddingLeft="14dp"
+                        android:paddingRight="14dp" />
+                </LinearLayout>
+
+                <!-- Category Pills -->
+                <HorizontalScrollView
+                    android:id="@+id/scrollInvCategories"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:scrollbars="none"
+                    android:layout_marginBottom="8dp">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <Button android:id="@+id/btnInvCatAll" android:layout_width="wrap_content" android:layout_height="34dp" android:text="All" android:background="@drawable/btn_primary" android:textColor="@color/white" android:textSize="11sp" android:layout_marginEnd="5dp" />
+                        <Button android:id="@+id/btnInvCatWeapons" android:layout_width="wrap_content" android:layout_height="34dp" android:text="Weapons" android:background="@drawable/bg_box" android:textColor="@color/text_muted" android:textSize="11sp" android:layout_marginEnd="5dp" />
+                        <Button android:id="@+id/btnInvCatClasses" android:layout_width="wrap_content" android:layout_height="34dp" android:text="Classes" android:background="@drawable/bg_box" android:textColor="@color/text_muted" android:textSize="11sp" android:layout_marginEnd="5dp" />
+                        <Button android:id="@+id/btnInvCatArmors" android:layout_width="wrap_content" android:layout_height="34dp" android:text="Armors" android:background="@drawable/bg_box" android:textColor="@color/text_muted" android:textSize="11sp" android:layout_marginEnd="5dp" />
+                        <Button android:id="@+id/btnInvCatHelms" android:layout_width="wrap_content" android:layout_height="34dp" android:text="Helms" android:background="@drawable/bg_box" android:textColor="@color/text_muted" android:textSize="11sp" android:layout_marginEnd="5dp" />
+                        <Button android:id="@+id/btnInvCatCapes" android:layout_width="wrap_content" android:layout_height="34dp" android:text="Capes" android:background="@drawable/bg_box" android:textColor="@color/text_muted" android:textSize="11sp" android:layout_marginEnd="5dp" />
+                        <Button android:id="@+id/btnInvCatPets" android:layout_width="wrap_content" android:layout_height="34dp" android:text="Pets" android:background="@drawable/bg_box" android:textColor="@color/text_muted" android:textSize="11sp" android:layout_marginEnd="5dp" />
+                        <Button android:id="@+id/btnInvCatMisc" android:layout_width="wrap_content" android:layout_height="34dp" android:text="Misc" android:background="@drawable/bg_box" android:textColor="@color/text_muted" android:textSize="11sp" android:layout_marginEnd="5dp" />
+                        <Button android:id="@+id/btnInvCatAc" android:layout_width="wrap_content" android:layout_height="34dp" android:text="AC Only" android:background="@drawable/bg_box" android:textColor="@color/text_muted" android:textSize="11sp" android:layout_marginEnd="5dp" />
+                        <Button android:id="@+id/btnInvCatEquipped" android:layout_width="wrap_content" android:layout_height="34dp" android:text="Equipped" android:background="@drawable/bg_box" android:textColor="@color/text_muted" android:textSize="11sp" />
+                    </LinearLayout>
+                </HorizontalScrollView>
+
+                <!-- Inventory Recycler -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recyclerInventory"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:overScrollMode="never" />
+            </LinearLayout>
+
+            <!-- B. QUESTS HUB -->
+            <LinearLayout
+                android:id="@+id/containerQuests"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="10dp">
+
+                    <TextView
+                        android:id="@+id/tvQuestsHeader"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="ACTIVE QUESTS"
+                        android:textColor="@color/white"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <Button
+                        android:id="@+id/btnReloadQuests"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/bg_box"
+                        android:text="REFRESH"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recyclerQuests"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:overScrollMode="never" />
+            </LinearLayout>
+
+            <!-- C. SCREEN DROPS & TEMP ITEMS HUB -->
+            <LinearLayout
+                android:id="@+id/containerScreenDrops"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="10dp">
+
+                    <TextView
+                        android:id="@+id/tvDropsHeader"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="SCREEN DROPS"
+                        android:textColor="@color/white"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <Button
+                        android:id="@+id/btnPickupAll"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:background="@drawable/btn_green"
+                        android:text="PICKUP ALL"
+                        android:textColor="@color/white"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:paddingLeft="12dp"
+                        android:paddingRight="12dp"
+                        android:layout_marginEnd="6dp" />
+
+                    <Button
+                        android:id="@+id/btnReloadDrops"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/bg_box"
+                        android:text="REFRESH"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- Drops Recycler -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recyclerDrops"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:overScrollMode="never" />
+
+                <!-- Temp Items Section inside Drops -->
+                <LinearLayout
+                    android:id="@+id/containerTempDrops"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_card"
+                    android:padding="12dp">
+
+                    <TextView
+                        android:id="@+id/tvTempDropsHeader"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="TEMPORARY QUEST ITEMS"
+                        android:textColor="@color/text_muted"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="6dp" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recyclerTempDrops"
+                        android:layout_width="match_parent"
+                        android:layout_height="120dp"
+                        android:overScrollMode="never" />
+                </LinearLayout>
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Stubs for old tabDrops compatibility (hidden) -->
+        <View
+            android:id="@+id/tabDrops"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone" />
+
+    </FrameLayout>
+
+    <!-- ========================================== -->
+    <!-- BOTTOM NAVIGATION BAR (56dp Native M3)     -->
+    <!-- ==================== MODERN DARK BOTTOM NAVIGATION BAR ==================== -->
+    <LinearLayout
+        android:id="@+id/navBottomBar"
+        android:layout_width="match_parent"
+        android:layout_height="62dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@drawable/bg_bottom_nav"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp">
+
+        <!-- 1. Home / Dashboard -->
+        <LinearLayout
+            android:id="@+id/navBtnDashboard"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true">
+
+            <LinearLayout
+                android:id="@+id/pillNavDashboard"
+                android:layout_width="48dp"
+                android:layout_height="28dp"
+                android:gravity="center"
+                android:background="@drawable/bg_nav_active_pill">
+
+                <ImageView
+                    android:id="@+id/ivNavDashboard"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_nav_home" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvNavDashboardText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="HOME"
+                android:textColor="@color/accent"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+        <!-- 2. Army -->
+        <LinearLayout
+            android:id="@+id/navBtnArmy"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true">
+
+            <LinearLayout
+                android:id="@+id/pillNavArmy"
+                android:layout_width="48dp"
+                android:layout_height="28dp"
+                android:gravity="center"
+                android:background="@android:color/transparent">
+
+                <ImageView
+                    android:id="@+id/ivNavArmy"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_nav_army" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvNavArmyText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ARMY"
+                android:textColor="@color/text_muted"
+                android:textSize="10sp"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+        <!-- 3. Scripts -->
+        <LinearLayout
+            android:id="@+id/navBtnScripts"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true">
+
+            <LinearLayout
+                android:id="@+id/pillNavScripts"
+                android:layout_width="48dp"
+                android:layout_height="28dp"
+                android:gravity="center"
+                android:background="@android:color/transparent">
+
+                <ImageView
+                    android:id="@+id/ivNavScripts"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_nav_scripts" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvNavScriptsText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SCRIPTS"
+                android:textColor="@color/text_muted"
+                android:textSize="10sp"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+        <!-- 4. Controls -->
+        <LinearLayout
+            android:id="@+id/navBtnControls"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true">
+
+            <LinearLayout
+                android:id="@+id/pillNavControls"
+                android:layout_width="48dp"
+                android:layout_height="28dp"
+                android:gravity="center"
+                android:background="@android:color/transparent">
+
+                <ImageView
+                    android:id="@+id/ivNavControls"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_nav_controls" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvNavControlsText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CONTROLS"
+                android:textColor="@color/text_muted"
+                android:textSize="10sp"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+        <!-- 5. Vault -->
+        <LinearLayout
+            android:id="@+id/navBtnVault"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true">
+
+            <LinearLayout
+                android:id="@+id/pillNavVault"
+                android:layout_width="48dp"
+                android:layout_height="28dp"
+                android:gravity="center"
+                android:background="@android:color/transparent">
+
+                <ImageView
+                    android:id="@+id/ivNavVault"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_nav_vault" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvNavVaultText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="VAULT"
+                android:textColor="@color/text_muted"
+                android:textSize="10sp"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

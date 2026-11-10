@@ -98,6 +98,7 @@ public static class Services
         services.AddSingleton<IAuraMonitorService, AuraMonitorService>();
         services.AddSingleton<IJunkService, JunkService>();
         services.AddSingleton<BackgroundThemeService>();
+        services.AddSingleton<IRemoteControlService, RemoteControlService>();
 
         return services;
     }

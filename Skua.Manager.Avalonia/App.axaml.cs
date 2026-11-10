@@ -18,6 +18,8 @@ using Skua.Manager.Avalonia.ViewModels;
 using Skua.Shared.Avalonia.Services;
 using Skua.Shared.Avalonia.Controls.Theming;
 using System;
+using System.Linq;
+using Avalonia.Threading;
 
 namespace Skua.Manager.Avalonia;
 
@@ -106,6 +108,99 @@ public partial class App : Application
 
         if (Ioc.Default.GetRequiredService<ISettingsService>().Get("CheckClientUpdates", true))
             _ = Ioc.Default.GetRequiredService<ClientUpdatesViewModel>().Refresh();
+
+        try
+        {
+            var remote = Ioc.Default.GetService<IRemoteControlService>();
+            if (remote != null)
+            {
+                remote.IsManagerMode = true;
+                var accountManager = Ioc.Default.GetService<AccountManagerViewModel>();
+                var armyQueue = Ioc.Default.GetService<ArmyQueueViewModel>();
+
+                if (accountManager != null)
+                {
+                    remote.LaunchAccountAction = (user, pass, srv) =>
+                    {
+                        var acc = accountManager.Accounts.FirstOrDefault(a => a.Username.Equals(user, StringComparison.OrdinalIgnoreCase));
+                        if (acc != null)
+                        {
+                            Dispatcher.UIThread.Post(() => WeakReferenceMessenger.Default.Send<StartAccountMessage>(new(acc, false)));
+                        }
+                    };
+                    remote.LaunchGroupAction = groupName =>
+                    {
+                        var grp = accountManager.Groups.FirstOrDefault(g => g.Name.Equals(groupName, StringComparison.OrdinalIgnoreCase));
+                        if (grp != null)
+                        {
+                            Dispatcher.UIThread.Post(() => WeakReferenceMessenger.Default.Send<StartGroupMessage>(new(grp, false, false)));
+                        }
+                    };
+                }
+
+                if (armyQueue != null)
+                {
+                    remote.ArmyQueueProvider = () =>
+                    {
+                        return new
+                        {
+                            is_running = armyQueue.IsRunning,
+                            is_paused = armyQueue.IsPaused,
+                            status = armyQueue.StatusText,
+                            steps = armyQueue.Steps.Select((s, idx) => new
+                            {
+                                index = idx,
+                                name = s.Name,
+                                script = s.DisplayStepScriptName,
+                                script_path = s.StepScriptPath ?? string.Empty,
+                                status = s.StepStatus,
+                                members = s.Members.Select(m => new
+                                {
+                                    username = m.Username,
+                                    display_name = m.DisplayOrUsername,
+                                    script = m.DisplayScriptName,
+                                    script_path = m.ScriptPath ?? string.Empty,
+                                    status = m.RuntimeStatus,
+                                    pid = m.ProcessId
+                                }).ToList()
+                            }).ToList(),
+                            presets = armyQueue.Presets.ToList()
+                        };
+                    };
+                    remote.StartArmyQueueAction = async () =>
+                    {
+                        await Dispatcher.UIThread.InvokeAsync(async () =>
+                        {
+                            await armyQueue.StartQueue();
+                        });
+                        return RemoteActionResult.Ok("Army Queue started");
+                    };
+                    remote.StopArmyQueueAction = () =>
+                    {
+                        Dispatcher.UIThread.Post(() => armyQueue.StopQueueDirect());
+                    };
+                    remote.PauseResumeArmyQueueAction = () =>
+                    {
+                        Dispatcher.UIThread.Post(() => armyQueue.PauseResumeQueue());
+                    };
+                    remote.SetArmyQueueStepScriptAction = (stepIdx, script) =>
+                    {
+                        Dispatcher.UIThread.Post(() => armyQueue.SetStepScriptDirect(stepIdx, script));
+                    };
+                    remote.AddArmyQueueStepAction = name =>
+                    {
+                        Dispatcher.UIThread.Post(() => armyQueue.AddStepDirect(name));
+                    };
+                    remote.RemoveArmyQueueStepAction = stepIdx =>
+                    {
+                        Dispatcher.UIThread.Post(() => armyQueue.RemoveStepDirect(stepIdx));
+                    };
+                }
+
+                remote.Start();
+            }
+        }
+        catch { }
     }
 
     private async void OnDesktopExit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
@@ -117,6 +212,7 @@ public partial class App : Application
         }
         catch { }
 
+        try { Ioc.Default.GetService<IRemoteControlService>()?.Stop(); } catch { }
         await Ioc.Default.GetRequiredService<IDiagnosticsService>().DisposeAsync();
     }
 

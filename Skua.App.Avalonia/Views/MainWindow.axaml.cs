@@ -80,6 +80,8 @@ public partial class MainWindow : Window
     private const int WM_SKUA_JUMP_MAP = 0x0400 + 449;
     private const int WM_SKUA_SET_OPTION = 0x0400 + 450;
     private const int WM_SKUA_LOAD_SCRIPT = 0x0400 + 453;
+    private const int WM_SKUA_START_SCRIPT = 0x0400 + 445;
+    private const int WM_SKUA_STOP_SCRIPT = 0x0400 + 446;
     private const int WM_SKUA_ARMY_SCHEDULER = 0x0400 + 454;
     private const int WM_SKUA_ARMY_SCHEDULER_STOP = 0x0400 + 455;
     private const int WM_SKUA_CHECK_LOGIN = 0x0400 + 456;
@@ -361,20 +363,63 @@ public partial class MainWindow : Window
                 IScriptMap map = Ioc.Default.GetRequiredService<IScriptMap>();
                 IScriptPlayer player = Ioc.Default.GetRequiredService<IScriptPlayer>();
                 IScriptOption options = Ioc.Default.GetRequiredService<IScriptOption>();
-                if (!map.Loaded || string.IsNullOrWhiteSpace(map.Name) || string.IsNullOrWhiteSpace(player.Cell))
-                    return;
+
+                string mapName = (map.Loaded && !string.IsNullOrWhiteSpace(map.Name)) ? map.Name : "Enter";
+                string cell = string.IsNullOrWhiteSpace(player.Cell) ? "Enter" : player.Cell;
+                string pad = string.IsNullOrWhiteSpace(player.Pad) ? "Spawn" : player.Pad;
+
+                int hp = player.Health;
+                int maxHp = player.MaxHealth;
+                int mp = player.Mana;
+                int maxMp = player.MaxMana;
+                int level = player.Level;
+                int gold = player.Gold;
+                int coins = player.Coins;
+                string className = player.CurrentClass?.Name ?? "None";
+                int classRank = player.CurrentClassRank;
+                bool inCombat = player.InCombat;
+                bool alive = player.Alive;
+                bool hasTarget = player.HasTarget;
+                string targetName = player.Target?.Name ?? string.Empty;
+                int targetHp = player.Target?.HP ?? 0;
+                int targetMaxHp = player.Target?.MaxHP ?? 0;
 
                 // Report the server-assigned room number rather than the internal area ID or requested private-room number.
                 string room = map.RoomNumber > 0 ? map.RoomNumber.ToString() : string.Empty;
+                var scriptManager = Ioc.Default.GetService<IScriptManager>();
+                string serverName = bot.Servers?.LastName ?? string.Empty;
+                bool isScriptRunning = scriptManager?.ScriptRunning ?? false;
+                string scriptName = System.IO.Path.GetFileName(scriptManager?.LoadedScript ?? string.Empty);
+
                 string locationFile = System.IO.Path.Combine(dir, $"{Environment.ProcessId}.location.json");
                 string temporaryFile = locationFile + ".tmp";
                 string locationJson = JsonSerializer.Serialize(new
                 {
-                    Map = map.Name,
+                    Map = mapName,
                     Room = room,
-                    Cell = player.Cell,
-                    Pad = string.IsNullOrWhiteSpace(player.Pad) ? "Spawn" : player.Pad,
+                    Cell = cell,
+                    Pad = pad,
+                    Server = serverName,
                     Username = username,
+                    Level = level,
+                    HP = hp,
+                    MaxHP = maxHp > 0 ? maxHp : (hp > 0 ? hp : 100),
+                    MP = mp,
+                    MaxMP = maxMp > 0 ? maxMp : 100,
+                    Gold = gold,
+                    Coins = coins,
+                    CurrentClass = className,
+                    ClassRank = classRank,
+                    InCombat = inCombat,
+                    Alive = alive,
+                    HasTarget = hasTarget,
+                    TargetName = targetName,
+                    TargetHP = targetHp,
+                    TargetMaxHP = targetMaxHp,
+                    LoggedIn = true,
+                    Playing = true,
+                    ScriptRunning = isScriptRunning,
+                    ScriptName = scriptName,
                     UpdatedUtc = DateTime.UtcNow
                 });
                 System.IO.File.WriteAllText(temporaryFile, locationJson);
@@ -395,12 +440,16 @@ public partial class MainWindow : Window
             string file = System.IO.Path.Combine(dir, $"{Environment.ProcessId}.txt");
             string locationFile = System.IO.Path.Combine(dir, $"{Environment.ProcessId}.location.json");
             string temporaryFile = locationFile + ".tmp";
+            string remoteFile = System.IO.Path.Combine(dir, $"{Environment.ProcessId}.remote.txt");
             if (System.IO.File.Exists(file))
                 System.IO.File.Delete(file);
             if (System.IO.File.Exists(locationFile))
                 System.IO.File.Delete(locationFile);
             if (System.IO.File.Exists(temporaryFile))
                 System.IO.File.Delete(temporaryFile);
+            if (System.IO.File.Exists(remoteFile))
+                System.IO.File.Delete(remoteFile);
+            try { Ioc.Default.GetService<IRemoteControlService>()?.Stop(); } catch { }
         }
         catch { }
 
@@ -691,6 +740,29 @@ public partial class MainWindow : Window
             }
             return IntPtr.Zero;
         }
+        else if (uMsg == WM_SKUA_START_SCRIPT)
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                var sm = Ioc.Default.GetRequiredService<Skua.App.Avalonia.ViewModels.ScriptLoaderViewModel>();
+                if (!sm.ScriptManager.ScriptRunning && sm.ToggleScriptCommand.CanExecute(null))
+                    sm.ToggleScriptCommand.Execute(null);
+            });
+            return IntPtr.Zero;
+        }
+        else if (uMsg == WM_SKUA_STOP_SCRIPT)
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                var sm = Ioc.Default.GetRequiredService<Skua.App.Avalonia.ViewModels.ScriptLoaderViewModel>();
+                var scheduler = Ioc.Default.GetRequiredService<Skua.Shared.Avalonia.ViewModels.ScriptSchedulerViewModel>();
+                if (scheduler.IsRunningQueue && scheduler.StopQueueCommand.CanExecute(null))
+                    scheduler.StopQueueCommand.Execute(null);
+                else if (sm.ScriptManager.ScriptRunning && sm.ToggleScriptCommand.CanExecute(null))
+                    sm.ToggleScriptCommand.Execute(null);
+            });
+            return IntPtr.Zero;
+        }
         else if (uMsg == WM_SKUA_ARMY_SCHEDULER)
         {
             Task.Run(() => 
@@ -698,32 +770,39 @@ public partial class MainWindow : Window
                 try 
                 {
                     string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "skua_global_playlist.json");
+                    var scheduler = Ioc.Default.GetRequiredService<Skua.Shared.Avalonia.ViewModels.ScriptSchedulerViewModel>();
                     if (System.IO.File.Exists(tempFile))
                     {
-                        var data = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.List<Skua.Shared.Avalonia.ViewModels.ScriptSchedulerViewModel.SavedScriptItem>>(System.IO.File.ReadAllText(tempFile));
-                        var scheduler = Ioc.Default.GetRequiredService<Skua.Shared.Avalonia.ViewModels.ScriptSchedulerViewModel>();
-                        Dispatcher.UIThread.Post(() =>
+                        string content = System.IO.File.ReadAllText(tempFile).Trim();
+                        if (content.StartsWith("["))
                         {
-                            scheduler.ScriptQueue.Clear();
-                            if (data != null)
+                            var data = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.List<Skua.Shared.Avalonia.ViewModels.ScriptSchedulerViewModel.SavedScriptItem>>(content);
+                            if (data != null && data.Count > 0)
                             {
-                                foreach (var item in data)
+                                Dispatcher.UIThread.Post(() =>
                                 {
-                                    if (System.IO.File.Exists(item.Path))
+                                    scheduler.ScriptQueue.Clear();
+                                    foreach (var item in data)
                                     {
-                                        var vm = new Skua.Shared.Avalonia.ViewModels.ScriptItemViewModel(item.Path) { Id = item.Id };
-                                        if (!string.IsNullOrEmpty(item.Name)) vm.Name = item.Name;
-                                        scheduler.ScriptQueue.Add(vm);
+                                        if (System.IO.File.Exists(item.Path))
+                                        {
+                                            var vm = new Skua.Shared.Avalonia.ViewModels.ScriptItemViewModel(item.Path) { Id = item.Id };
+                                            if (!string.IsNullOrEmpty(item.Name)) vm.Name = item.Name;
+                                            scheduler.ScriptQueue.Add(vm);
+                                        }
                                     }
-                                }
+                                });
                             }
-                            if (scheduler.ScriptQueue.Count > 0 && !scheduler.IsRunningQueue)
-                            {
-                                if (scheduler.StartQueueCommand.CanExecute(null))
-                                    scheduler.StartQueueCommand.Execute(null);
-                            }
-                        });
+                        }
                     }
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        if (scheduler.ScriptQueue.Count > 0 && !scheduler.IsRunningQueue)
+                        {
+                            if (scheduler.StartQueueCommand.CanExecute(null))
+                                scheduler.StartQueueCommand.Execute(null);
+                        }
+                    });
                 } catch { }
             });
             return IntPtr.Zero;
