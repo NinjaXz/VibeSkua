@@ -64,7 +64,6 @@ public class Modules {
         registerModule(new QuestRequirementWiki());
         registerModule(new QuestItemRates());
         registerModule(new HidePlayers());
-        registerModule(new StreamerNameplate());
         registerModule(new DisableCollisions());
         registerModule(new DisableFX());
     }
