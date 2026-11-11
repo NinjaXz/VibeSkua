@@ -564,12 +564,12 @@ public class HotKeys
         StrongReferenceMessenger.Default.Send<ToggleScriptMessage, int>((int)MessageChannels.ScriptStatus);
     }
 
-    private static void TogglePauseScriptLocal()
+    private static async void TogglePauseScriptLocal()
     {
         // Same as the Script Loader's Pause/Resume button; its status text follows ScriptPaused.
         IScriptManager manager = Ioc.Default.GetRequiredService<IScriptManager>();
         if (manager.ScriptRunning)
-            manager.ScriptPaused = !manager.ScriptPaused;
+            await manager.SetPausedAsync(!manager.ScriptPaused);
     }
 
     private static void LoadScriptLocal()

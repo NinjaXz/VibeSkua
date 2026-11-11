@@ -20,6 +20,8 @@ public class Broadcaster
     private DateTime _lastAttackingSeen = DateTime.MinValue;
     private volatile bool _publishing;
     private readonly object _writeLock = new();
+    private long _nextPublication;
+    private long _publishedVersion;
 
     private CancellationTokenSource? _cts;
     private Task? _watcher;
@@ -196,6 +198,7 @@ public class Broadcaster
 
     public bool WriteNow()
     {
+        long version = Interlocked.Increment(ref _nextPublication);
         try
         {
             if (!_enabled())
@@ -222,18 +225,12 @@ public class Broadcaster
             // rewrote the file) on every gap. 4s merges a farming streak into one
             // continuous "attacking", so it only drops on a genuine sustained stop.
             bool rawAttacking = player.InCombat || player.HasTarget;
-            if (rawAttacking)
-                _lastAttackingSeen = DateTime.UtcNow;
-            bool attacking = rawAttacking || (DateTime.UtcNow - _lastAttackingSeen).TotalMilliseconds < 4000;
 
             string server = GameServer.CurrentName(_bot); // server NAME, not IP (sock7 is shared)
-            _lastServer = server;
 
             // AQW stores the "Enable Goto" social preference here. A nullable read
             // distinguishes a transient Flash read failure from an actual false value.
             bool? gotoEnabled = _bot.Flash.GetGameObject<bool?>("uoPref.bGoto");
-            if (gotoEnabled.HasValue)
-                _lastOffGoto = !gotoEnabled.Value;
 
             // CurrentClass scans inventory; retain the existing sampling cadence.
             bool checkClass;
@@ -261,6 +258,17 @@ public class Broadcaster
 
             lock (_writeLock)
             {
+                // A later publication or logout invalidates this captured snapshot.
+                if (version < _publishedVersion)
+                    return false;
+
+                if (rawAttacking)
+                    _lastAttackingSeen = DateTime.UtcNow;
+                bool attacking = rawAttacking || (DateTime.UtcNow - _lastAttackingSeen).TotalMilliseconds < 4000;
+                _lastServer = server;
+                if (gotoEnabled.HasValue)
+                    _lastOffGoto = !gotoEnabled.Value;
+
                 // Start the command's expiry window only when it can actually be
                 // published. A map transition must not consume its 60-second lifetime.
                 if (_sendAllPending)
@@ -305,6 +313,8 @@ public class Broadcaster
                 };
 
                 bool written = WriteIfChanged(data);
+                if (written)
+                    _publishedVersion = version;
                 if (written && _sendAllPending)
                 {
                     _sendAllPending = false;
@@ -328,6 +338,7 @@ public class Broadcaster
         {
             lock (_writeLock)
             {
+                _publishedVersion = Interlocked.Increment(ref _nextPublication);
                 if (string.IsNullOrEmpty(_lastUsername))
                 {
                     DebugLog.Log("Broadcaster", "offline write skipped: never logged in this session");

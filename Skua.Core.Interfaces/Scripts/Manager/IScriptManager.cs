@@ -17,9 +17,14 @@ public interface IScriptManager : IScriptStatus, INotifyPropertyChanged
     CancellationTokenSource? ScriptCts { get; }
 
     /// <summary>
-    /// Gets or sets whether the script is currently paused.
+    /// Gets the applied pause state. The setter requests a transition; use SetPausedAsync to await resume.
     /// </summary>
     bool ScriptPaused { get; set; }
+
+    /// <summary>
+    /// Applies a pause or awaits completed resume. Returns false on failure or when superseded by pause/shutdown.
+    /// </summary>
+    Task<bool> SetPausedAsync(bool paused);
 
     /// <summary>
     /// Event used to pause and resume the script execution thread.

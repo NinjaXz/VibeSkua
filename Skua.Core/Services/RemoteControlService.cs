@@ -1275,7 +1275,7 @@ public class RemoteControlService : IRemoteControlService
 
                 case "/api/scripts/pause":
                     if (method != "POST") { await SendMethodNotAllowedAsync(stream, "POST"); break; }
-                    var pauseRes = HandleTogglePause();
+                    var pauseRes = await HandleTogglePauseAsync().ConfigureAwait(false);
                     await SendJsonResponseAsync(stream, pauseRes.success ? 200 : 400, pauseRes).ConfigureAwait(false);
                     break;
 
@@ -2743,7 +2743,8 @@ public class RemoteControlService : IRemoteControlService
         {
             if (manager.ScriptPaused)
             {
-                manager.ScriptPaused = false;
+                if (!await manager.SetPausedAsync(false).ConfigureAwait(false))
+                    return RemoteActionResult.Fail("Script resume did not complete");
                 return RemoteActionResult.Ok("Script resumed");
             }
             return RemoteActionResult.Ok("Script already running");
@@ -2792,7 +2793,7 @@ public class RemoteControlService : IRemoteControlService
         return RemoteActionResult.Ok("Script stopped");
     }
 
-    private RemoteActionResult HandleTogglePause()
+    private async Task<RemoteActionResult> HandleTogglePauseAsync()
     {
         var manager = _serviceProvider.GetService<IScriptManager>();
         if (manager == null)
@@ -2801,8 +2802,13 @@ public class RemoteControlService : IRemoteControlService
         if (!manager.ScriptRunning)
             return RemoteActionResult.Fail("Script is not running");
 
-        manager.ScriptPaused = !manager.ScriptPaused;
-        return RemoteActionResult.Ok(manager.ScriptPaused ? "Script paused" : "Script resumed", new { paused = manager.ScriptPaused });
+        bool paused = !manager.ScriptPaused;
+        if (!await manager.SetPausedAsync(paused).ConfigureAwait(false))
+            return RemoteActionResult.Fail("Script pause transition did not complete");
+        string message = "Script resumed";
+        if (paused)
+            message = "Script paused";
+        return RemoteActionResult.Ok(message, new { paused });
     }
 
     private RemoteActionResult HandleLoadScript(string body)

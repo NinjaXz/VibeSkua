@@ -77,27 +77,107 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
     [ObservableProperty]
     private bool _scriptRunning = false;
 
-    [ObservableProperty]
-    private bool _scriptPaused = false;
+    private readonly object _pauseLock = new();
+    private bool _scriptPaused;
+    private bool _pauseRequested;
+    private bool _pauseStopping;
+    private Task<bool> _pauseTransition = Task.FromResult(true);
+
+    public bool ScriptPaused
+    {
+        get { lock (_pauseLock) return _scriptPaused; }
+        set { _ = SetPausedAsync(value); }
+    }
 
     public ManualResetEventSlim ScriptPauseEvent { get; } = new(true);
 
-    async partial void OnScriptPausedChanged(bool value)
+    public Task<bool> SetPausedAsync(bool paused)
     {
-        if (value)
+        bool changed;
+        lock (_pauseLock)
         {
+            if (_pauseStopping)
+                return Task.FromResult(false);
+
+            _pauseRequested = paused;
+            if (!paused)
+            {
+                if (!_scriptPaused)
+                    return Task.FromResult(true);
+
+                Task<bool> previous = _pauseTransition;
+                _pauseTransition = Task.Run(() => ResumeScriptAsync(previous));
+                return _pauseTransition;
+            }
+
+            changed = !_scriptPaused;
             Skills.Pause();
             ScriptPauseEvent.Reset();
+            _scriptPaused = true;
         }
-        else
-        {
-            await Task.Run(() => _lazyBot.Value.Auto.Stop());
-            if (ScriptPaused)
-                return;
 
+        if (changed)
+            OnPropertyChanged(nameof(ScriptPaused));
+        return Task.FromResult(true);
+    }
+
+    private async Task<bool> ResumeScriptAsync(Task<bool> previous)
+    {
+        try
+        {
+            await previous.ConfigureAwait(false);
+            await _lazyBot.Value.Auto.StopAsync().ConfigureAwait(false);
+            lock (_pauseLock)
+            {
+                if (_pauseStopping || _pauseRequested)
+                    return false;
+
+                Skills.Resume();
+                ScriptPauseEvent.Set();
+                _scriptPaused = false;
+            }
+            OnPropertyChanged(nameof(ScriptPaused));
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.ScriptLog($"Could not resume script: {ex.Message}");
+            return false;
+        }
+    }
+
+    private async Task StopAutoForScriptAsync()
+    {
+        Task<bool> pending;
+        lock (_pauseLock)
+        {
+            _pauseStopping = true;
+            _pauseRequested = true;
+            pending = _pauseTransition;
+        }
+
+        await pending.ConfigureAwait(false);
+        try
+        {
+            await _lazyBot.Value.Auto.StopAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.ScriptLog($"Could not stop script automation: {ex.Message}");
+        }
+    }
+
+    private void ResetPauseState(bool stopping)
+    {
+        lock (_pauseLock)
+        {
+            _pauseStopping = stopping;
+            _pauseRequested = false;
+            _scriptPaused = false;
             Skills.Resume();
             ScriptPauseEvent.Set();
         }
+        OnPropertyChanged(nameof(ScriptPaused));
     }
 
     [ObservableProperty]
@@ -154,7 +234,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
 
         try
         {
-            await _lazyBot.Value.Auto.StopAsync();
+            await StopAutoForScriptAsync();
 
             UnloadPreviousScript();
 
@@ -210,8 +290,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
 
             // ScriptRunning is already true while compiling and configuring, so a pause (hotkey or button) can land
             // before this run has a thread, or in a failed start or the last run's teardown. Start unpaused.
-            ScriptPaused = false;
-            ScriptPauseEvent.Set();
+            ResetPauseState(stopping: false);
 
             Thread scriptThread = new(() =>
             {
@@ -286,6 +365,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
                     }
 
                     script = null;
+                    StopAutoForScriptAsync().GetAwaiter().GetResult();
                     Skills.Stop();
                     Drops.Stop();
 
@@ -293,7 +373,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
                     UnloadPreviousScript();
                     ScriptCts?.Dispose();
                     ScriptCts = null;
-                    ScriptPaused = false;
+                    ResetPauseState(stopping: true);
                     _diagnostics.RecordEvent("Script", "Stopped", correlationId: scriptCorrelationId);
                     StrongReferenceMessenger.Default.Send<ScriptStoppedMessage, int>((int)MessageChannels.ScriptStatus);
                     RunningConfig = null;
@@ -328,8 +408,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
         catch (Exception e)
         {
             _diagnostics.RecordEvent("Script", "StartFailed", correlationId: scriptCorrelationId);
-            ScriptPaused = false;
-            ScriptPauseEvent.Set();
+            ResetPauseState(stopping: true);
             lock (_threadLock)
             {
                 ScriptRunning = false;
@@ -355,7 +434,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
 
     public async ValueTask StopScript(bool runScriptStoppingEvent = true)
     {
-        ScriptPaused = false;
+        Task autoStop = StopAutoForScriptAsync();
 
         string? scriptCorrelationId;
         lock (_threadLock)
@@ -378,6 +457,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
             return;
         }
 
+        await autoStop.ConfigureAwait(false);
         await Wait.ForTrueAsync(() => ScriptCts == null, 30).ConfigureAwait(false);
 
         Thread? thread;
