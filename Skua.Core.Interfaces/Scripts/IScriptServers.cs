@@ -45,6 +45,11 @@ public interface IScriptServers : INotifyPropertyChanged
     bool IsReloginInProgress => false;
 
     /// <summary>
+    /// Whether a <see cref="Logout"/> call is still taking effect; <see cref="IsIntentionalLogout"/> must not be cleared meanwhile.
+    /// </summary>
+    bool IsLogoutInProgress => false;
+
+    /// <summary>
     /// The list of available game servers.
     /// </summary>
     List<Server> ServerList { get; }

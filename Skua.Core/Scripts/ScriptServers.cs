@@ -79,14 +79,19 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         IsIntentionalLogout = false;
     }
 
+    // The script timer clears IsIntentionalLogout whenever it sees the player in game, which it still can for a moment
+    // after Logout() starts; it leaves the flag alone for this long after the call.
+    private const int LogoutSettleMs = 5000;
+    private long _logoutStartedAt = long.MinValue / 2;
+    public bool IsLogoutInProgress => Environment.TickCount64 - Interlocked.Read(ref _logoutStartedAt) < LogoutSettleMs;
+
     public void Logout()
     {
+        Interlocked.Exchange(ref _logoutStartedAt, Environment.TickCount64);
         // Flag first: the game's logout() sends our own "%xt%zm%cmd%1%logout%", which the packet handler sees mid-call.
         // Unflagged it reads as a kick and starts auto relogin, whose first step stops the running script.
         IsIntentionalLogout = true;
         Flash.CallGameFunction("logout");
-        // Again: the timer thread clears the flag while it still sees the player in game.
-        IsIntentionalLogout = true;
         StrongReferenceMessenger.Default.Send<LogoutRequestedMessage, int>(new(), (int)MessageChannels.GameEvents);
         DisconnectToLogin();
     }
@@ -523,7 +528,6 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
     public async Task<bool> EnsureRelogin(CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
-        _accountLockoutDetected = false;
         IsIntentionalLogout = false;
         await GetServers(true);
         token.ThrowIfCancellationRequested();
@@ -552,7 +556,6 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
     public async Task<bool> EnsureRelogin(string serverName, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
-        _accountLockoutDetected = false;
         IsIntentionalLogout = false;
         await GetServers(true);
         token.ThrowIfCancellationRequested();
@@ -663,7 +666,8 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         Interlocked.Increment(ref _loginLoops);
         try
         {
-            if (!_loginGate.Wait(0))
+            bool waited = !_loginGate.Wait(0);
+            if (waited)
             {
                 ReloginLog("Another login is in progress; waiting for it to finish.");
                 await _loginGate.WaitAsync(token);
@@ -671,10 +675,22 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
 
             try
             {
+                // A fresh request clears an old lockout. One that queued behind a loop which found a lockout must not:
+                // it would retry the locked account, or (reset before the wait) hide the lockout from the running loop.
+                if (!waited)
+                {
+                    _accountLockoutDetected = false;
+                }
+                else if (_accountLockoutDetected)
+                {
+                    ReloginLog("The previous login found an account lockout; not retrying.");
+                    return false;
+                }
+
                 if (Player.Playing)
                 {
-                    ReloginLog("Already in game; nothing to do.");
-                    return true;
+                    ReloginLog("Already in game; waiting for the world to load.");
+                    return await WaitForWorldLoaded(token);
                 }
 
                 return await RunLoginAttempts(preferredName, token);
@@ -807,8 +823,29 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         }
         catch { }
 
-        if (!Player.Playing && !_accountLockoutDetected)
+        if (Player.Playing)
+            return await WaitForWorldLoaded(token);
+
+        if (!_accountLockoutDetected)
             ReloginLog("Unable to reconnect within configured retries.");
-        return Player.Playing;
+        return false;
+    }
+
+    // Playing turns true before the world is loaded; success means a script can start, so wait for both.
+    private async Task<bool> WaitForWorldLoaded(CancellationToken token)
+    {
+        int timeoutMs = Math.Min(15000, Options.LoginTimeout > 0 ? Options.LoginTimeout : 15000);
+        using CancellationTokenSource waitWorld = new(timeoutMs);
+        try
+        {
+            while (Player.Playing && !Flash.IsWorldLoaded && !waitWorld.IsCancellationRequested && !token.IsCancellationRequested)
+                await Task.Delay(250, token);
+        }
+        catch { }
+
+        bool loaded = Player.Playing && Flash.IsWorldLoaded;
+        if (!loaded)
+            ReloginLog("In game, but the world did not finish loading.");
+        return loaded;
     }
 }

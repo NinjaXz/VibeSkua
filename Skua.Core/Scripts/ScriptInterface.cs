@@ -322,7 +322,7 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
                 {
                     wasPlaying = true;
                     Servers.LastIP = Player.ServerIP ?? Servers.LastIP;
-                    if (Servers.IsIntentionalLogout)
+                    if (Servers.IsIntentionalLogout && !Servers.IsLogoutInProgress)
                         Servers.IsIntentionalLogout = false;
 
                     if (!catching)
