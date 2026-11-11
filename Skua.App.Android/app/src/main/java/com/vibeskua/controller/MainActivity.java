@@ -1020,12 +1020,28 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupAdapters() {
-        scriptsAdapter = new ScriptsAdapter(script -> {
-            try {
-                JSONObject body = new JSONObject();
-                body.put("path", script.path != null && !script.path.isEmpty() ? script.path : script.fileName);
-                sendPost("/api/scripts/load", body.toString(), "Loaded " + script.name);
-            } catch (Exception ignored) { }
+        scriptsAdapter = new ScriptsAdapter(new ScriptsAdapter.OnScriptClickListener() {
+            @Override
+            public void onRunScript(Models.ScriptItem script) {
+                try {
+                    String scriptTarget = script.path != null && !script.path.isEmpty() ? script.path : script.fileName;
+                    JSONObject body = new JSONObject();
+                    body.put("script", scriptTarget);
+                    body.put("path", scriptTarget);
+                    sendPost("/api/scripts/start", body.toString(), "Starting " + script.name);
+                } catch (Exception ignored) { }
+            }
+
+            @Override
+            public void onLoadScript(Models.ScriptItem script) {
+                try {
+                    String scriptTarget = script.path != null && !script.path.isEmpty() ? script.path : script.fileName;
+                    JSONObject body = new JSONObject();
+                    body.put("script", scriptTarget);
+                    body.put("path", scriptTarget);
+                    sendPost("/api/scripts/load", body.toString(), "Loaded " + script.name);
+                } catch (Exception ignored) { }
+            }
         });
         recyclerScripts.setLayoutManager(new LinearLayoutManager(this));
         recyclerScripts.setAdapter(scriptsAdapter);

@@ -18,6 +18,7 @@ public class ScriptsAdapter extends RecyclerView.Adapter<ScriptsAdapter.ViewHold
 
     public interface OnScriptClickListener {
         void onRunScript(Models.ScriptItem script);
+        void onLoadScript(Models.ScriptItem script);
     }
 
     public static final int SORT_NAME_ASC = 0;
@@ -192,6 +193,9 @@ public class ScriptsAdapter extends RecyclerView.Adapter<ScriptsAdapter.ViewHold
 
         holder.btnRun.setOnClickListener(v -> {
             if (listener != null) listener.onRunScript(s);
+        });
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) listener.onLoadScript(s);
         });
     }
 

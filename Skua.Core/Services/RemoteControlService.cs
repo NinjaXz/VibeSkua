@@ -1097,17 +1097,7 @@ public class RemoteControlService : IRemoteControlService
                 if (lowerPath == "/api/fleet/load-script" || lowerPath == "/api/army/load-script")
                 {
                     if (method != "POST") { await SendMethodNotAllowedAsync(stream, "POST").ConfigureAwait(false); return; }
-                    string scriptPath = string.Empty;
-                    if (!string.IsNullOrWhiteSpace(body))
-                    {
-                        try
-                        {
-                            using var doc = JsonDocument.Parse(body);
-                            if (doc.RootElement.TryGetProperty("path", out var pProp)) scriptPath = pProp.GetString() ?? string.Empty;
-                            else if (doc.RootElement.TryGetProperty("script", out var sProp)) scriptPath = sProp.GetString() ?? string.Empty;
-                        }
-                        catch { }
-                    }
+                    string scriptPath = ExtractScriptPathFromBody(body);
                     if (!string.IsNullOrWhiteSpace(scriptPath))
                     {
                         LoadScriptAllAction?.Invoke(scriptPath);
@@ -1281,7 +1271,7 @@ public class RemoteControlService : IRemoteControlService
 
                 case "/api/scripts/load":
                     if (method != "POST") { await SendMethodNotAllowedAsync(stream, "POST"); break; }
-                    var loadRes = HandleLoadScript(body);
+                    var loadRes = await HandleLoadScriptAsync(body).ConfigureAwait(false);
                     await SendJsonResponseAsync(stream, loadRes.success ? 200 : 400, loadRes).ConfigureAwait(false);
                     break;
 
@@ -1558,7 +1548,7 @@ public class RemoteControlService : IRemoteControlService
 
                 case "/api/fleet/load-script":
                     if (method != "POST") { await SendMethodNotAllowedAsync(stream, "POST"); break; }
-                    var flLoad = HandleLoadScript(body);
+                    var flLoad = await HandleLoadScriptAsync(body).ConfigureAwait(false);
                     await SendJsonResponseAsync(stream, flLoad.success ? 200 : 400, flLoad).ConfigureAwait(false);
                     break;
 
@@ -2653,79 +2643,117 @@ public class RemoteControlService : IRemoteControlService
         return false;
     }
 
+    private static string ExtractScriptPathFromBody(string body)
+    {
+        if (string.IsNullOrWhiteSpace(body))
+            return string.Empty;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            var root = doc.RootElement;
+            if (root.TryGetProperty("script", out var sProp) && sProp.ValueKind == JsonValueKind.String)
+                return sProp.GetString()?.Trim() ?? string.Empty;
+            if (root.TryGetProperty("path", out var pProp) && pProp.ValueKind == JsonValueKind.String)
+                return pProp.GetString()?.Trim() ?? string.Empty;
+            if (root.TryGetProperty("scriptPath", out var spProp) && spProp.ValueKind == JsonValueKind.String)
+                return spProp.GetString()?.Trim() ?? string.Empty;
+            if (root.TryGetProperty("script_path", out var spProp2) && spProp2.ValueKind == JsonValueKind.String)
+                return spProp2.GetString()?.Trim() ?? string.Empty;
+            if (root.TryGetProperty("file", out var fProp) && fProp.ValueKind == JsonValueKind.String)
+                return fProp.GetString()?.Trim() ?? string.Empty;
+            if (root.TryGetProperty("fileName", out var fnProp) && fnProp.ValueKind == JsonValueKind.String)
+                return fnProp.GetString()?.Trim() ?? string.Empty;
+            if (root.TryGetProperty("name", out var nProp) && nProp.ValueKind == JsonValueKind.String)
+                return nProp.GetString()?.Trim() ?? string.Empty;
+        }
+        catch { }
+
+        return string.Empty;
+    }
+
+    private async Task<string?> ResolveScriptPathAsync(string scriptPath)
+    {
+        if (string.IsNullOrWhiteSpace(scriptPath))
+            return null;
+
+        string normalized = scriptPath.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
+        string fullPath = Path.IsPathRooted(normalized)
+            ? normalized
+            : Path.Combine(ClientFileSources.SkuaScriptsDIR, normalized);
+
+        if (File.Exists(fullPath))
+            return fullPath;
+
+        string legacyPath = Path.Combine(ClientFileSources.LegacySkuaDIR, "Scripts", normalized);
+        if (File.Exists(legacyPath))
+            return legacyPath;
+
+        // Check if file exists recursively in SkuaScriptsDIR by file name
+        try
+        {
+            string fileName = Path.GetFileName(normalized);
+            if (!string.IsNullOrEmpty(fileName) && Directory.Exists(ClientFileSources.SkuaScriptsDIR))
+            {
+                var found = Directory.EnumerateFiles(ClientFileSources.SkuaScriptsDIR, fileName, SearchOption.AllDirectories).FirstOrDefault();
+                if (!string.IsNullOrEmpty(found) && File.Exists(found))
+                    return found;
+            }
+        }
+        catch { }
+
+        // Attempt download from IGetScriptsService
+        bool downloaded = false;
+        try
+        {
+            var getScripts = _serviceProvider.GetService<IGetScriptsService>();
+            if (getScripts != null)
+            {
+                var info = getScripts.Scripts?.FirstOrDefault(s =>
+                    string.Equals(s.FilePath?.Replace('\\', '/'), scriptPath.Replace('\\', '/'), StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(s.FileName, Path.GetFileName(scriptPath), StringComparison.OrdinalIgnoreCase));
+                if (info != null)
+                {
+                    await getScripts.DownloadScriptAsync(info).ConfigureAwait(false);
+                    downloaded = File.Exists(fullPath);
+                }
+            }
+        }
+        catch { }
+
+        // Fallback: direct GitHub download
+        if (!downloaded && !File.Exists(fullPath))
+        {
+            try
+            {
+                string urlRel = scriptPath.Replace('\\', '/').TrimStart('/');
+                string rawUrl = $"https://raw.githubusercontent.com/auqw/Scripts/refs/heads/Skua/{urlRel}";
+                using var http = new HttpClient();
+                http.Timeout = TimeSpan.FromSeconds(15);
+                byte[] content = await http.GetByteArrayAsync(rawUrl).ConfigureAwait(false);
+                string? dir = Path.GetDirectoryName(fullPath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                    Directory.CreateDirectory(dir);
+                await File.WriteAllBytesAsync(fullPath, content).ConfigureAwait(false);
+            }
+            catch { }
+        }
+
+        return File.Exists(fullPath) ? fullPath : null;
+    }
+
     private async Task<RemoteActionResult> HandleStartScriptAsync(string body)
     {
         var manager = _serviceProvider.GetService<IScriptManager>();
         if (manager == null)
             return RemoteActionResult.Fail("ScriptManager unavailable");
 
-        string scriptPath = string.Empty;
-        if (!string.IsNullOrWhiteSpace(body))
-        {
-            try
-            {
-                using var doc = JsonDocument.Parse(body);
-                if (doc.RootElement.TryGetProperty("script", out var prop))
-                    scriptPath = prop.GetString() ?? string.Empty;
-            }
-            catch { }
-        }
-
+        string scriptPath = ExtractScriptPathFromBody(body);
         if (!string.IsNullOrWhiteSpace(scriptPath))
         {
-            string fullPath = Path.IsPathRooted(scriptPath)
-                ? scriptPath
-                : Path.Combine(ClientFileSources.SkuaScriptsDIR, scriptPath.Replace('/', Path.DirectorySeparatorChar));
-
-            if (!File.Exists(fullPath))
-            {
-                string legacyPath = Path.Combine(ClientFileSources.LegacySkuaDIR, "Scripts", scriptPath.Replace('/', Path.DirectorySeparatorChar));
-                if (File.Exists(legacyPath))
-                {
-                    fullPath = legacyPath;
-                }
-            }
-
-            if (!File.Exists(fullPath))
-            {
-                // Attempt to download script automatically if not cached locally
-                bool downloaded = false;
-                try
-                {
-                    var getScripts = _serviceProvider.GetService<IGetScriptsService>();
-                    if (getScripts != null)
-                    {
-                        var info = getScripts.Scripts?.FirstOrDefault(s =>
-                            string.Equals(s.FilePath?.Replace('\\', '/'), scriptPath.Replace('\\', '/'), StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(s.FileName, Path.GetFileName(scriptPath), StringComparison.OrdinalIgnoreCase));
-                        if (info != null)
-                        {
-                            await getScripts.DownloadScriptAsync(info).ConfigureAwait(false);
-                            downloaded = File.Exists(fullPath);
-                        }
-                    }
-                }
-                catch { }
-
-                if (!downloaded && !File.Exists(fullPath))
-                {
-                    try
-                    {
-                        string rawUrl = $"https://raw.githubusercontent.com/auqw/Scripts/refs/heads/Skua/{scriptPath.Replace('\\', '/')}";
-                        using var http = new HttpClient();
-                        http.Timeout = TimeSpan.FromSeconds(15);
-                        byte[] content = await http.GetByteArrayAsync(rawUrl).ConfigureAwait(false);
-                        string? dir = Path.GetDirectoryName(fullPath);
-                        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-                            Directory.CreateDirectory(dir);
-                        await File.WriteAllBytesAsync(fullPath, content).ConfigureAwait(false);
-                    }
-                    catch { }
-                }
-
-                if (!File.Exists(fullPath))
-                    return RemoteActionResult.Fail($"Script file not found: {scriptPath}");
-            }
+            string? fullPath = await ResolveScriptPathAsync(scriptPath).ConfigureAwait(false);
+            if (string.IsNullOrEmpty(fullPath) || !File.Exists(fullPath))
+                return RemoteActionResult.Fail($"Script file not found: {scriptPath}");
 
             if (manager.ScriptRunning)
             {
@@ -2811,36 +2839,22 @@ public class RemoteControlService : IRemoteControlService
         return RemoteActionResult.Ok(message, new { paused });
     }
 
-    private RemoteActionResult HandleLoadScript(string body)
+    private async Task<RemoteActionResult> HandleLoadScriptAsync(string body)
     {
         var manager = _serviceProvider.GetService<IScriptManager>();
         if (manager == null)
             return RemoteActionResult.Fail("ScriptManager unavailable");
 
-        string scriptPath = string.Empty;
-        if (!string.IsNullOrWhiteSpace(body))
-        {
-            try
-            {
-                using var doc = JsonDocument.Parse(body);
-                if (doc.RootElement.TryGetProperty("script", out var prop))
-                    scriptPath = prop.GetString() ?? string.Empty;
-            }
-            catch { }
-        }
-
+        string scriptPath = ExtractScriptPathFromBody(body);
         if (string.IsNullOrWhiteSpace(scriptPath))
             return RemoteActionResult.Fail("Script path missing");
 
-        string fullPath = Path.IsPathRooted(scriptPath)
-            ? scriptPath
-            : Path.Combine(ClientFileSources.SkuaScriptsDIR, scriptPath.Replace('/', Path.DirectorySeparatorChar));
-
-        if (!File.Exists(fullPath))
+        string? fullPath = await ResolveScriptPathAsync(scriptPath).ConfigureAwait(false);
+        if (string.IsNullOrEmpty(fullPath) || !File.Exists(fullPath))
             return RemoteActionResult.Fail($"Script file not found: {scriptPath}");
 
         manager.SetLoadedScript(fullPath);
-        return RemoteActionResult.Ok($"Loaded script: {Path.GetFileName(fullPath)}");
+        return RemoteActionResult.Ok($"Loaded script: {Path.GetFileName(fullPath)}", new { path = fullPath, script = Path.GetFileName(fullPath) });
     }
 
     private RemoteActionResult HandleLaunchAccount(string body)
