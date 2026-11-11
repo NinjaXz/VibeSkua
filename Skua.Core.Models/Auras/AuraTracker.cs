@@ -156,4 +156,10 @@ public class AuraTrackerResult
     public AuraTrackerTarget? Target { get; init; }
     public bool HasTarget { get; init; }
     public IReadOnlyList<AuraTrackerEntry> Auras { get; init; } = Array.Empty<AuraTrackerEntry>();
+
+    /// <summary>
+    /// True when the game could not be read (no answer or an unreadable one), as opposed to a read that
+    /// found no auras or no target.
+    /// </summary>
+    public bool Failed { get; init; }
 }

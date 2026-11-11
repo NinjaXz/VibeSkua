@@ -29,12 +29,19 @@ public partial class AuraTrackerViewModel : BotControlViewModelBase
     private const int IconSize = 32;
     // Icons are drawn by the game; a few per poll so a fight full of new auras doesn't stall it.
     private const int IconsPerPoll = 2;
+    // An icon the game couldn't draw yet is asked for again, a little later each time.
+    private const int IconRetries = 5;
+    // Failed reads in a row that keep the last auras on screen (a reload or a slow frame), before
+    // the panels clear.
+    private const int FailedReadsKept = 4;
 
     private readonly IAuraTrackerService _tracker;
     private readonly ISettingsService _settings;
     private bool _windowOpen;
     private readonly Timer _timer;
     private readonly Dictionary<string, Bitmap?> _icons = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, (int Tries, long RetryAt)> _iconMisses = new(StringComparer.Ordinal);
+    private int _failedSelf, _failedTarget;
     private int _polling;
     private readonly HashSet<string> _seenNames = new(StringComparer.OrdinalIgnoreCase);
     private AuraTrackerResult _lastSelf = new() { Subject = SubjectType.Self };
@@ -114,18 +121,24 @@ public partial class AuraTrackerViewModel : BotControlViewModelBase
         {
             AuraTrackerResult self = _tracker.Read(SubjectType.Self);
             AuraTrackerResult target = _tracker.Read(SubjectType.Target);
-            List<(string Key, (int Size, byte[] Argb)? Pixels)> newIcons = new();
+            // Which icons to fetch is decided under the lock; the game is asked outside it, because a
+            // Flash call may need the UI thread, which takes the same lock in Apply.
+            List<string> wanted = new();
+            long now = Environment.TickCount64;
             lock (_icons)
             {
                 foreach (AuraTrackerEntry a in self.Auras.Concat(target.Auras))
                 {
-                    if (newIcons.Count >= IconsPerPoll)
+                    if (wanted.Count >= IconsPerPoll)
                         break;
-                    if (a.Icon.Length == 0 || _icons.ContainsKey(a.Icon) || newIcons.Any(n => n.Key == a.Icon))
+                    if (a.Icon.Length == 0 || _icons.ContainsKey(a.Icon) || wanted.Contains(a.Icon))
                         continue;
-                    newIcons.Add((a.Icon, _tracker.GetIcon(a.Icon, IconSize)));
+                    if (_iconMisses.TryGetValue(a.Icon, out var miss) && (miss.Tries >= IconRetries || miss.RetryAt > now))
+                        continue;
+                    wanted.Add(a.Icon);
                 }
             }
+            List<(string Key, (int Size, byte[] Argb)? Pixels)> newIcons = wanted.Select(k => (k, _tracker.GetIcon(k, IconSize))).ToList();
             Dispatcher.UIThread.Post(() => Apply(self, target, newIcons));
         }
         catch (Exception)
@@ -148,12 +161,28 @@ public partial class AuraTrackerViewModel : BotControlViewModelBase
     {
         lock (_icons)
         {
+            long now = Environment.TickCount64;
             foreach ((string key, (int Size, byte[] Argb)? pixels) in newIcons)
-                _icons[key] = pixels is { } p ? ToBitmap(p.Size, p.Argb) : null;
+            {
+                if (pixels is { } p && ToBitmap(p.Size, p.Argb) is { } bmp)
+                {
+                    _icons[key] = bmp;
+                    _iconMisses.Remove(key);
+                    continue;
+                }
+                // Not drawn this time: keep the initial and ask again in 1, 2, 4, 8 s, then give up.
+                int tries = (_iconMisses.TryGetValue(key, out var miss) ? miss.Tries : 0) + 1;
+                _iconMisses[key] = (tries, now + (1000L << (tries - 1)));
+            }
         }
 
-        _lastSelf = self;
-        _lastTarget = target;
+        // A failed read keeps what is shown for a few polls instead of clearing it like an empty one.
+        _failedSelf = self.Failed ? _failedSelf + 1 : 0;
+        _failedTarget = target.Failed ? _failedTarget + 1 : 0;
+        if (!self.Failed || _failedSelf > FailedReadsKept)
+            _lastSelf = self;
+        if (!target.Failed || _failedTarget > FailedReadsKept)
+            _lastTarget = target;
         foreach (AuraTrackerEntry a in self.Auras.Concat(target.Auras))
             _seenNames.Add(a.Name);
         Refresh();

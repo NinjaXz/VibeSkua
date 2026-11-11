@@ -55,9 +55,10 @@ public partial class AuraTrackerService : IAuraTrackerService
         catch (InvalidOperationException) { }
 
         if (snap is null)
-            return new AuraTrackerResult { Subject = subject };
+            return new AuraTrackerResult { Subject = subject, Failed = true };
 
         AuraData data = _data.Value;
+        HashSet<string> present = new(snap.Auras.Select(a => a.Name ?? string.Empty), StringComparer.OrdinalIgnoreCase);
         List<AuraTrackerEntry> entries = new();
         foreach (AuraTrackerRecord rec in snap.Auras)
         {
@@ -66,7 +67,7 @@ public partial class AuraTrackerService : IAuraTrackerService
             double? left = rec.Persist ? null : rec.Remaining;
             if (left is < -1)
                 continue;
-            entries.Add(Decorate(rec, subject, left, data));
+            entries.Add(Decorate(rec, subject, left, data, present));
         }
 
         static int Rank(AuraTrackerEntry e) => e.Tag != AuraTag.None ? 0 : e.IsFull ? 1 : e.ShowsStacks ? 2 : 3;
@@ -104,7 +105,7 @@ public partial class AuraTrackerService : IAuraTrackerService
         }
     }
 
-    private AuraTrackerEntry Decorate(AuraTrackerRecord rec, SubjectType subject, double? left, AuraData data)
+    private AuraTrackerEntry Decorate(AuraTrackerRecord rec, SubjectType subject, double? left, AuraData data, IReadOnlySet<string> present)
     {
         AuraCaster? first = rec.Casters.FirstOrDefault();
         bool mine = first is { IsMe: true, IsMonster: false };
@@ -114,8 +115,17 @@ public partial class AuraTrackerService : IAuraTrackerService
 
         WikiInfo? wiki = casterClass.Length > 0 ? WikiFor(rec.Name, casterClass, data) : null;
         EffectLine? fx = casterClass.Length > 0 ? data.Effect(casterClass, rec.Name) : null;
-        // Forge procs are yours; a monster's "Decay" is not Dauntless's.
+        // Forge enhancement and scroll procs (wiki data, the same for every player who has them), but a
+        // monster's "Decay" is not Dauntless's.
         ProcInfo? proc = mine || first is not { IsMonster: true } ? data.Proc(rec.Name, subject) : null;
+        // A proc that lands on you, with its own buff on you too, explains an aura you gave yourself better
+        // than your class does: Dauntless gives you Dauntless and Decay together, while Legion DoomKnight's
+        // Decay goes on its opponent.
+        if (subject == SubjectType.Self && mine && proc is { On: "you" } && ProcBuffPresent(proc, rec.Name, present))
+        {
+            wiki = null;
+            fx = null;
+        }
 
         int max = LimitIn(StripTags(rec.Description));
         if (max == 0 && wiki is not null) max = wiki.Max;
@@ -207,6 +217,14 @@ public partial class AuraTrackerService : IAuraTrackerService
             Category = category,
             Group = AuraClassifier.GroupOf(tag, category)
         };
+    }
+
+    // "Dauntless (forge weapon enhancement)" -> is a "Dauntless" aura on the same subject.
+    private static bool ProcBuffPresent(ProcInfo proc, string aura, IReadOnlySet<string> present)
+    {
+        int paren = proc.Source.IndexOf(" (", StringComparison.Ordinal);
+        string buff = (paren > 0 ? proc.Source[..paren] : proc.Source).Trim();
+        return buff.Length > 0 && !buff.Equals(aura, StringComparison.OrdinalIgnoreCase) && present.Contains(buff);
     }
 
     private WikiInfo? WikiFor(string aura, string cls, AuraData data)

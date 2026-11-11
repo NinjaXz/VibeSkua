@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Material.Icons;
 using Skua.App.Avalonia.ViewModels;
 using Skua.Core.Models.Auras;
@@ -22,6 +24,15 @@ public partial class AuraOverlayWindow : Window
     private readonly Window? _owner;
     private readonly SubjectType _subject;
     private PixelPoint _offset;
+    // Set by a header press: the window's own moves after it are the user's drag, until the main
+    // window moves. BeginMoveDrag drops the pointer capture before the panel moves, and on Windows runs
+    // the move loop itself, so the panel's PositionChanged is the one reliable signal of where it went.
+    private bool _dragging;
+    private bool _placing;
+    // The offset is saved once the panel has stopped moving for a moment, not on every pixel.
+    private DispatcherTimer? _saveTimer;
+    // The list never takes more than this share of the game's height; past it, it scrolls.
+    private const double ListShareOfGame = 0.6;
 
     public AuraOverlayWindow()
     {
@@ -41,6 +52,7 @@ public partial class AuraOverlayWindow : Window
         _offset = LoadOffset();
 
         Header.PointerPressed += Header_PointerPressed;
+        PositionChanged += Self_Moved;
         FoldButton.Click += (_, _) =>
         {
             Body.IsVisible = !Body.IsVisible;
@@ -84,7 +96,17 @@ public partial class AuraOverlayWindow : Window
     {
         if (_owner is null)
             return;
-        Position = new PixelPoint(_owner.Position.X + _offset.X, _owner.Position.Y + _offset.Y);
+        // Header, filter chips and padding take about 64 px above the list.
+        RowsScroll.MaxHeight = Math.Max(120, _owner.ClientSize.Height * ListShareOfGame - 64);
+        _placing = true;
+        try
+        {
+            Position = new PixelPoint(_owner.Position.X + _offset.X, _owner.Position.Y + _offset.Y);
+        }
+        finally
+        {
+            _placing = false;
+        }
     }
 
     private PixelPoint DefaultOffset()
@@ -112,12 +134,36 @@ public partial class AuraOverlayWindow : Window
     {
         if (_owner is null || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             return;
+        // The fold button and the filter chips are clicks, not drags.
+        if (e.Source is Visual v && v.FindAncestorOfType<Button>(includeSelf: true) is not null)
+            return;
+        _dragging = true;
         BeginMoveDrag(e);
-        _offset = new PixelPoint(Position.X - _owner.Position.X, Position.Y - _owner.Position.Y);
+    }
+
+    private void Self_Moved(object? sender, PixelPointEventArgs e)
+    {
+        if (!_dragging || _placing || _owner is null)
+            return;
+        _offset = new PixelPoint(e.Point.X - _owner.Position.X, e.Point.Y - _owner.Position.Y);
+        _saveTimer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(400), DispatcherPriority.Background, (_, _) => SaveOffset());
+        _saveTimer.Stop();
+        _saveTimer.Start();
+    }
+
+    private void SaveOffset()
+    {
+        _saveTimer?.Stop();
         _vm?.SetOverlayPosition(_subject, string.Create(CultureInfo.InvariantCulture, $"{_offset.X},{_offset.Y}"));
     }
 
-    private void Owner_Moved(object? sender, PixelPointEventArgs e) => Place();
+    private void Owner_Moved(object? sender, PixelPointEventArgs e)
+    {
+        if (_saveTimer?.IsEnabled == true)
+            SaveOffset();
+        _dragging = false;
+        Place();
+    }
 
     private void Owner_Resized(object? sender, WindowResizedEventArgs e) => Place();
 
@@ -161,6 +207,9 @@ public partial class AuraOverlayWindow : Window
             _owner.PositionChanged -= Owner_Moved;
             _owner.Resized -= Owner_Resized;
         }
+        if (_saveTimer?.IsEnabled == true)
+            SaveOffset();
+        PositionChanged -= Self_Moved;
         base.OnClosed(e);
     }
 }

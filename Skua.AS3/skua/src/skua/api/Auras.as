@@ -7,7 +7,9 @@ import flash.events.TimerEvent;
 import flash.geom.Matrix;
 import flash.geom.Rectangle;
 import flash.utils.ByteArray;
+import flash.utils.Dictionary;
 import flash.utils.Timer;
+import flash.utils.describeType;
 import flash.utils.getTimer;
 
 import skua.Main;
@@ -327,12 +329,17 @@ public class Auras {
         return removedCount;
     }
 
+    // Last dur/val seen on each dataLeaf.auras record (weak keys) and when it changed: AQW never moves
+    // a record's ts on a re-cast, so a change in dur or val is the only sign of when it was re-cast.
+    private static var _recasts:Dictionary = new Dictionary(true);
+
     private static const B64:String = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
     // Aura Tracker snapshot of "Self" or "Target": the hud records (stacks, icon, time left in the game's
     // own clock) joined with dataLeaf.auras, where AQW keeps one record per aura name per caster
     // (World.updateAuraData matches nam, casterType and casterId). A re-cast by the same caster only
-    // updates dur/val, so ts is when that caster first applied it. Caster names are resolved here:
+    // updates dur/val, so ts is when that caster first applied it; castTime moves it to the last re-cast
+    // this tracker saw change dur or val. Caster names are resolved here:
     // players from world.avatars[entID], monsters from world.getMonster(MonMapID).
     // 
     public static function GetAuraTracker(subject:String):String {
@@ -362,15 +369,17 @@ public class Auras {
             var wall:Number = new Date().getTime();
             var casters:Object = {};
             var latest:Object = {};
+            var latestTs:Object = {};
             if (leaf.auras is Array) {
                 for each (var rec:* in leaf.auras) {
                     if (rec == null || !rec.nam || rec.e == 1) {
                         continue;
                     }
                     var nam:String = String(rec.nam);
-                    var ts:Number = Number(rec.ts) || 0;
-                    if (latest[nam] == null || ts > Number(latest[nam].ts)) {
+                    var ts:Number = castTime(rec, wall);
+                    if (latest[nam] == null || ts > Number(latestTs[nam])) {
                         latest[nam] = rec;
+                        latestTs[nam] = ts;
                     }
                     if (rec.casterType != "p" && rec.casterType != "m") {
                         continue;
@@ -400,11 +409,15 @@ public class Auras {
                     continue;
                 }
                 var last:* = latest[name];
-                var fromHud:Number = Number(hud.end) > 0 ? (Number(hud.end) - now) / 1000 : -1;
+                var lastTs:Number = last != null ? Number(latestTs[name]) : 0;
                 // A stack that falls off moves only the hud end, and a monster's re-cast aura keeps its
-                // old hud end: the later of the two readings is the one that holds.
-                var fromCast:Number = last != null && Number(last.ts) > 0 && Number(last.dur) > 0
-                    ? (Number(last.ts) + Number(last.dur) * 1000 - wall) / 1000 : -1;
+                // old hud end: the later of the two readings is the one that holds. A reading that has
+                // run out stays negative (expired), unlike an aura with no timer at all (persistent).
+                var hudTimed:Boolean = Number(hud.end) > 0;
+                var castTimed:Boolean = last != null && lastTs > 0 && Number(last.dur) > 0;
+                var fromHud:Number = hudTimed ? (Number(hud.end) - now) / 1000 : 0;
+                var fromCast:Number = castTimed ? (lastTs + Number(last.dur) * 1000 - wall) / 1000 : 0;
+                var remaining:Number = hudTimed && castTimed ? Math.max(fromHud, fromCast) : (hudTimed ? fromHud : fromCast);
                 var byCaster:Array = casters[name] as Array;
                 if (byCaster == null) {
                     byCaster = [];
@@ -414,8 +427,8 @@ public class Auras {
                     nam: name,
                     n: Math.max(1, int(hud.n) || (last != null ? int(last.val) : 1)),
                     dur: Number(hud.dur) || (last != null ? Number(last.dur) : 0),
-                    remaining: Math.max(fromHud, fromCast),
-                    persist: hud.persist == true || (fromHud < 0 && fromCast < 0),
+                    remaining: remaining,
+                    persist: hud.persist == true || (!hudTimed && !castTimed),
                     icon: hud.icon != null ? String(hud.icon) : (last != null && last.icon != null ? String(last.icon) : ""),
                     desc: world.auraDescs != null && world.auraDescs[name] != null ? String(world.auraDescs[name]) : "",
                     seq: int(hud.seq),
@@ -426,6 +439,23 @@ public class Auras {
         } catch (e:Error) {
         }
         return JSON.stringify(out);
+    }
+
+    // When this caster last applied the aura: the record's ts, or the last time this tracker saw its dur
+    // or val change (a re-cast).
+    private static function castTime(rec:*, wall:Number):Number {
+        var ts:Number = Number(rec.ts) || 0;
+        var seen:Object = _recasts[rec];
+        if (seen == null) {
+            _recasts[rec] = {dur: rec.dur, val: rec.val, at: ts};
+            return ts;
+        }
+        if (seen.dur != rec.dur || seen.val != rec.val) {
+            seen.dur = rec.dur;
+            seen.val = rec.val;
+            seen.at = wall;
+        }
+        return Math.max(ts, Number(seen.at));
     }
 
     private static function describeCaster(world:*, type:String, id:*, ts:Number):Object {
@@ -464,7 +494,9 @@ public class Auras {
             }
             size = Math.max(8, Math.min(64, size));
             var cls:Class = world.getClass(link) as Class;
-            if (cls == null) {
+            // Only display classes are built (the game's own AuraHUD builds the same link); any other
+            // class is refused before its constructor runs.
+            if (cls == null || String(describeType(cls)).indexOf('<extendsClass type="flash.display::DisplayObject"/>') < 0) {
                 return "";
             }
             var d:DisplayObject = new cls() as DisplayObject;

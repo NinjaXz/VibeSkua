@@ -30,7 +30,8 @@
     </Style>
   </Window.Styles>
 
-  <!-- One panel over the game: You or Target. Drag the header to move it; the fold button hides the list. -->
+  <!-- One panel over the game: You or Target. Drag the header to move it; the fold button hides the list.
+       The list is held to 60% of the game's height (set in code) and scrolls with the wheel or its bar. -->
   <Border Background="#D0141418" BorderBrush="{DynamicResource SkuaBorderBrush}" BorderThickness="1"
           CornerRadius="10" Padding="8,6">
     <StackPanel Spacing="4">
@@ -46,13 +47,16 @@
       </Grid>
       <StackPanel x:Name="Body">
         <WrapPanel x:Name="Chips" Margin="0,0,0,2" />
-        <ItemsControl x:Name="Rows">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate DataType="vms:AuraRowViewModel">
-              <views:AuraRowView />
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
+        <ScrollViewer x:Name="RowsScroll" HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto" AllowAutoHide="False">
+          <ItemsControl x:Name="Rows">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="vms:AuraRowViewModel">
+                <views:AuraRowView />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
         <TextBlock x:Name="EmptyText" Text="No auras" FontSize="12" Foreground="{DynamicResource SkuaMutedTextBrush}" />
       </StackPanel>
     </StackPanel>
