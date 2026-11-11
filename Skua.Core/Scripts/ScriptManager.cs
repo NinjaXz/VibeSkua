@@ -82,7 +82,7 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
 
     public ManualResetEventSlim ScriptPauseEvent { get; } = new(true);
 
-    partial void OnScriptPausedChanged(bool value)
+    async partial void OnScriptPausedChanged(bool value)
     {
         if (value)
         {
@@ -91,7 +91,10 @@ public partial class ScriptManager : ObservableObject, IScriptManager, IDisposab
         }
         else
         {
-            _lazyBot.Value.Auto.Stop();
+            await Task.Run(() => _lazyBot.Value.Auto.Stop());
+            if (ScriptPaused)
+                return;
+
             Skills.Resume();
             ScriptPauseEvent.Set();
         }

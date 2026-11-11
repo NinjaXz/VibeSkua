@@ -202,7 +202,11 @@ public class Broadcaster
                 return false;
 
             IScriptPlayer? player = _bot.Player;
-            if (player?.LoggedIn != true || string.IsNullOrEmpty(player.Username))
+            if (player?.LoggedIn != true)
+                return false;
+
+            string username = player.Username;
+            if (string.IsNullOrEmpty(username))
                 return false;
 
             // Mid-transition the map reports unloaded or a bogus name ("-1"); keep the
@@ -231,6 +235,30 @@ public class Broadcaster
             if (gotoEnabled.HasValue)
                 _lastOffGoto = !gotoEnabled.Value;
 
+            // CurrentClass scans inventory; retain the existing sampling cadence.
+            bool checkClass;
+            lock (_writeLock)
+            {
+                checkClass = !username.Equals(_lastUsername, StringComparison.OrdinalIgnoreCase) ||
+                    (DateTime.UtcNow - _lastClassCheck).TotalSeconds >= 2;
+            }
+
+            // Flash calls wait for the UI thread, which also reads Followers.
+            // Capture game state and provider values without holding _writeLock.
+            string? className = null;
+            if (checkClass)
+            {
+                try { className = player.CurrentClass?.Name; }
+                catch { }
+            }
+            string fullName = SafeGet(() => map?.FullName) ?? "";
+            string cell = player.Cell ?? "Enter";
+            string pad = player.Pad ?? "Spawn";
+            string following = SafeGet(_followingProvider) ?? "";
+            string? scriptName = SafeGet(_scriptNameProvider);
+            string declined = SafeGet(_declinedProvider) ?? "";
+            bool parking = SafeGetBool(_parkingProvider);
+
             lock (_writeLock)
             {
                 // Start the command's expiry window only when it can actually be
@@ -238,42 +266,38 @@ public class Broadcaster
                 if (_sendAllPending)
                     _sendAllIssuedUtcTicks = DateTime.UtcNow.Ticks;
 
-                if (!player.Username.Equals(_lastUsername, StringComparison.OrdinalIgnoreCase))
+                if (!username.Equals(_lastUsername, StringComparison.OrdinalIgnoreCase))
                 {
                     _lastClassName = "";
                     _lastClassCheck = DateTime.MinValue;
                 }
-                _lastUsername = player.Username;
+                _lastUsername = username;
 
-                // CurrentClass scans inventory; sample at roster cadence rather than
-                // on every 250ms location poll. A transient read failure keeps the
-                // last known class until the next sample.
-                if ((DateTime.UtcNow - _lastClassCheck).TotalSeconds >= 2)
+                if (checkClass)
                 {
                     _lastClassCheck = DateTime.UtcNow;
-                    try { _lastClassName = player.CurrentClass?.Name ?? _lastClassName; }
-                    catch { }
+                    _lastClassName = className ?? _lastClassName;
                 }
 
                 SyncData data = new()
                 {
-                    Username = player.Username,
+                    Username = username,
                     Pid = Environment.ProcessId,
                     Server = server,
                     ClassName = _lastClassName,
                     Map = mapName,
-                    Room = ResolveRoom(),
-                    Cell = player.Cell ?? "Enter",
-                    Pad = player.Pad ?? "Spawn",
+                    Room = ResolveRoom(fullName),
+                    Cell = cell,
+                    Pad = pad,
                     LoggedIn = true,
                     Attacking = attacking,
                     OffGoto = _lastOffGoto,
                     Followers = _followers.ToList(),
-                    Following = SafeGet(_followingProvider) ?? "",
-                    ScriptOn = SafeGet(_scriptNameProvider) != null,
-                    ScriptName = SafeGet(_scriptNameProvider) ?? "",
-                    Declined = SafeGet(_declinedProvider) ?? "",
-                    Parking = SafeGetBool(_parkingProvider),
+                    Following = following,
+                    ScriptOn = scriptName != null,
+                    ScriptName = scriptName ?? "",
+                    Declined = declined,
+                    Parking = parking,
                     SendAllTarget = _sendAllTarget,
                     SendAllCommand = _sendAllCommand,
                     SendAllRecipients = _sendAllRecipients.ToList(),
@@ -362,11 +386,10 @@ public class Broadcaster
     /// title from the game UI (e.g. "ultradage-100000"). Falls back to the last room
     /// we managed to read, so a mid-transition write doesn't corrupt the value.
     /// </summary>
-    private string ResolveRoom()
+    private string ResolveRoom(string fullName)
     {
         try
         {
-            string fullName = _bot.Map?.FullName ?? "";
             int dash = fullName.LastIndexOf('-');
             if (dash > 0 && dash < fullName.Length - 1)
             {
