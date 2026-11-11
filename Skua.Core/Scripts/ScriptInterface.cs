@@ -322,7 +322,7 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
                 {
                     wasPlaying = true;
                     Servers.LastIP = Player.ServerIP ?? Servers.LastIP;
-                    if (Servers.IsIntentionalLogout)
+                    if (Servers.IsIntentionalLogout && !Servers.IsLogoutInProgress)
                         Servers.IsIntentionalLogout = false;
 
                     if (!catching)
@@ -923,7 +923,9 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
     private void Relogin(int delay, bool startScript, CancellationTokenSource reloginCts)
     {
         reloginCts.Token.ThrowIfCancellationRequested();
-        Servers.DisconnectForRelogin();
+        // A login loop already running (e.g. the startup login) owns the login screen; this one queues behind it.
+        if (!Servers.IsReloginInProgress)
+            Servers.DisconnectForRelogin();
         Log($"Waiting {delay}ms for re-login.");
         _reloginTask = Schedule(delay, async _ =>
         {

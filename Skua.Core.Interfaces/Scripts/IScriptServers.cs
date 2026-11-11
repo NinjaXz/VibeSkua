@@ -40,6 +40,16 @@ public interface IScriptServers : INotifyPropertyChanged
     bool IsIntentionalLogout { get; set; }
 
     /// <summary>
+    /// Whether an <see cref="EnsureRelogin(CancellationToken)"/> login loop is running or waiting for another one to finish.
+    /// </summary>
+    bool IsReloginInProgress => false;
+
+    /// <summary>
+    /// Whether a <see cref="Logout"/> call is still taking effect; <see cref="IsIntentionalLogout"/> must not be cleared meanwhile.
+    /// </summary>
+    bool IsLogoutInProgress => false;
+
+    /// <summary>
     /// The list of available game servers.
     /// </summary>
     List<Server> ServerList { get; }
