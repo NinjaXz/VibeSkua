@@ -79,11 +79,15 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         IsIntentionalLogout = false;
     }
 
-    [MethodCallBinding("logout", RunMethodPost = true, GameFunction = true)]
-    private void _logout()
+    public void Logout()
     {
+        // Flag first: the game's logout() sends our own "%xt%zm%cmd%1%logout%", which the packet handler sees mid-call.
+        // Unflagged it reads as a kick and starts auto relogin, whose first step stops the running script.
         IsIntentionalLogout = true;
-        CommunityToolkit.Mvvm.Messaging.StrongReferenceMessenger.Default.Send<Skua.Core.Messaging.LogoutRequestedMessage, int>(new(), (int)Skua.Core.Messaging.MessageChannels.GameEvents);
+        Flash.CallGameFunction("logout");
+        // Again: the timer thread clears the flag while it still sees the player in game.
+        IsIntentionalLogout = true;
+        StrongReferenceMessenger.Default.Send<LogoutRequestedMessage, int>(new(), (int)MessageChannels.GameEvents);
         DisconnectToLogin();
     }
 
