@@ -53,6 +53,13 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
     public string LastIP { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public bool IsIntentionalLogout { get; set; }
+
+    // One EnsureLogin loop at a time: two loops (e.g. the startup login and auto relogin) fight over the login screen
+    // and each one's "reset login UI" kicks the other's freshly logged-in session.
+    private readonly SemaphoreSlim _loginGate = new(1, 1);
+    private int _loginLoops;
+    public bool IsReloginInProgress => Volatile.Read(ref _loginLoops) > 0;
+
     public string? CachedUsername => _loginInfoSetted && !string.IsNullOrWhiteSpace(_username) ? _username : (!string.IsNullOrWhiteSpace(Player.Username) && Player.Username != "loginInfo.strUsername" ? Player.Username : null);
 
     // Flash Objects Binding
@@ -628,6 +635,11 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         {
             try { Flash.Call("loadPolicyFiles"); } catch { }
         }
+        else if (Player.Playing)
+        {
+            // Already in game (another login got there first): resetting the login UI now would kick that session.
+            ReloginLog("Server list screen not shown because the player is already in game.");
+        }
         else if (!_accountLockoutDetected)
         {
             ReloginLog("Server list screen failed to load (authentication timeout or modal lock). Resetting login UI.");
@@ -643,6 +655,38 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
     }
 
     private async Task<bool> EnsureLogin(string? preferredName, CancellationToken token)
+    {
+        Interlocked.Increment(ref _loginLoops);
+        try
+        {
+            if (!_loginGate.Wait(0))
+            {
+                ReloginLog("Another login is in progress; waiting for it to finish.");
+                await _loginGate.WaitAsync(token);
+            }
+
+            try
+            {
+                if (Player.Playing)
+                {
+                    ReloginLog("Already in game; nothing to do.");
+                    return true;
+                }
+
+                return await RunLoginAttempts(preferredName, token);
+            }
+            finally
+            {
+                _loginGate.Release();
+            }
+        }
+        finally
+        {
+            Interlocked.Decrement(ref _loginLoops);
+        }
+    }
+
+    private async Task<bool> RunLoginAttempts(string? preferredName, CancellationToken token)
     {
         int tries = 0;
         HashSet<string> attemptedServers = new(StringComparer.OrdinalIgnoreCase);
