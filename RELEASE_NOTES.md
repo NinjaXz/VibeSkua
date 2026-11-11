@@ -1,3 +1,15 @@
+# VibeSkua v2.1.4
+
+# Fix ButlerV5 hang and Auto-Relogin issues
+shoutout jonjon and lil peezer 🙏 rest in peace
+## What's Changed
+* fix relogin by @l0newolf12 in https://github.com/NinjaXz/VibeSkua/pull/63
+* compatibvility update with new FlashUtil cahanges by @l0newolf12 in https://github.com/NinjaXz/VibeSkua/pull/64
+* bump ver number by @l0newolf12 in https://github.com/NinjaXz/VibeSkua/pull/65
+
+
+**Full Changelog**: https://github.com/NinjaXz/VibeSkua/compare/v2.1.3...v2.1.4
+
 # VibeSkua: 2.1.3
 
 ## New
