@@ -57,90 +57,100 @@ public partial class ScriptAuto : ObservableObject, IScriptAuto
     private IScriptCombat Combat => _lazyCombat.Value;
     private IScriptMap Map => _lazyMap.Value;
 
-    [ObservableProperty]
     private bool _isRunning;
+    public bool IsRunning => Volatile.Read(ref _isRunning);
 
+    private readonly object _autoLock = new();
     private Task? _autoTask;
     private CancellationTokenSource? _ctsAuto;
 
     public void StartAutoAttack(string? className = null, ClassUseMode classUseMode = ClassUseMode.Base, int[]? manualMapIDs = null)
     {
-        _ctsAuto = new CancellationTokenSource();
         _DoActionAuto(hunt: false, className, classUseMode, manualMapIDs);
     }
 
     public void StartAutoHunt(string? className = null, ClassUseMode classUseMode = ClassUseMode.Base, int[]? manualMapIDs = null)
     {
-        _ctsAuto = new CancellationTokenSource();
         _DoActionAuto(hunt: true, className, classUseMode, manualMapIDs);
     }
 
     public void Stop()
     {
-        if (_ctsAuto is null)
-        {
-            IsRunning = false;
-            return;
-        }
-
-        _ctsAuto?.Cancel();
-        _autoTask?.Wait();
-        Wait.ForTrue(() => _ctsAuto is null, 20);
-        _autoTask?.Dispose();
-        IsRunning = false;
+        StopAsync().AsTask().GetAwaiter().GetResult();
     }
 
     public async ValueTask StopAsync()
     {
-        if (_ctsAuto is null)
+        Task? task;
+        lock (_autoLock)
         {
-            IsRunning = false;
-            return;
+            _ctsAuto?.Cancel();
+            task = _autoTask;
         }
 
-        _ctsAuto?.Cancel();
-        await Wait.ForTrueAsync(() => _ctsAuto is null && (_autoTask?.IsCompleted ?? true), 40);
-        _autoTask?.Dispose();
-        IsRunning = false;
+        if (task != null)
+            await task.ConfigureAwait(false);
     }
 
     private void _DoActionAuto(bool hunt, string? className = null, ClassUseMode classUseMode = ClassUseMode.Base, int[]? manualMapIDs = null)
     {
-        if (_autoTask is { IsCompleted: false })
-            return;
-
-        if (!Player.LoggedIn)
-            return;
-
-        CheckDropsandBoosts();
-        Options.InfiniteRange = true;
-        if (className is not null)
-            Skills.StartAdvanced(className, true, classUseMode);
-        else
-            Skills.StartAdvanced(Player.CurrentClass?.Name ?? "Generic", true);
-
-        _autoTask = Task.Run(async () =>
+        lock (_autoLock)
         {
-            try
+            if (_autoTask is { IsCompleted: false })
+                return;
+
+            CancellationTokenSource cts = new();
+            _ctsAuto = cts;
+            _isRunning = true;
+            _autoTask = Task.Run(async () =>
             {
-                if (hunt)
-                    await _Hunt(_ctsAuto!.Token, manualMapIDs);
-                else
-                    await _Attack(_ctsAuto!.Token, manualMapIDs);
-            }
-            catch { /* ignored */ }
-            finally
-            {
-                Drops.Stop();
-                Skills.Stop();
-                Boosts.Stop();
-                Options.InfiniteRange = false;
-                _ctsAuto?.Dispose();
-                _ctsAuto = null;
-                IsRunning = false;
-            }
-        });
-        IsRunning = true;
+                bool started = false;
+                try
+                {
+                    cts.Token.ThrowIfCancellationRequested();
+                    if (!Player.LoggedIn)
+                        return;
+
+                    started = true;
+                    CheckDropsandBoosts();
+                    Options.InfiniteRange = true;
+                    if (className is not null)
+                        Skills.StartAdvanced(className, true, classUseMode);
+                    else
+                        Skills.StartAdvanced(Player.CurrentClass?.Name ?? "Generic", true);
+
+                    if (hunt)
+                        await _Hunt(cts.Token, manualMapIDs);
+                    else
+                        await _Attack(cts.Token, manualMapIDs);
+                }
+                catch { /* ignored */ }
+                finally
+                {
+                    try
+                    {
+                        if (started)
+                        {
+                            Drops.Stop();
+                            Skills.Stop();
+                            Boosts.Stop();
+                            Options.InfiniteRange = false;
+                        }
+                    }
+                    finally
+                    {
+                        lock (_autoLock)
+                        {
+                            _ctsAuto = null;
+                            cts.Dispose();
+                            _isRunning = false;
+                        }
+                        OnPropertyChanged(nameof(IsRunning));
+                    }
+                }
+            });
+        }
+        OnPropertyChanged(nameof(IsRunning));
     }
 
     private string _target = "";
