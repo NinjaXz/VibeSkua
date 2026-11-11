@@ -1,0 +1,176 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vms="clr-namespace:Skua.App.Avalonia.ViewModels"
+             xmlns:conv="clr-namespace:Skua.App.Avalonia.Converters"
+             xmlns:auras="clr-namespace:Skua.Core.Models.Auras;assembly=Skua.Core.Models"
+             x:Class="Skua.App.Avalonia.Views.AuraRowView"
+             x:DataType="vms:AuraRowViewModel">
+
+  <!-- One aura: icon, name, tag, who applied it, stacks, time; a thin bar; the effect line; details when opened.
+       Used by the Aura Tracker window and the panels over the game. -->
+  <UserControl.Styles>
+    <Style Selector="Border.aura-row">
+      <Setter Property="Background" Value="{DynamicResource SkuaSurfaceAltBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SkuaBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="8,6,8,6" />
+      <Setter Property="Margin" Value="0,3" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Border.aura-row.full">
+      <Setter Property="BorderBrush" Value="#40E0FF" />
+    </Style>
+    <Style Selector="Border.aura-row.noheal">
+      <Setter Property="BorderBrush" Value="{DynamicResource SkuaDangerBrush}" />
+      <Setter Property="Background" Value="{DynamicResource SkuaDangerTintBrush}" />
+    </Style>
+    <Style Selector="Border.aura-row.taunt">
+      <Setter Property="BorderBrush" Value="{DynamicResource SkuaWarningBrush}" />
+      <Setter Property="Background" Value="{DynamicResource SkuaWarningTintBrush}" />
+    </Style>
+    <Style Selector="Border.aura-row.scroll">
+      <Setter Property="BorderBrush" Value="#C77DFF" />
+    </Style>
+
+    <Style Selector="Border.aura-icon">
+      <Setter Property="Width" Value="28" />
+      <Setter Property="Height" Value="28" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Background" Value="{DynamicResource SkuaSurfaceSubtleBrush}" />
+      <Setter Property="ClipToBounds" Value="True" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="Border.aura-tag">
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Padding" Value="5,1" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Background" Value="{DynamicResource SkuaTagBackgroundBrush}" />
+    </Style>
+    <Style Selector="Border.aura-tag.noheal"><Setter Property="Background" Value="{DynamicResource SkuaDangerBrush}" /></Style>
+    <Style Selector="Border.aura-tag.taunt"><Setter Property="Background" Value="{DynamicResource SkuaWarningBrush}" /></Style>
+    <Style Selector="Border.aura-tag.scroll"><Setter Property="Background" Value="#C77DFF" /></Style>
+
+    <Style Selector="TextBlock.aura-stacks">
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="{DynamicResource SkuaTextBrush}" />
+    </Style>
+    <Style Selector="TextBlock.aura-stacks.full"><Setter Property="Foreground" Value="#40E0FF" /></Style>
+    <Style Selector="TextBlock.aura-time">
+      <Setter Property="FontFamily" Value="Consolas, Menlo, monospace" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="MinWidth" Value="44" />
+      <Setter Property="TextAlignment" Value="Right" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="{DynamicResource SkuaMutedTextBrush}" />
+    </Style>
+    <Style Selector="TextBlock.aura-time.ending"><Setter Property="Foreground" Value="{DynamicResource SkuaWarningBrush}" /></Style>
+
+    <Style Selector="ProgressBar.aura-bar">
+      <Setter Property="Height" Value="3" />
+      <Setter Property="MinHeight" Value="3" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="CornerRadius" Value="1.5" />
+      <Setter Property="Minimum" Value="0" />
+      <Setter Property="Maximum" Value="1" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource SkuaInfoBrush}" />
+    </Style>
+    <Style Selector="ProgressBar.aura-bar.ending"><Setter Property="Foreground" Value="{DynamicResource SkuaWarningBrush}" /></Style>
+
+    <Style Selector="TextBlock.aura-detail">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Foreground" Value="{DynamicResource SkuaTextBrush}" />
+    </Style>
+    <Style Selector="TextBlock.aura-by">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="{DynamicResource SkuaGoldBrush}" />
+    </Style>
+    <Style Selector="TextBlock.aura-by.me"><Setter Property="Foreground" Value="{DynamicResource SkuaMutedTextBrush}" /></Style>
+
+  </UserControl.Styles>
+
+<Border Classes="aura-row"
+        Classes.full="{Binding IsFull}"
+        Classes.noheal="{Binding IsNoHeal}"
+        Classes.taunt="{Binding IsTaunt}"
+        Classes.scroll="{Binding IsScroll}"
+        ToolTip.Tip="Click for details">
+  <Button Padding="0" Background="Transparent" BorderThickness="0"
+          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+          Command="{Binding ToggleExpandedCommand}">
+    <StackPanel Spacing="4">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8">
+        <Border Classes="aura-icon">
+          <Panel>
+            <Image Source="{Binding Icon}" IsVisible="{Binding HasIcon}" Stretch="Uniform" />
+            <TextBlock Text="{Binding Initial}" IsVisible="{Binding !HasIcon}" FontWeight="Bold"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Foreground="{DynamicResource SkuaTextBrush}" />
+          </Panel>
+        </Border>
+        <!-- Name on top, who applied it underneath, so a long boss name never squeezes the aura name. -->
+        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+          <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}"
+                     FontWeight="SemiBold" Foreground="{DynamicResource SkuaTextBrush}" />
+          <TextBlock Classes="aura-by" Classes.me="{Binding AppliedByMe}" Text="{Binding AppliedByShort}"
+                     IsVisible="{Binding AppliedByShort, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                     ToolTip.Tip="{Binding AppliedBy}" />
+        </StackPanel>
+        <Border Grid.Column="2" Classes="aura-tag" IsVisible="{Binding HasTag}"
+                Classes.noheal="{Binding IsNoHeal}" Classes.taunt="{Binding IsTaunt}" Classes.scroll="{Binding IsScroll}">
+          <TextBlock Text="{Binding TagText}" FontSize="10" FontWeight="Bold" Foreground="White" />
+        </Border>
+        <TextBlock Grid.Column="3" Classes="aura-stacks" Classes.full="{Binding IsFull}" Text="{Binding StackText}" />
+        <TextBlock Grid.Column="4" Classes="aura-time" Classes.ending="{Binding EndingSoon}" Text="{Binding TimeText}" />
+      </Grid>
+      <ProgressBar Classes="aura-bar" Classes.ending="{Binding EndingSoon}" Value="{Binding Progress}" />
+      <ItemsControl IsVisible="{Binding HasPills}" ItemsSource="{Binding Pills}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate DataType="auras:EffectPill">
+            <Border CornerRadius="4" Padding="6,1" Margin="0,2,4,0" MaxWidth="280"
+                    Background="{Binding Kind, Converter={x:Static conv:EffectKindBrushConverter.Instance}}">
+              <TextBlock Text="{Binding Text}" FontSize="11" FontWeight="SemiBold" TextWrapping="Wrap"
+                         Foreground="{Binding Kind, Converter={x:Static conv:EffectKindBrushConverter.Instance}, ConverterParameter=fg}" />
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <StackPanel IsVisible="{Binding IsExpanded}" Spacing="2" Margin="0,2,0,0">
+        <TextBlock Classes="aura-detail">
+          <Run Text="{Binding AppliedByLabel}" FontWeight="SemiBold" />
+          <Run Text=": " />
+          <Run Text="{Binding AppliedBy}" />
+        </TextBlock>
+        <TextBlock Classes="aura-detail" IsVisible="{Binding HasStacksDetail}">
+          <Run Text="Stacks: " FontWeight="SemiBold" />
+          <Run Text="{Binding StacksDetail}" />
+        </TextBlock>
+        <TextBlock Classes="aura-detail">
+          <Run Text="Duration: " FontWeight="SemiBold" />
+          <Run Text="{Binding DurationText}" />
+        </TextBlock>
+        <TextBlock Classes="aura-detail" IsVisible="{Binding HasEffect}">
+          <Run Text="Gives: " FontWeight="SemiBold" />
+          <Run Text="{Binding Effect}" />
+        </TextBlock>
+        <TextBlock Classes="aura-detail" IsVisible="{Binding HasTagNote}" Text="{Binding TagNote}" />
+        <TextBlock Classes="aura-detail" IsVisible="{Binding HasSource}" Text="{Binding SourceText}"
+                   FontStyle="Italic" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+      </StackPanel>
+    </StackPanel>
+  </Button>
+</Border>
+</UserControl>

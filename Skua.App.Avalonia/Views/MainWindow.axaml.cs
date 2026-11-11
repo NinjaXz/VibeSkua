@@ -242,6 +242,7 @@ public partial class MainWindow : Window
                 "Junk Items" => MaterialIconKind.DeleteSweepOutline,
                 "Calendar" => MaterialIconKind.CalendarMonth,
                 "Skills" => MaterialIconKind.LightningBoltOutline,
+                "Aura Tracker" => MaterialIconKind.ShieldStarOutline,
                 "Stats" => MaterialIconKind.ChartLine,
                 "Notification Center" => MaterialIconKind.BellOutline,
                 "Runtime" => MaterialIconKind.PlayNetworkOutline,
@@ -315,6 +316,8 @@ public partial class MainWindow : Window
     private void MainWindow_Opened(object? sender, EventArgs e)
     {
         _startup.Execute();
+        if (Ioc.Default.GetService<AuraTrackerViewModel>() is { } auraTracker)
+            AuraOverlay.Attach(this, auraTracker);
         _flash.FlashCall += OnFlashCall;
 
         try

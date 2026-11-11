@@ -96,6 +96,7 @@ public static class Services
         services.AddSingleton<IGrabberService, GrabberService>();
         services.AddSingleton<IClientFilesService, ClientFilesService>();
         services.AddSingleton<IAuraMonitorService, AuraMonitorService>();
+        services.AddSingleton<IAuraTrackerService, AuraTrackerService>();
         services.AddSingleton<IJunkService, JunkService>();
         services.AddSingleton<BackgroundThemeService>();
         services.AddSingleton<IRemoteControlService, RemoteControlService>();
@@ -163,6 +164,7 @@ public static class Services
         services.AddTransient<DiagnosticsViewModel>();
         services.AddSingleton<NotificationCenterViewModel>();
         services.AddTransient<CalendarViewModel>();
+        services.AddSingleton<AuraTrackerViewModel>();
 
         services.AddSingleton<ScriptRepoViewModel>();
         services.AddSingleton<ScriptLoaderViewModel>();

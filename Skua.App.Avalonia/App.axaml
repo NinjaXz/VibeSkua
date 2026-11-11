@@ -102,6 +102,9 @@
     <DataTemplate DataType="vms:CalendarViewModel">
       <views:CalendarView />
     </DataTemplate>
+    <DataTemplate DataType="vms:AuraTrackerViewModel">
+      <views:AuraTrackerView />
+    </DataTemplate>
     <DataTemplate DataType="advancedSkills:AdvancedSkillsViewModel">
       <views:AdvancedSkillsView />
     </DataTemplate>
