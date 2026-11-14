@@ -54,6 +54,7 @@ internal class MainMenu
         windowService.RegisterManagedWindow<DiagnosticsViewModel>("Diagnostics");
         windowService.RegisterManagedWindow<NotificationCenterViewModel>("Notification Center");
         windowService.RegisterManagedWindow<CalendarViewModel>("Calendar");
+        windowService.RegisterManagedWindow<AuraTrackerViewModel>("Aura Tracker");
 
         windowService.RegisterManagedWindow<AdvancedSkillsViewModel>("Skills");
 
@@ -98,6 +99,7 @@ internal class MainMenu
             new("Combat", new List<MainMenuItemViewModel>()
             {
                 new("Skills"),
+                new("Aura Tracker"),
                 new("Stats"),
                 new("Runtime")
             }),

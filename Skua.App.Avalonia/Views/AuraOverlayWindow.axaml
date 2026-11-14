@@ -1,0 +1,64 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+        xmlns:vms="clr-namespace:Skua.App.Avalonia.ViewModels"
+        xmlns:views="clr-namespace:Skua.App.Avalonia.Views"
+        x:Class="Skua.App.Avalonia.Views.AuraOverlayWindow"
+        x:DataType="vms:AuraTrackerViewModel"
+        Title="Auras"
+        Width="320" SizeToContent="Height"
+        SystemDecorations="None" CanResize="False"
+        ShowInTaskbar="False" ShowActivated="False"
+        Background="Transparent" TransparencyLevelHint="Transparent">
+
+  <Window.Styles>
+    <Style Selector="Button.chip">
+      <Setter Property="FontSize" Value="10" />
+      <Setter Property="Padding" Value="7,1" />
+      <Setter Property="Margin" Value="0,0,4,3" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="CornerRadius" Value="9" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="#55FFFFFF" />
+      <Setter Property="Foreground" Value="#C8C6BE" />
+    </Style>
+    <Style Selector="Button.chip.on">
+      <Setter Property="Background" Value="{DynamicResource SkuaAccentBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SkuaAccentBrush}" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+  </Window.Styles>
+
+  <!-- One panel over the game: You or Target. Drag the header to move it; the fold button hides the list.
+       The list is held to 60% of the game's height (set in code) and scrolls with the wheel or its bar. -->
+  <Border Background="#D0141418" BorderBrush="{DynamicResource SkuaBorderBrush}" BorderThickness="1"
+          CornerRadius="10" Padding="8,6">
+    <StackPanel Spacing="4">
+      <Grid x:Name="Header" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6" Background="Transparent" Cursor="SizeAll">
+        <materialIcons:MaterialIcon x:Name="HeaderIcon" Kind="AccountOutline" Width="14" Height="14"
+                                    Foreground="{DynamicResource SkuaAccentBrush}" />
+        <TextBlock x:Name="HeaderText" Grid.Column="1" Text="YOU" FontSize="11" FontWeight="SemiBold"
+                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                   Foreground="{DynamicResource SkuaAccentBrush}" />
+        <Button x:Name="FoldButton" Grid.Column="2" Content="–" Padding="6,0" MinHeight="0" FontSize="12"
+                Background="Transparent" BorderThickness="0" Foreground="{DynamicResource SkuaMutedTextBrush}"
+                ToolTip.Tip="Fold or unfold" />
+      </Grid>
+      <StackPanel x:Name="Body">
+        <WrapPanel x:Name="Chips" Margin="0,0,0,2" />
+        <ScrollViewer x:Name="RowsScroll" HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto" AllowAutoHide="False">
+          <ItemsControl x:Name="Rows">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="vms:AuraRowViewModel">
+                <views:AuraRowView />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+        <TextBlock x:Name="EmptyText" Text="No auras" FontSize="12" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+      </StackPanel>
+    </StackPanel>
+  </Border>
+</Window>

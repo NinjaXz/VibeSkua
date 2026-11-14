@@ -1,0 +1,183 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vms="clr-namespace:Skua.App.Avalonia.ViewModels"
+             xmlns:views="clr-namespace:Skua.App.Avalonia.Views"
+             xmlns:conv="clr-namespace:Skua.App.Avalonia.Converters"
+             x:Class="Skua.App.Avalonia.Views.AuraTrackerView"
+             x:DataType="vms:AuraTrackerViewModel"
+             Background="{DynamicResource SkuaPageBrush}"
+             mc:Ignorable="d" d:DesignHeight="620" d:DesignWidth="400">
+
+  <UserControl.Styles>
+    <Style Selector="Border.aura-card">
+      <Setter Property="Background" Value="{DynamicResource SkuaSurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SkuaBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="10,8" />
+    </Style>
+    <Style Selector="TextBlock.aura-heading">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource SkuaAccentBrush}" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style Selector="Button.chip">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="Padding" Value="9,2" />
+      <Setter Property="Margin" Value="0,0,5,4" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="CornerRadius" Value="11" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SkuaBorderBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource SkuaMutedTextBrush}" />
+    </Style>
+    <Style Selector="Button.chip.on">
+      <Setter Property="Background" Value="{DynamicResource SkuaAccentBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SkuaAccentBrush}" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="Button.mini">
+      <Setter Property="Padding" Value="6,0" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+  </UserControl.Styles>
+
+
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="12" Spacing="10">
+      <Border Classes="aura-card">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="Show over game" FontWeight="SemiBold" Foreground="{DynamicResource SkuaTextBrush}" />
+            <TextBlock Text="Panels over the game window, opened every time VibeSkua starts. Drag a header to move it."
+                       FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+          </StackPanel>
+          <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowOverlay}" OnContent="" OffContent="" VerticalAlignment="Center" />
+        </Grid>
+      </Border>
+
+      <Border Classes="aura-card">
+        <StackPanel Spacing="4">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <materialIcons:MaterialIcon Kind="AccountOutline" Width="14" Height="14" Foreground="{DynamicResource SkuaAccentBrush}" />
+            <TextBlock Classes="aura-heading" Text="YOU" />
+          </StackPanel>
+          <WrapPanel Margin="0,2,0,2">
+            <Button Classes="chip" Classes.on="{Binding SelfFilter, Converter={x:Static conv:NameEqualsConverter.Instance}, ConverterParameter=All}" Content="All" Command="{Binding SetSelfFilterCommand}" CommandParameter="All" />
+            <Button Classes="chip" Classes.on="{Binding SelfFilter, Converter={x:Static conv:NameEqualsConverter.Instance}, ConverterParameter=Buffs}" Content="Buffs" Command="{Binding SetSelfFilterCommand}" CommandParameter="Buffs" />
+            <Button Classes="chip" Classes.on="{Binding SelfFilter, Converter={x:Static conv:NameEqualsConverter.Instance}, ConverterParameter=Debuffs}" Content="Debuffs" Command="{Binding SetSelfFilterCommand}" CommandParameter="Debuffs" />
+            <Button Classes="chip" Classes.on="{Binding SelfFilter, Converter={x:Static conv:NameEqualsConverter.Instance}, ConverterParameter=ScrollsAndPotions}" Content="Scrolls &amp; potions" Command="{Binding SetSelfFilterCommand}" CommandParameter="ScrollsAndPotions" />
+          </WrapPanel>
+          <ItemsControl ItemsSource="{Binding SelfAuras}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="vms:AuraRowViewModel">
+                <views:AuraRowView />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock Text="No auras" IsVisible="{Binding NoSelfAuras}" FontSize="12" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+        </StackPanel>
+      </Border>
+
+      <Border Classes="aura-card">
+        <StackPanel Spacing="4">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <materialIcons:MaterialIcon Kind="Crosshairs" Width="14" Height="14" Foreground="{DynamicResource SkuaAccentBrush}" />
+            <TextBlock Classes="aura-heading" Text="{Binding TargetTitle}" />
+          </StackPanel>
+          <WrapPanel Margin="0,2,0,2">
+            <Button Classes="chip" Classes.on="{Binding TargetFilter, Converter={x:Static conv:NameEqualsConverter.Instance}, ConverterParameter=All}" Content="All" Command="{Binding SetTargetFilterCommand}" CommandParameter="All" />
+            <Button Classes="chip" Classes.on="{Binding TargetFilter, Converter={x:Static conv:NameEqualsConverter.Instance}, ConverterParameter=Buffs}" Content="Buffs" Command="{Binding SetTargetFilterCommand}" CommandParameter="Buffs" />
+            <Button Classes="chip" Classes.on="{Binding TargetFilter, Converter={x:Static conv:NameEqualsConverter.Instance}, ConverterParameter=Debuffs}" Content="Debuffs" Command="{Binding SetTargetFilterCommand}" CommandParameter="Debuffs" />
+            <Button Classes="chip" Classes.on="{Binding TargetFilter, Converter={x:Static conv:NameEqualsConverter.Instance}, ConverterParameter=ScrollsAndPotions}" Content="Scrolls &amp; potions" Command="{Binding SetTargetFilterCommand}" CommandParameter="ScrollsAndPotions" />
+          </WrapPanel>
+          <ItemsControl ItemsSource="{Binding TargetAuras}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="vms:AuraRowViewModel">
+                <views:AuraRowView />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock Text="No auras" IsVisible="{Binding NoTargetAuras}" FontSize="12" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+          <TextBlock Text="No target" IsVisible="{Binding !HasTarget}" FontSize="12" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+        </StackPanel>
+      </Border>
+
+      <Border Classes="aura-card">
+        <Expander Header="Priority" HorizontalAlignment="Stretch">
+          <StackPanel Spacing="6">
+            <TextBlock FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource SkuaMutedTextBrush}"
+                       Text="Pinned auras come first, then these groups top to bottom. Applies to the window and the panels over the game." />
+            <ItemsControl ItemsSource="{Binding PriorityGroups}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vms:AuraPriorityItem">
+                  <Border Background="{DynamicResource SkuaSurfaceAltBrush}" BorderBrush="{DynamicResource SkuaBorderBrush}"
+                          BorderThickness="1" CornerRadius="8" Padding="8,3" Margin="0,2">
+                    <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
+                      <TextBlock Text="{Binding Rank}" FontWeight="Bold" VerticalAlignment="Center" Foreground="{DynamicResource SkuaAccentBrush}" />
+                      <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" Foreground="{DynamicResource SkuaTextBrush}" />
+                      <Button Grid.Column="2" Classes="mini" Content="▲" ToolTip.Tip="Move up"
+                              Command="{Binding $parent[UserControl].((vms:AuraTrackerViewModel)DataContext).MoveGroupUpCommand}" CommandParameter="{Binding}" />
+                      <Button Grid.Column="3" Classes="mini" Content="▼" ToolTip.Tip="Move down"
+                              Command="{Binding $parent[UserControl].((vms:AuraTrackerViewModel)DataContext).MoveGroupDownCommand}" CommandParameter="{Binding}" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button Classes="mini" Content="Reset order" HorizontalAlignment="Right" Command="{Binding ResetGroupsCommand}"
+                    Foreground="{DynamicResource SkuaMutedTextBrush}" />
+
+            <TextBlock Text="Pin an aura or effect to the top" FontWeight="SemiBold" Margin="0,4,0,0" Foreground="{DynamicResource SkuaTextBrush}" />
+            <TextBox Text="{Binding PinQuery}" Watermark="Type a name, e.g. enrage or decay; Enter pins the best match">
+              <TextBox.KeyBindings>
+                <KeyBinding Gesture="Enter" Command="{Binding AddPinCommand}" />
+              </TextBox.KeyBindings>
+            </TextBox>
+            <ItemsControl ItemsSource="{Binding PinSuggestions}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <Button Classes="mini" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="8,3"
+                          Content="{Binding}" Foreground="{DynamicResource SkuaTextBrush}"
+                          Command="{Binding $parent[UserControl].((vms:AuraTrackerViewModel)DataContext).AddPinCommand}" CommandParameter="{Binding}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource SkuaMutedTextBrush}"
+                       Text="The first suggestion is the best match. Text that matches no known aura is kept as a keyword: any aura whose name or effect contains it is pinned." />
+            <ItemsControl ItemsSource="{Binding Pins}" IsVisible="{Binding HasPins}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <Border CornerRadius="10" Padding="8,1,2,1" Margin="0,0,5,4" Background="{DynamicResource SkuaAccentBrush}">
+                    <StackPanel Orientation="Horizontal" Spacing="2">
+                      <TextBlock Text="{Binding}" FontSize="11" Foreground="White" VerticalAlignment="Center" />
+                      <Button Classes="mini" Content="×" Foreground="White" ToolTip.Tip="Unpin"
+                              Command="{Binding $parent[UserControl].((vms:AuraTrackerViewModel)DataContext).RemovePinCommand}" CommandParameter="{Binding}" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Expander>
+      </Border>
+
+      <TextBlock FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource SkuaMutedTextBrush}"
+                 Text="Effects, stack limits and skill names come from the AQW Wiki (aqwwiki.wikidot.com, CC BY-SA 3.0). Click an aura for who applied it and where its text comes from." />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

@@ -18,6 +18,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Aura Tracker: AQW Wiki class, forge enhancement and scroll texts (CC BY-SA 3.0), see tools/build_aura_effects.py -->
+    <EmbeddedResource Include="Resources\auradata.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="SkuaImage.png" />
     <None Update="ScriptDates.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
