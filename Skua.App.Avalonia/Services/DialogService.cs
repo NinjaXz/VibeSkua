@@ -962,6 +962,9 @@ public class DialogService : IDialogService
     private static void FocusDefaultDialogAction(Window dialog, Control? initialFocus)
     {
         dialog.Activate();
+        // In the tab host, keep the tabs' game windows below the dialog so it is never hidden behind the game.
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime { MainWindow: Views.TabbedHostWindow host })
+            host.KeepGameWindowsBelowHostWindows();
         dialog.Focus();
         if (initialFocus?.Focus() == true)
         {

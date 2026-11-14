@@ -91,6 +91,22 @@ public partial class TabbedHostWindow : Window
     private static extern bool IsWindowVisible(IntPtr hWnd);
 
     [DllImport("user32.dll")]
+    private static extern bool IsWindowEnabled(IntPtr hWnd);
+
+    private delegate void WinEventProc(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint idEventThread, uint dwmsEventTime);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr SetWinEventHook(uint eventMin, uint eventMax, IntPtr hmodWinEventProc, WinEventProc lpfnWinEventProc, uint idProcess, uint idThread, uint dwFlags);
+
+    [DllImport("user32.dll")]
+    private static extern bool UnhookWinEvent(IntPtr hWinEventHook);
+
+    private const uint EVENT_SYSTEM_FOREGROUND = 0x0003;
+    private const uint WINEVENT_OUTOFCONTEXT = 0x0000;
+    private WinEventProc? _foregroundHookProc;
+    private IntPtr _foregroundHook = IntPtr.Zero;
+
+    [DllImport("user32.dll")]
     public static extern IntPtr BeginDeferWindowPos(int nNumWindows);
 
     [DllImport("user32.dll")]
@@ -119,6 +135,7 @@ public partial class TabbedHostWindow : Window
     private const int GWL_HWNDPARENT = -8;
     private const int GWL_EXSTYLE = -20;
     private const uint GW_OWNER = 4;
+    private const uint GW_HWNDPREV = 3;
 
     [DllImport("user32.dll", SetLastError = true)]
     public static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
@@ -526,6 +543,11 @@ public partial class TabbedHostWindow : Window
             HotKeys.HostHwnd = _hostHwnd;
             _subclassProc = HostWindowSubclassProc;
             SetWindowSubclass(_hostHwnd, _subclassProc, 1, IntPtr.Zero);
+
+            // Clicking a tab's game window activates it, and Windows lifts it above an open host dialog.
+            _foregroundHookProc = OnForegroundChanged;
+            _foregroundHook = SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, IntPtr.Zero,
+                _foregroundHookProc, 0, 0, WINEVENT_OUTOFCONTEXT);
         }
 
         HotKeys.RegisterSkuaPid((uint)Environment.ProcessId);
@@ -742,14 +764,78 @@ public partial class TabbedHostWindow : Window
             PostMessage(childHwnd, WM_SKUA_SET_OPTION, new IntPtr(11), new IntPtr(1));
 
         DoReposition();
+        KeepGameWindowsBelowHostWindows();
 
         _isSpawning = false;
         ProcessNextSpawn();
     }
 
+    /// <summary>
+    /// Places the tabs' game windows directly below the host's own windows (message boxes and other dialogs).
+    /// The game windows belong to the tab processes but are owned by the host, so they share a z-order band with the
+    /// host's dialogs. A game window that attaches after a dialog opened, or a dialog opened while the client has no
+    /// foreground rights, otherwise leaves the modal dialog hidden behind the game and the client looks frozen.
+    /// </summary>
+    /// <summary>A modal dialog disables its owner, so a disabled host means one of its dialogs is open.</summary>
+    private bool IsHostModalOpen => _hostHwnd != IntPtr.Zero && !IsWindowEnabled(_hostHwnd);
+
+    private void OnForegroundChanged(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint idEventThread, uint dwmsEventTime)
+    {
+        if (_isClosing || hwnd == IntPtr.Zero || !IsHostModalOpen)
+            return;
+
+        GetWindowThreadProcessId(hwnd, out uint pid);
+        if (_tabs.Values.Any(t => t.Process != null && !t.Process.HasExited && (uint)t.Process.Id == pid))
+            KeepGameWindowsBelowHostWindows();
+    }
+
+    public void KeepGameWindowsBelowHostWindows()
+    {
+        if (_hostHwnd == IntPtr.Zero
+            || Application.Current?.ApplicationLifetime is not global::Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+            return;
+
+        HashSet<IntPtr> hostWindows = new();
+        foreach (Window window in desktop.Windows)
+        {
+            if (window == this || !window.IsVisible)
+                continue;
+            IntPtr hwnd = window.TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
+            if (hwnd != IntPtr.Zero)
+                hostWindows.Add(hwnd);
+        }
+        if (hostWindows.Count == 0)
+            return;
+
+        // Owned windows sit above their owner, so the first host window found walking up from the host is the lowest.
+        IntPtr lowest = IntPtr.Zero;
+        IntPtr cursor = _hostHwnd;
+        for (int i = 0; i < 256 && lowest == IntPtr.Zero; i++)
+        {
+            cursor = GetWindow(cursor, GW_HWNDPREV);
+            if (cursor == IntPtr.Zero)
+                break;
+            if (hostWindows.Contains(cursor))
+                lowest = cursor;
+        }
+        if (lowest == IntPtr.Zero)
+            return;
+
+        foreach (TabInfo info in _tabs.Values)
+        {
+            if (info.ChildHwnd != IntPtr.Zero)
+                SetWindowPos(info.ChildHwnd, lowest, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+        }
+    }
+
     private void OnWindowClosing(object? sender, WindowClosingEventArgs e)
     {
         _isClosing = true;
+        if (_foregroundHook != IntPtr.Zero)
+        {
+            UnhookWinEvent(_foregroundHook);
+            _foregroundHook = IntPtr.Zero;
+        }
         App.DisposeTrayIcon();
         try { _pipeCts.Cancel(); } catch { }
 
@@ -2522,6 +2608,10 @@ public partial class TabbedHostWindow : Window
                 _needsReposition = false;
                 Dispatcher.UIThread.Post(DoReposition, DispatcherPriority.Render);
             }
+
+            // ShowWindow(SW_SHOW) above may lift a game window over an open host dialog.
+            if (IsHostModalOpen)
+                KeepGameWindowsBelowHostWindows();
         }
     }
 

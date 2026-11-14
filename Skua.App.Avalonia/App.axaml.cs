@@ -431,7 +431,7 @@ public partial class App : Application
                 && (settings.Get<bool>("AutoUpdateBotScripts")
                     || dialogService.ShowMessageBox("Would you like to update your scripts?", "Script Update", true) == true))
             {
-                await Skua.Core.Services.ScriptStartupUpdater.DownloadMissingAndOutdatedAsync(getScripts, dialogService);
+                await Skua.Core.Services.ScriptStartupUpdater.DownloadMissingAndOutdatedAsync(getScripts, dialogService, reportSuccess: true);
             }
         }
         catch { }
