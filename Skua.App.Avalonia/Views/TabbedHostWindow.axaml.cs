@@ -119,6 +119,7 @@ public partial class TabbedHostWindow : Window
     private const int GWL_HWNDPARENT = -8;
     private const int GWL_EXSTYLE = -20;
     private const uint GW_OWNER = 4;
+    private const uint GW_HWNDPREV = 3;
 
     [DllImport("user32.dll", SetLastError = true)]
     public static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
@@ -742,9 +743,55 @@ public partial class TabbedHostWindow : Window
             PostMessage(childHwnd, WM_SKUA_SET_OPTION, new IntPtr(11), new IntPtr(1));
 
         DoReposition();
+        KeepGameWindowsBelowHostWindows();
 
         _isSpawning = false;
         ProcessNextSpawn();
+    }
+
+    /// <summary>
+    /// Places the tabs' game windows directly below the host's own windows (message boxes and other dialogs).
+    /// The game windows belong to the tab processes but are owned by the host, so they share a z-order band with the
+    /// host's dialogs. A game window that attaches after a dialog opened, or a dialog opened while the client has no
+    /// foreground rights, otherwise leaves the modal dialog hidden behind the game and the client looks frozen.
+    /// </summary>
+    public void KeepGameWindowsBelowHostWindows()
+    {
+        if (_hostHwnd == IntPtr.Zero
+            || Application.Current?.ApplicationLifetime is not global::Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+            return;
+
+        HashSet<IntPtr> hostWindows = new();
+        foreach (Window window in desktop.Windows)
+        {
+            if (window == this || !window.IsVisible)
+                continue;
+            IntPtr hwnd = window.TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
+            if (hwnd != IntPtr.Zero)
+                hostWindows.Add(hwnd);
+        }
+        if (hostWindows.Count == 0)
+            return;
+
+        // Owned windows sit above their owner, so the first host window found walking up from the host is the lowest.
+        IntPtr lowest = IntPtr.Zero;
+        IntPtr cursor = _hostHwnd;
+        for (int i = 0; i < 256 && lowest == IntPtr.Zero; i++)
+        {
+            cursor = GetWindow(cursor, GW_HWNDPREV);
+            if (cursor == IntPtr.Zero)
+                break;
+            if (hostWindows.Contains(cursor))
+                lowest = cursor;
+        }
+        if (lowest == IntPtr.Zero)
+            return;
+
+        foreach (TabInfo info in _tabs.Values)
+        {
+            if (info.ChildHwnd != IntPtr.Zero)
+                SetWindowPos(info.ChildHwnd, lowest, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+        }
     }
 
     private void OnWindowClosing(object? sender, WindowClosingEventArgs e)
