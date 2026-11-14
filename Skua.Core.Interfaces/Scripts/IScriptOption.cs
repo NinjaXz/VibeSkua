@@ -255,6 +255,26 @@ public interface IScriptOption : INotifyPropertyChanged
     HuntPriorities HuntPriority { get; set; }
 
     /// <summary>
+    /// Enables the autonomous stuck script watchdog.
+    /// </summary>
+    bool EnableScriptWatchdog { get; set; }
+
+    /// <summary>
+    /// The timeout in seconds before the stuck script watchdog triggers soft recovery actions.
+    /// </summary>
+    int ScriptWatchdogTimeout { get; set; }
+
+    /// <summary>
+    /// Whether the watchdog should restart the running script on critical (Tier 3) stalls.
+    /// </summary>
+    bool WatchdogAutoRestart { get; set; }
+
+    /// <summary>
+    /// Whether to send Discord webhook alerts when the watchdog performs recovery actions.
+    /// </summary>
+    bool WatchdogDiscordAlerts { get; set; }
+
+    /// <summary>
     /// Resets the options to the user defined defaults. If no user settings are found, uses the application default values.
     /// </summary>
     void Reset();

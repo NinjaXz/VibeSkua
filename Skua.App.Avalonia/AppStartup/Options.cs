@@ -18,15 +18,52 @@ namespace Skua.App.Avalonia.AppStartup;
 
 internal class Options
 {
+    private static readonly Dictionary<string, string> GameOptionDescriptions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        { "EnableScriptWatchdog", "Monitors scripts for silent deadlocks or death freezes and triggers automatic recovery." },
+        { "ScriptWatchdogTimeout", "Seconds of zero forward progress before the watchdog triggers recovery (default: 300s / 5m)." },
+        { "WatchdogAutoRestart", "Automatically restarts the script if the character remains stuck after soft rescue and map reload." },
+        { "WatchdogDiscordAlerts", "Sends an alert to your configured Discord webhook when a script freezes and gets auto-restarted." },
+        { "LagKiller", "Hides game animations and stops rendering to minimize CPU and GPU usage." },
+        { "HidePlayers", "Hides other players in the room to reduce lag and improve FPS." },
+        { "OptimizePlayers", "Optimizes player avatar rendering." },
+        { "DisableFX", "Disables visual skill effects, particles, and spell animations." },
+        { "DisableCollisions", "Allows your character to walk through walls and map barriers." },
+        { "ShowFPS", "Displays the current frames per second on screen." },
+        { "SetFPS", "Sets the maximum target frame rate for the game." },
+        { "AggroMonsters", "Causes all monsters in the current room to attack you simultaneously." },
+        { "AggroAllMonsters", "Provokes all monsters across the entire map at the same time." },
+        { "AttackWithoutTarget", "Uses combat skills even without an active monster targeted." },
+        { "InfiniteRange", "Allows attacking monsters from anywhere in the current cell." },
+        { "Magnetise", "Pulls item drops directly to the player." },
+        { "SafeTimings", "Enforces a safety buffer on game actions to prevent disconnects." },
+        { "AcceptACDrops", "Automatically accepts any AdventureCoin (AC) item that drops." },
+        { "AcceptAllDrops", "Automatically picks up every dropped item." },
+        { "RejectAllDrops", "Automatically declines all non-AC item drops." },
+        { "AutoRelogin", "Automatically logs back in and resumes if disconnected from the server." },
+        { "AutoReloginAny", "Relogs into any available server instead of only the last server." },
+        { "ReloginFallback", "Falls back to direct socket connection if the login UI hangs." },
+        { "RetryRelogin", "Retries logging in multiple times if the first attempt fails." },
+        { "SafeRelogin", "Adds a 1-minute 15-second ghost session delay before relogging." },
+        { "ReloginTries", "Maximum number of login attempts before giving up." },
+        { "LoginTimeout", "Maximum seconds to wait for authentication and world loading." },
+        { "SkipCutscenes", "Automatically skips in-game story cutscenes and dialogs." },
+        { "HeadlessMode", "Collapses the Flash viewport to 1x1 pixel to drastically reduce CPU and RAM." },
+        { "ReloginServer", "The preferred server to reconnect to during auto-relogin." }
+    };
+
+    private static string GetGameOptionDescription(string binding) =>
+        GameOptionDescriptions.TryGetValue(binding, out string? desc) ? desc : string.Empty;
+
     internal static GameOptionsViewModel CreateGameOptions(IServiceProvider s)
     {
         IScriptOption scriptOpt = s.GetService<IScriptOption>()!;
 
         List<DisplayOptionItemViewModelBase> options = new()
         {
-            new CommandOptionItemViewModel<bool>("Upgrade Name Colour", "1", CreateBoolCommand(b => Ioc.Default.GetRequiredService<IFlashUtil>().SetGameObject("world.myAvatar.pMC.pname.ti.textColor", b ? 0x8CD5FF : 0xFFFFFF))),
-            new CommandOptionItemViewModel<bool>("Staff Name Colour", "1", CreateBoolCommand(b => Ioc.Default.GetRequiredService<IFlashUtil>().SetGameObject("world.myAvatar.pMC.pname.ti.textColor", b ? 0xFECB38 : 0xFFFFFF))),
-            new CommandOptionItemViewModel<IRelayCommand>("Reload Map", "4", new RelayCommand(Ioc.Default.GetRequiredService<IScriptMap>().Reload)) { ActionText = "Reload" }
+            new CommandOptionItemViewModel<bool>("Upgrade Name Colour", "Display your character name in upgrade/member blue colour", "1", CreateBoolCommand(b => Ioc.Default.GetRequiredService<IFlashUtil>().SetGameObject("world.myAvatar.pMC.pname.ti.textColor", b ? 0x8CD5FF : 0xFFFFFF))),
+            new CommandOptionItemViewModel<bool>("Staff Name Colour", "Display your character name in staff/moderator gold colour", "1", CreateBoolCommand(b => Ioc.Default.GetRequiredService<IFlashUtil>().SetGameObject("world.myAvatar.pMC.pname.ti.textColor", b ? 0xFECB38 : 0xFFFFFF))),
+            new CommandOptionItemViewModel<IRelayCommand>("Reload Map", "Reloads the current map room to refresh monsters and clear stuck states", "4", new RelayCommand(Ioc.Default.GetRequiredService<IScriptMap>().Reload)) { ActionText = "Reload" }
         };
 
         foreach (PropertyInfo pi in scriptOpt.GetType().GetProperties())
@@ -39,7 +76,7 @@ internal class Options
                 options.Add(CreateOptionItem<string>(s, pi.Name, "2", new RelayCommand<string>(value => pi.SetValue(scriptOpt, value))));
             else if (pi.PropertyType == typeof(int))
             {
-                string? suffixText = pi.Name == nameof(IScriptOption.SetFPS) ? "FPS" : null;
+                string? suffixText = pi.Name == nameof(IScriptOption.SetFPS) ? "FPS" : pi.Name == nameof(IScriptOption.ScriptWatchdogTimeout) ? "s" : null;
                 options.Add(CreateOptionItemWithSuffix<int>(s, pi.Name, "3", suffixText, new RelayCommand<string>(value =>
                 {
                     if (!int.TryParse(value, out int result))
@@ -52,12 +89,12 @@ internal class Options
         return new GameOptionsViewModel(options, s.GetService<IScriptServers>()!, scriptOpt);
 
         static RelayCommand<bool> CreateBoolCommand(Action<bool> action) => new(action);
-        static BindingOptionItemViewModel<T, ScriptOption> CreateOptionItem<T>(IServiceProvider s, string binding, string tag, IRelayCommand command) => new(Label(s, binding), tag, binding, (ScriptOption)s.GetRequiredService<IScriptOption>(), command);
+        static BindingOptionItemViewModel<T, ScriptOption> CreateOptionItem<T>(IServiceProvider s, string binding, string tag, IRelayCommand command) => new(Label(s, binding), GetGameOptionDescription(binding), tag, binding, (ScriptOption)s.GetRequiredService<IScriptOption>(), command);
         // The decamelizer keeps "ACDrops" together
         static string Label(IServiceProvider s, string binding) => binding == nameof(IScriptOption.AcceptACDrops) ? "Accept AC Drops" : s.GetRequiredService<IDecamelizer>().Decamelize(binding, null);
         static BindingOptionItemViewModel<T, ScriptOption> CreateOptionItemWithSuffix<T>(IServiceProvider s, string binding, string tag, string? suffixText, IRelayCommand command)
         {
-            BindingOptionItemViewModel<T, ScriptOption> item = new(s.GetRequiredService<IDecamelizer>().Decamelize(binding, null), tag, binding, (ScriptOption)s.GetRequiredService<IScriptOption>(), command)
+            BindingOptionItemViewModel<T, ScriptOption> item = new(s.GetRequiredService<IDecamelizer>().Decamelize(binding, null), GetGameOptionDescription(binding), tag, binding, (ScriptOption)s.GetRequiredService<IScriptOption>(), command)
             {
                 SuffixText = suffixText
             };

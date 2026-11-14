@@ -61,7 +61,7 @@
                   </ItemsControl.ItemsPanel>
                   <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                      <Border Classes="option-row" MinHeight="38" Padding="12,3">
+                      <Border Classes="option-row" MinHeight="38" Padding="12,3" ToolTip.Tip="{Binding Description}">
                         <sharedOptions:OptionItemControl CompactText="True" />
                       </Border>
                     </DataTemplate>

@@ -80,6 +80,11 @@ public interface IScriptInterface
     IAuraMonitorService AuraMonitor { get; }
 
     /// <summary>
+    /// Service that monitors script activity and executes tiered auto-recovery when scripts stall.
+    /// </summary>
+    IScriptWatchdogService Watchdog { get; }
+
+    /// <summary>
     /// Helper for managing ultra boss mechanics including counter-attacks and aura monitoring.
     /// </summary>
     IUltraBossHelper UltraBossHelper { get; }
