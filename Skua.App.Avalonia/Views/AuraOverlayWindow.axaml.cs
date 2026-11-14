@@ -53,6 +53,8 @@ public partial class AuraOverlayWindow : Window
 
         Header.PointerPressed += Header_PointerPressed;
         PositionChanged += Self_Moved;
+        // The panel grows with its auras: keep it inside the game when it does.
+        Resized += (_, _) => { if (!_dragging) Place(); };
         FoldButton.Click += (_, _) =>
         {
             Body.IsVisible = !Body.IsVisible;
@@ -92,16 +94,44 @@ public partial class AuraOverlayWindow : Window
             c.Classes.Set("on", c.Tag is AuraFilter f && f == current);
     }
 
+    // The game's own rectangle inside the main window (the Flash host under the menu bar), in device pixels
+    // from the window's top-left. Panels stay inside it; the saved offset is kept, so a panel squeezed in by
+    // a small window goes back to its spot when there is room again.
+    internal static Control? GameHost;
+
+    private PixelRect GameArea()
+    {
+        double scale = _owner?.RenderScaling ?? 1;
+        if (_owner is not null && GameHost is { IsVisible: true } host && host.Bounds.Width > 50 && host.Bounds.Height > 50
+            && host.TranslatePoint(new Point(0, 0), _owner) is { } at)
+            return new PixelRect((int)(at.X * scale), (int)(at.Y * scale), (int)(host.Bounds.Width * scale), (int)(host.Bounds.Height * scale));
+        return new PixelRect(0, 0, (int)((_owner?.ClientSize.Width ?? 900) * scale), (int)((_owner?.ClientSize.Height ?? 600) * scale));
+    }
+
+    // An offset moved inside the game's rectangle, for this panel's current size.
+    private PixelPoint Inside(PixelPoint offset)
+    {
+        PixelRect area = GameArea();
+        double ownScale = RenderScaling;
+        int w = (int)(Bounds.Width * ownScale), h = (int)(Bounds.Height * ownScale);
+        return new PixelPoint(Math.Clamp(offset.X, area.X, Math.Max(area.X, area.Right - w)),
+            Math.Clamp(offset.Y, area.Y, Math.Max(area.Y, area.Bottom - h)));
+    }
+
     public void Place()
     {
         if (_owner is null)
             return;
+        PixelRect area = GameArea();
+        double ownScale = RenderScaling;
         // Header, filter chips and padding take about 64 px above the list.
-        RowsScroll.MaxHeight = Math.Max(120, _owner.ClientSize.Height * ListShareOfGame - 64);
+        RowsScroll.MaxHeight = Math.Max(120, area.Height / ownScale * ListShareOfGame - 64);
+        PixelPoint inside = Inside(_offset);
+        int x = inside.X, y = inside.Y;
         _placing = true;
         try
         {
-            Position = new PixelPoint(_owner.Position.X + _offset.X, _owner.Position.Y + _offset.Y);
+            Position = new PixelPoint(_owner.Position.X + x, _owner.Position.Y + y);
         }
         finally
         {
@@ -146,7 +176,7 @@ public partial class AuraOverlayWindow : Window
         if (!_dragging || _placing || _owner is null)
             return;
         _offset = new PixelPoint(e.Point.X - _owner.Position.X, e.Point.Y - _owner.Position.Y);
-        _saveTimer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(400), DispatcherPriority.Background, (_, _) => SaveOffset());
+        _saveTimer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(250), DispatcherPriority.Background, (_, _) => SaveOffset());
         _saveTimer.Stop();
         _saveTimer.Start();
     }
@@ -154,6 +184,9 @@ public partial class AuraOverlayWindow : Window
     private void SaveOffset()
     {
         _saveTimer?.Stop();
+        // A drag may end past the game's edge: the panel goes back inside it, and that spot is the one kept.
+        _offset = Inside(_offset);
+        Place();
         _vm?.SetOverlayPosition(_subject, string.Create(CultureInfo.InvariantCulture, $"{_offset.X},{_offset.Y}"));
     }
 
@@ -220,8 +253,9 @@ public static class AuraOverlay
     private static AuraOverlayWindow? _self;
     private static AuraOverlayWindow? _target;
 
-    public static void Attach(Window owner, AuraTrackerViewModel vm)
+    public static void Attach(Window owner, AuraTrackerViewModel vm, Control? gameHost = null)
     {
+        AuraOverlayWindow.GameHost = gameHost;
         vm.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(AuraTrackerViewModel.ShowOverlay))

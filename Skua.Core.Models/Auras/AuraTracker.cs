@@ -91,6 +91,14 @@ public class AuraCaster
     [JsonProperty("me")]
     public bool IsMe { get; set; }
 
+    /// <summary>
+    /// Empty when the game's own aura record named this caster. "packet" when the game left the record
+    /// without one and the name came from the aura packet; "skill" when the packet had none either and it
+    /// came from the skill that hit the same target in that packet.
+    /// </summary>
+    [JsonProperty("via")]
+    public string Via { get; set; } = string.Empty;
+
     [JsonIgnore]
     public bool IsMonster => Type == "m";
 

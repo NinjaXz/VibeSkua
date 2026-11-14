@@ -498,8 +498,13 @@ public partial class AuraRowViewModel : ObservableObject
         IsScroll = a.Tag == AuraTag.Scroll;
         IsFull = a.IsFull;
         AppliedBy = a.Casters.Count == 0
-            ? "Unknown (the game sent no caster)"
-            : string.Join(", ", a.Casters.Select(c => c.DisplayName));
+            ? "Not named: the aura packet had no caster, and no skill hit at the same moment"
+            : string.Join(", ", a.Casters.Select(c => c.DisplayName + c.Via switch
+            {
+                "packet" => " (from the aura packet)",
+                "skill" => " (the skill that hit at the same moment)",
+                _ => string.Empty
+            }));
         AppliedByShort = a.Casters.Count == 0
             ? string.Empty
             : a.Casters[0].DisplayName + (a.Casters.Count > 1 ? $" +{a.Casters.Count - 1}" : string.Empty);

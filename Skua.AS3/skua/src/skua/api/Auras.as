@@ -355,6 +355,8 @@ public class Auras {
                 return JSON.stringify(out);
             }
             var leaf:* = avatar.dataLeaf;
+            watchAuras();
+            var tinf:String = leaf.MonMapID != null ? "m:" + leaf.MonMapID : "p:" + leaf.entID;
             if (subject != "Self") {
                 out.target = {
                     name: avatar.objData != null ? String(avatar.objData.strMonName || avatar.objData.strUsername || "") : "",
@@ -421,6 +423,15 @@ public class Auras {
                 var byCaster:Array = casters[name] as Array;
                 if (byCaster == null) {
                     byCaster = [];
+                }
+                // The game's record has no caster (its cInf named no one it knew): take the one the aura
+                // packet itself, or the skill that hit in the same packet, named.
+                if (byCaster.length == 0 && _watchCasters[tinf + "|" + name] != null) {
+                    var hit:Object = _watchCasters[tinf + "|" + name];
+                    var parts:Array = String(hit.c).split(":");
+                    var sniffed:Object = describeCaster(world, String(parts[0]), int(parts[1]), 0);
+                    sniffed.via = hit.s;
+                    byCaster.push(sniffed);
                 }
                 byCaster.sortOn("ts", Array.NUMERIC | Array.DESCENDING);
                 out.auras.push({
@@ -536,6 +547,101 @@ public class Auras {
             i += 3;
         }
         return out.join("");
+    }
+    // Who put each aura on whom, read straight from the game's own aura packets. The game keeps a caster on an
+    // aura record only when the packet's cInf names someone it already knows (World.handleAuraEvent); otherwise
+    // the record's casterType/casterId stay null. This listens to the same SmartFox event the game uses
+    // (onExtensionResponse) and keeps, per "target|aura", the last cInf seen. When an aura entry has no cInf,
+    // the skill animation that hit the same target in the same combat packet ("anims") names the caster.
+    private static var _watchSfc:* = null;
+    private static var _watchCasters:Object = {};
+    private static var _watchLog:Array = [];
+
+    private static function watchAuras():void {
+        try {
+            var sfc:* = Main.instance.game != null ? Main.instance.game.sfc : null;
+            if (sfc == null || sfc == _watchSfc) {
+                return;
+            }
+            if (_watchSfc != null) {
+                _watchSfc.removeEventListener("onExtensionResponse", onAuraPacket);
+            }
+            _watchSfc = sfc;
+            sfc.addEventListener("onExtensionResponse", onAuraPacket);
+        } catch (e:Error) {
+        }
+    }
+
+    private static function onAuraPacket(evt:*):void {
+        try {
+            var o:* = evt.params.dataObj;
+            if (o == null || typeof o != "object" || o.cmd == null) {
+                return;
+            }
+            var list:Array = null;
+            if (o.cmd == "ct" && o.a is Array) {
+                list = o.a;
+            } else if (String(o.cmd).indexOf("aura") == 0) {
+                list = [o];
+            }
+            if (list == null) {
+                return;
+            }
+            var byAnim:Object = {};
+            if (o.anims is Array) {
+                for each (var an:* in o.anims) {
+                    if (an != null && an.cInf != null && an.tInf != null) {
+                        for each (var ti:String in String(an.tInf).split(",")) {
+                            byAnim[ti] = String(an.cInf);
+                        }
+                    }
+                }
+            }
+            var now:int = getTimer();
+            for each (var e:* in list) {
+                if (e == null || e.tInf == null || !(e.auras is Array)) {
+                    continue;
+                }
+                var cmd:String = String(e.cmd);
+                var tinf:String = String(e.tInf);
+                var c:String = e.cInf != null ? String(e.cInf) : (byAnim[tinf] != null ? String(byAnim[tinf]) : "");
+                var src:String = e.cInf != null ? "packet" : (c != "" ? "skill" : "none");
+                var names:Array = [];
+                for each (var a:* in e.auras) {
+                    if (a == null || a.nam == null) {
+                        continue;
+                    }
+                    names.push(String(a.nam));
+                    if (cmd.indexOf("aura+") == 0 && c != "") {
+                        _watchCasters[tinf + "|" + String(a.nam)] = {c: c, s: src, t: now};
+                    }
+                }
+                _watchLog.push({t: now, cmd: cmd, c: c, tg: tinf, s: src, n: names.join(",")});
+                if (_watchLog.length > 60) {
+                    _watchLog.shift();
+                }
+            }
+        } catch (err:Error) {
+        }
+    }
+
+    // {now, casters: {"m:3|Decay": {c: "p:123", s: "packet"|"skill", t}}, log: [last 30 aura events]}
+    public static function AuraCasters():String {
+        watchAuras();
+        var now:int = getTimer();
+        var out:Object = {};
+        var old:Array = [];
+        for (var k:String in _watchCasters) {
+            if (now - int(_watchCasters[k].t) > 120000) {
+                old.push(k);
+            } else {
+                out[k] = _watchCasters[k];
+            }
+        }
+        for each (var gone:String in old) {
+            delete _watchCasters[gone];
+        }
+        return JSON.stringify({now: now, casters: out, log: _watchLog.slice(-30)});
     }
 }
 }
