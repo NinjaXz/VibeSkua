@@ -91,6 +91,22 @@ public partial class TabbedHostWindow : Window
     private static extern bool IsWindowVisible(IntPtr hWnd);
 
     [DllImport("user32.dll")]
+    private static extern bool IsWindowEnabled(IntPtr hWnd);
+
+    private delegate void WinEventProc(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint idEventThread, uint dwmsEventTime);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr SetWinEventHook(uint eventMin, uint eventMax, IntPtr hmodWinEventProc, WinEventProc lpfnWinEventProc, uint idProcess, uint idThread, uint dwFlags);
+
+    [DllImport("user32.dll")]
+    private static extern bool UnhookWinEvent(IntPtr hWinEventHook);
+
+    private const uint EVENT_SYSTEM_FOREGROUND = 0x0003;
+    private const uint WINEVENT_OUTOFCONTEXT = 0x0000;
+    private WinEventProc? _foregroundHookProc;
+    private IntPtr _foregroundHook = IntPtr.Zero;
+
+    [DllImport("user32.dll")]
     public static extern IntPtr BeginDeferWindowPos(int nNumWindows);
 
     [DllImport("user32.dll")]
@@ -527,6 +543,11 @@ public partial class TabbedHostWindow : Window
             HotKeys.HostHwnd = _hostHwnd;
             _subclassProc = HostWindowSubclassProc;
             SetWindowSubclass(_hostHwnd, _subclassProc, 1, IntPtr.Zero);
+
+            // Clicking a tab's game window activates it, and Windows lifts it above an open host dialog.
+            _foregroundHookProc = OnForegroundChanged;
+            _foregroundHook = SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, IntPtr.Zero,
+                _foregroundHookProc, 0, 0, WINEVENT_OUTOFCONTEXT);
         }
 
         HotKeys.RegisterSkuaPid((uint)Environment.ProcessId);
@@ -755,6 +776,19 @@ public partial class TabbedHostWindow : Window
     /// host's dialogs. A game window that attaches after a dialog opened, or a dialog opened while the client has no
     /// foreground rights, otherwise leaves the modal dialog hidden behind the game and the client looks frozen.
     /// </summary>
+    /// <summary>A modal dialog disables its owner, so a disabled host means one of its dialogs is open.</summary>
+    private bool IsHostModalOpen => _hostHwnd != IntPtr.Zero && !IsWindowEnabled(_hostHwnd);
+
+    private void OnForegroundChanged(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint idEventThread, uint dwmsEventTime)
+    {
+        if (_isClosing || hwnd == IntPtr.Zero || !IsHostModalOpen)
+            return;
+
+        GetWindowThreadProcessId(hwnd, out uint pid);
+        if (_tabs.Values.Any(t => t.Process != null && !t.Process.HasExited && (uint)t.Process.Id == pid))
+            KeepGameWindowsBelowHostWindows();
+    }
+
     public void KeepGameWindowsBelowHostWindows()
     {
         if (_hostHwnd == IntPtr.Zero
@@ -797,6 +831,11 @@ public partial class TabbedHostWindow : Window
     private void OnWindowClosing(object? sender, WindowClosingEventArgs e)
     {
         _isClosing = true;
+        if (_foregroundHook != IntPtr.Zero)
+        {
+            UnhookWinEvent(_foregroundHook);
+            _foregroundHook = IntPtr.Zero;
+        }
         App.DisposeTrayIcon();
         try { _pipeCts.Cancel(); } catch { }
 
@@ -2569,6 +2608,10 @@ public partial class TabbedHostWindow : Window
                 _needsReposition = false;
                 Dispatcher.UIThread.Post(DoReposition, DispatcherPriority.Render);
             }
+
+            // ShowWindow(SW_SHOW) above may lift a game window over an open host dialog.
+            if (IsHostModalOpen)
+                KeepGameWindowsBelowHostWindows();
         }
     }
 
