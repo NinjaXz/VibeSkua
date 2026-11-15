@@ -119,7 +119,7 @@ if not exist "Build\plugins\Skua.Plugin.Omniscope.dll" (
 )
 
 echo Compiling AS3 once, then packaging and organizing output to match WPF release structure...
-powershell -NoProfile -ExecutionPolicy Bypass -File "package-build.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "BuildTools\package-build.ps1"
 if errorlevel 1 goto :Failure
 if not exist "Build\VibeSkua.exe" (
     echo Build completed without producing Build\VibeSkua.exe.

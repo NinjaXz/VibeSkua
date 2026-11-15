@@ -1,8 +1,14 @@
 param(
-    [string]$RootDir = $PSScriptRoot
+    [string]$RootDir
 )
 
 $ErrorActionPreference = "Stop"
+
+if ([string]::IsNullOrWhiteSpace($RootDir)) {
+    $RootDir = Split-Path -Parent $PSScriptRoot
+}
+
+$RootDir = [System.IO.Path]::GetFullPath($RootDir)
 
 $AppBin = Join-Path $RootDir "Skua.App.Avalonia\bin\Release\net10.0-windows"
 $ManagerBin = Join-Path $RootDir "Skua.Manager.Avalonia\bin\Release\net10.0"
@@ -85,7 +91,7 @@ if (-not (Test-Path (Join-Path $FFDecDir "ffdec.jar"))) {
 $BundledJavaRuntime = Join-Path $RootDir "Build\FFDec\Runtime"
 $BundledJavaExecutable = Join-Path $BundledJavaRuntime "bin\java.exe"
 if (-not (Test-Path -LiteralPath $BundledJavaExecutable -PathType Leaf)) {
-    $RuntimeBuilder = Join-Path $RootDir "Build-FFDecRuntime.ps1"
+    $RuntimeBuilder = Join-Path $PSScriptRoot "Build-FFDecRuntime.ps1"
     if (-not (Test-Path -LiteralPath $RuntimeBuilder -PathType Leaf)) {
         throw "The FFDec runtime setup script is missing: $RuntimeBuilder"
     }
