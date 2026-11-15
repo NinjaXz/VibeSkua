@@ -18,8 +18,7 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         Lazy<IScriptOption> options,
         Lazy<IScriptBotStats> stats,
         Lazy<IScriptManager> manager,
-        Lazy<ILogService> logger,
-        Lazy<ISettingsService> settings)
+        Lazy<ILogService> logger)
     {
         _lazyFlash = flash;
         _lazyPlayer = player;
@@ -28,7 +27,6 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
         _lazyStats = stats;
         _lazyManager = manager;
         _lazyLogger = logger;
-        _lazySettings = settings;
     }
 
     private readonly Lazy<IFlashUtil> _lazyFlash;
@@ -38,7 +36,6 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
     private readonly Lazy<IScriptBotStats> _lazyStats;
     private readonly Lazy<IScriptManager> _lazyManager;
     private readonly Lazy<ILogService> _lazyLogger;
-    private readonly Lazy<ISettingsService> _lazySettings;
 
     private IFlashUtil Flash => _lazyFlash.Value;
     private IScriptPlayer Player => _lazyPlayer.Value;
@@ -180,10 +177,6 @@ public partial class ScriptServers : ObservableRecipient, IScriptServers
             List<Server>? servers = JsonConvert.DeserializeObject<List<Server>>(response);
             if (servers == null || servers.Count == 0)
                 return new();
-
-            int thresholdMs = _lazySettings.Value.Get("ServerLatencyThresholdMs", ServerLatencyClassifier.DefaultThresholdMs);
-            int nearThresholdPercent = _lazySettings.Value.Get("ServerLatencyNearThresholdPercent", ServerLatencyClassifier.DefaultNearThresholdPercent);
-            await ServerLatencyTester.MeasureAsync(servers, thresholdMs, nearThresholdPercent).ConfigureAwait(false);
 
             CachedServers = servers;
             return CachedServers;
