@@ -38,14 +38,14 @@ public static class ServerLatencyTester
         {
             try
             {
+                // Measure the complete connection and AQW handshake, not just the server's response after send.
+                Stopwatch stopwatch = Stopwatch.StartNew();
                 using TcpClient client = new();
                 await client.ConnectAsync(server.IP, server.Port).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs), cancellationToken).ConfigureAwait(false);
 
                 using NetworkStream stream = client.GetStream();
                 await stream.WriteAsync(VersionCheck.AsMemory(), cancellationToken).ConfigureAwait(false);
                 await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
-
-                Stopwatch stopwatch = Stopwatch.StartNew();
                 using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 timeout.CancelAfter(TimeoutMs);
                 byte[] buffer = new byte[1];

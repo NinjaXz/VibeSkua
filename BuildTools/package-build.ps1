@@ -22,6 +22,14 @@ if (-not (Test-Path -LiteralPath $As3BuildScript -PathType Leaf)) {
     throw "The AS3 compiler script is missing: $As3BuildScript"
 }
 
+$FlexSetupScript = Join-Path $RootDir "Skua.AS3\Setup-Flex.ps1"
+if (-not (Test-Path -LiteralPath $FlexSetupScript -PathType Leaf)) {
+    throw "The Apache Flex setup script is missing: $FlexSetupScript"
+}
+
+Write-Host "Preparing Apache Flex SDK for the ActionScript build..." -ForegroundColor Cyan
+& $FlexSetupScript
+
 # Compile once during packaging. BuildProject.bat deliberately delegates AS3 work here
 # so the packaged client always contains the output from the current ActionScript sources.
 $SwfDirectory = Split-Path -Parent $SwfSource

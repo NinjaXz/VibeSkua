@@ -6,6 +6,8 @@ Build and packaging helpers used by the repository's root-level entry points.
 
 Run `BuildProject.bat` from the repository root. It restores and builds the .NET projects, invokes `package-build.ps1`, and launches the packaged client.
 
+During packaging, `Setup-Flex.ps1` is run automatically. It reuses a configured or discoverable Flex SDK, or downloads Apache Flex 4.16.1 when none is available. That first-time bootstrap requires a Java 8 JDK on `PATH`; CI provisions Java 8 automatically. The finished application bundles a separate Java 21 runtime for FFDec, so this build-time Java requirement does not apply to end users.
+
 ## Release packaging
 
 Run `Publish-Release.bat` from the repository root. It calls `BuildProject.bat` and then creates Velopack release assets.

@@ -98,9 +98,10 @@ To build the Android application yourself, see [Build Tools](BuildTools/README.m
 - Windows x64 for the desktop client and its embedded Flash/COM integration.
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
 - Git and access to the repository's configured remotes.
+- A Java 8 JDK on PATH for first-time Apache Flex setup, unless a compatible Flex SDK is already installed and configured.
 - Network access for package restore and any build-time dependencies that need downloading.
 
-The repository includes the ActionScript 3 sources and compiler setup. The packaging workflow also stages FFDec with a private Java 21 runtime, so end users do not need to install FFDec or Java separately.
+The repository includes the ActionScript 3 sources and compiler setup. Packaging automatically configures Apache Flex when it cannot find an existing SDK; the first-time download requires Java 8. The package separately bundles Java 21 for FFDec, so end users do not need to install Java. The packaging workflow also stages FFDec with a private Java 21 runtime, so end users do not need to install FFDec or Java separately.
 
 ### Fast local build
 
