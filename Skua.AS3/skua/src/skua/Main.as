@@ -225,18 +225,8 @@ public class Main extends MovieClip {
     }
 
     private function monitorLoginScreen(event:Event):void {
-        if (!this.game || !this.game.mcLogin || !this.stg) return;
-
-        // Stretch the login view to the available viewport, but preserve the game's aspect ratio once logged in.
-        var desiredScaleMode:String = this.game.mcLogin.visible
-            ? StageScaleMode.EXACT_FIT
-            : StageScaleMode.SHOW_ALL;
-        if (this.stg.scaleMode != desiredScaleMode) {
-            this.stg.scaleMode = desiredScaleMode;
-        }
-
-        if (!this.customBGReady) return;
-
+        if (!this.customBGReady || !this.game || !this.game.mcLogin) return;
+        
         if (this.game.mcLogin.visible && this.game.mcLogin.mcTitle) {
             var hasCustomBG:Boolean = false;
             var numChildren:int = this.game.mcLogin.mcTitle.numChildren;
