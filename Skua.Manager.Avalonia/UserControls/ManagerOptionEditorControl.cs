@@ -2,7 +2,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
-using Avalonia.Media;
 using Skua.Shared.Avalonia.ViewModels.Options;
 using System;
 using System.Globalization;
@@ -95,7 +94,6 @@ public sealed class ManagerOptionEditorControl : ContentControl
                         Text = suffix,
                         MinWidth = 22,
                         VerticalAlignment = VerticalAlignment.Center,
-                        Foreground = (IBrush?)Application.Current?.FindResource("SkuaMutedTextBrush")
                     }
                 }
             };
