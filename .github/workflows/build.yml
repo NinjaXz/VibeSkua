@@ -56,7 +56,7 @@ jobs:
       - name: Package client and verify OMNISCOPE and portable Java
         shell: pwsh
         run: |
-          ./package-build.ps1
+          ./BuildTools/package-build.ps1
           $appPath = Join-Path $PWD "Build/VibeSkua.exe"
           $managerPath = Join-Path $PWD "Build/VibeSkua.Manager.exe"
           $swfPath = Join-Path $PWD "Build/skua.swf"
