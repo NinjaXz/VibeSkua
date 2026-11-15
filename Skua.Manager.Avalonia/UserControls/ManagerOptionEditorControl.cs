@@ -60,7 +60,6 @@ public sealed class ManagerOptionEditorControl : ContentControl
                 Padding = new Thickness(8, 4),
                 VerticalContentAlignment = VerticalAlignment.Center,
                 HorizontalContentAlignment = HorizontalAlignment.Right,
-                ToolTip = $"Allowed range: {minimum} to {maximum} {suffix}"
             };
             input.TextChanged += (_, _) =>
             {
