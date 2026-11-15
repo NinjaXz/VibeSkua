@@ -48,7 +48,7 @@ public sealed partial class AccountManagerViewModel : BotControlViewModelBase
         _fileService = fileService;
         _scriptManager = scriptManager;
         ServerList = new();
-        Task.Run(async () => await _GetServers());
+        _ = _GetServers();
         Accounts = new();
         _GetSavedAccounts();
         _GetSavedGroups();
