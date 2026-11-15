@@ -159,11 +159,43 @@ public class InventoryAdapter extends RecyclerView.Adapter<InventoryAdapter.View
     }
 
     private boolean matchesCategory(Models.InventoryItem item, String cat) {
-        if ("All".equalsIgnoreCase(cat)) return true;
-        if ("AC Only".equalsIgnoreCase(cat)) return item.ac;
+        if (cat == null || cat.isEmpty() || "All".equalsIgnoreCase(cat)) return true;
+        if ("AC".equalsIgnoreCase(cat) || "AC Only".equalsIgnoreCase(cat)) return item.ac;
         if ("Equipped".equalsIgnoreCase(cat)) return item.equipped;
+
         String group = item.getGroupCategory();
-        return group.equalsIgnoreCase(cat);
+        if (group != null) {
+            if (group.equalsIgnoreCase(cat)) return true;
+            if ((cat.equalsIgnoreCase("Weapon") || cat.equalsIgnoreCase("Weapons")) && group.equalsIgnoreCase("Weapons")) return true;
+            if ((cat.equalsIgnoreCase("Class") || cat.equalsIgnoreCase("Classes")) && group.equalsIgnoreCase("Classes")) return true;
+            if ((cat.equalsIgnoreCase("Armor") || cat.equalsIgnoreCase("Armors")) && group.equalsIgnoreCase("Armors")) return true;
+            if ((cat.equalsIgnoreCase("Helm") || cat.equalsIgnoreCase("Helms")) && group.equalsIgnoreCase("Helms")) return true;
+            if ((cat.equalsIgnoreCase("Cape") || cat.equalsIgnoreCase("Capes")) && group.equalsIgnoreCase("Capes")) return true;
+            if ((cat.equalsIgnoreCase("Pet") || cat.equalsIgnoreCase("Pets")) && group.equalsIgnoreCase("Pets")) return true;
+            if ((cat.equalsIgnoreCase("Item") || cat.equalsIgnoreCase("Misc")) && group.equalsIgnoreCase("Misc")) return true;
+        }
+
+        // Secondary fallback to raw item category string
+        if (item.category != null) {
+            String c = item.category.trim().toLowerCase();
+            String catLower = cat.trim().toLowerCase();
+            if (c.equals(catLower)) return true;
+            if (catLower.startsWith("weapon") && (c.contains("weapon") || c.contains("sword") || c.contains("axe") ||
+                    c.contains("dagger") || c.contains("gun") || c.contains("rifle") || c.contains("bow") ||
+                    c.contains("mace") || c.contains("polearm") || c.contains("staff") || c.contains("wand") ||
+                    c.contains("scythe") || c.contains("gauntlet") || c.contains("whip"))) return true;
+            if (catLower.startsWith("class") && c.contains("class")) return true;
+            if (catLower.startsWith("armor") && c.contains("armor")) return true;
+            if (catLower.startsWith("helm") && (c.contains("helm") || c.contains("hat") || c.contains("hood"))) return true;
+            if (catLower.startsWith("cape") && (c.contains("cape") || c.contains("cloak") || c.contains("wings") || c.contains("back"))) return true;
+            if (catLower.startsWith("pet") && c.contains("pet")) return true;
+            if ((catLower.startsWith("misc") || catLower.startsWith("item")) &&
+                    (c.contains("item") || c.contains("misc") || c.contains("resource") ||
+                     c.contains("enhancement") || c.contains("quest") || c.contains("note") ||
+                     c.contains("amulet") || c.contains("necklace") || c.contains("house"))) return true;
+        }
+
+        return false;
     }
 
     @NonNull

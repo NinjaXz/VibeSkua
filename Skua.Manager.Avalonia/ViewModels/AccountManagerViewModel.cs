@@ -417,8 +417,7 @@ public sealed partial class AccountManagerViewModel : BotControlViewModelBase
             return;
         }
 
-        bool runScript = withScript || StartWithScript;
-        _LaunchAcc(account.Username, account.Password, account.DisplayName, runScript);
+        _LaunchAcc(account.Username, account.Password, account.DisplayName, withScript);
     }
 
     private async void _StartGroup(IGroupItemViewModel group, bool withScript, bool newWindow = false)
@@ -432,8 +431,7 @@ public sealed partial class AccountManagerViewModel : BotControlViewModelBase
             return;
         }
 
-        bool runScript = withScript || StartWithScript;
-        await StartAccountBatch(group.Accounts.ToList(), $"group '{group.Name}'", runScript, newWindow);
+        await StartAccountBatch(group.Accounts.ToList(), $"group '{group.Name}'", withScript, newWindow);
     }
 
     private void _LaunchAcc(string username, string password, string? displayName = null, bool? withScript = null, string? hostInstanceId = null)
@@ -465,15 +463,10 @@ public sealed partial class AccountManagerViewModel : BotControlViewModelBase
                 psi.ArgumentList.Add(_settingsService.Get("CurrentTheme", "no-theme"));
             }
 
-            bool shouldUseScript = withScript ?? StartWithScript;
+            bool shouldUseScript = withScript == true;
             if (shouldUseScript && !string.IsNullOrEmpty(ScriptPath))
             {
                 psi.ArgumentList.Add("--run-script");
-                psi.ArgumentList.Add(ScriptPath);
-            }
-            else if (!string.IsNullOrEmpty(ScriptPath))
-            {
-                psi.ArgumentList.Add("--load-script");
                 psi.ArgumentList.Add(ScriptPath);
             }
 

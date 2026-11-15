@@ -444,6 +444,12 @@ public class ManagerSettings
     [JsonPropertyName("AutoStartScript")]
     public bool AutoStartScript { get; set; } = false;
 
+    [JsonPropertyName("SchedulerAutoStart")]
+    public bool SchedulerAutoStart { get; set; } = true;
+
+    [JsonPropertyName("SchedulerUse24HourTime")]
+    public bool SchedulerUse24HourTime { get; set; } = false;
+
     [JsonExtensionData]
     public Dictionary<string, object>? ExtensionData { get; set; }
 

@@ -666,12 +666,20 @@ public partial class ArmyQueueViewModel : ObservableRecipient
     [RelayCommand]
     public async Task StartQueue()
     {
+        await StartQueueAsync(false);
+    }
+
+    public async Task StartQueueAsync(bool isAutomated = false)
+    {
         if (IsRunning)
             return;
 
         if (Steps.Count == 0 || Steps.All(s => s.Members.Count == 0))
         {
-            _dialogService.ShowMessageBox("Please add at least one squad with accounts to the queue.", "Empty Queue");
+            if (!isAutomated)
+                _dialogService.ShowMessageBox("Please add at least one squad with accounts to the queue.", "Empty Queue");
+            else
+                throw new InvalidOperationException("Please add at least one squad with accounts to the queue.");
             return;
         }
 
@@ -681,16 +689,21 @@ public partial class ArmyQueueViewModel : ObservableRecipient
 
         try
         {
-            await RunQueueAsync(token);
+            await RunQueueAsync(token, isAutomated);
         }
         catch (OperationCanceledException)
         {
             StatusText = "Army Queue was stopped.";
+            if (isAutomated)
+                throw;
         }
         catch (Exception ex)
         {
             StatusText = $"Queue Error: {ex.Message}";
-            _dialogService.ShowMessageBox($"Queue encountered an error: {ex.Message}", "Queue Execution Error");
+            if (!isAutomated)
+                _dialogService.ShowMessageBox($"Queue encountered an error: {ex.Message}", "Queue Execution Error");
+            if (isAutomated)
+                throw;
         }
         finally
         {
@@ -760,7 +773,7 @@ public partial class ArmyQueueViewModel : ObservableRecipient
         }
     }
 
-    private async Task RunQueueAsync(CancellationToken token)
+    private async Task RunQueueAsync(CancellationToken token, bool isAutomated = false)
     {
         int totalSteps = Steps.Count;
         ActiveStepIndex = 0;
@@ -919,7 +932,10 @@ public partial class ArmyQueueViewModel : ObservableRecipient
 
         StatusText = "All Army Queue squads completed successfully!";
         ProgressValue = 100;
-        _dialogService.ShowMessageBox("All scheduled Army Queue squads have completed their runs!", "Army Queue Finished");
+        if (!isAutomated)
+        {
+            _dialogService.ShowMessageBox("All scheduled Army Queue squads have completed their runs!", "Army Queue Finished");
+        }
     }
 
     private Process? LaunchMemberProcess(IAccountItemViewModel acc, string scriptPath, string? optionsStorage = null)

@@ -114,6 +114,7 @@ public class DialogService : IDialogService
             SelectAccountDialogViewModel selectAccount => ShowSelectAccountDialog(selectAccount, title),
             MessageBoxDialogViewModel messageBox => ShowMessageBox(messageBox.Message, messageBox.Title, messageBox.YesAndNo),
             CustomDialogViewModel custom => ShowCustomDialog(custom, title),
+            JobEditorDialogViewModel jobEditor => ShowJobEditorDialog(jobEditor, title),
             _ => ShowFallbackDialog(viewModel, title)
         };
     }
@@ -502,6 +503,21 @@ public class DialogService : IDialogService
         return index >= 0;
     }
 
+    private static bool? ShowJobEditorDialog(JobEditorDialogViewModel vm, string title)
+    {
+        Window dialog = CreateBaseDialog(title);
+        dialog.Width = 640;
+        dialog.Height = 720;
+        dialog.CanResize = true;
+
+        vm.CloseAction = () => dialog.Close();
+        dialog.Closed += (_, _) => vm.Cleanup();
+
+        dialog.Content = WrapWithShell(title, new ContentControl { Content = vm });
+        Show(dialog);
+        return vm.DialogResult;
+    }
+
     private static bool? ShowFallbackDialog<TViewModel>(TViewModel vm, string title) where TViewModel : class
     {
         Window dialog = CreateBaseDialog(title);
@@ -622,7 +638,7 @@ public class DialogService : IDialogService
             Width = 420,
             SizeToContent = SizeToContent.Height,
             CanResize = false,
-            WindowStartupLocation = WindowStartupLocation.Manual,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
             SystemDecorations = SystemDecorations.BorderOnly,
             ExtendClientAreaToDecorationsHint = true,
             ExtendClientAreaChromeHints = global::Avalonia.Platform.ExtendClientAreaChromeHints.NoChrome,
@@ -678,14 +694,15 @@ public class DialogService : IDialogService
     private static void Show(Window dialog, Control? initialFocus = null)
     {
         Skua.Shared.Avalonia.Services.PointerCaptureReset.Release();
-        Skua.Shared.Avalonia.Services.WindowPlacementHelper.CenterOnActiveScreen(dialog);
         Window? owner = GetOwner();
         if (owner != null)
         {
+            dialog.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             ShowModalAndBlock(dialog, owner, initialFocus);
             return;
         }
 
+        dialog.WindowStartupLocation = WindowStartupLocation.CenterScreen;
         ShowAndBlock(dialog, initialFocus);
     }
 

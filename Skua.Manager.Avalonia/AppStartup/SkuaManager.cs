@@ -23,6 +23,7 @@ internal class SkuaManager
         {
             new((string)"Accounts", s.GetRequiredService<AccountManagerViewModel>()),
             new((string)"Army Queue", s.GetRequiredService<ArmyQueueViewModel>()),
+            new((string)"Task Scheduler", s.GetRequiredService<SchedulerViewModel>()),
             new((string)"Launcher", s.GetRequiredService<LauncherViewModel>()),
             new((string)"Updater", s.GetRequiredService<AppUpdaterViewModel>()),
             new((string)"Scripts", s.GetRequiredService<ScriptUpdaterViewModel>()),

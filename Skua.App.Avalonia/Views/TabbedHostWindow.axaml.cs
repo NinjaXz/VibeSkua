@@ -3516,8 +3516,53 @@ public partial class TabbedHostWindow : Window
         {
             if (!string.IsNullOrWhiteSpace(playlistJson) && playlistJson.Trim().StartsWith("["))
             {
+                var normalizedList = new List<ScriptSchedulerViewModel.SavedScriptItem>();
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(playlistJson);
+                    if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+                    {
+                        foreach (var el in doc.RootElement.EnumerateArray())
+                        {
+                            string sPath = string.Empty;
+                            string sName = string.Empty;
+                            if (el.ValueKind == System.Text.Json.JsonValueKind.String)
+                            {
+                                sPath = el.GetString() ?? string.Empty;
+                            }
+                            else if (el.ValueKind == System.Text.Json.JsonValueKind.Object)
+                            {
+                                if (el.TryGetProperty("Path", out var pProp) || el.TryGetProperty("path", out pProp))
+                                    sPath = pProp.GetString() ?? string.Empty;
+                                if (el.TryGetProperty("Name", out var nProp) || el.TryGetProperty("name", out nProp))
+                                    sName = nProp.GetString() ?? string.Empty;
+                            }
+
+                            if (!string.IsNullOrWhiteSpace(sPath))
+                            {
+                                if (string.IsNullOrWhiteSpace(sName))
+                                    sName = System.IO.Path.GetFileName(sPath);
+                                normalizedList.Add(new ScriptSchedulerViewModel.SavedScriptItem
+                                {
+                                    Path = sPath,
+                                    Name = sName,
+                                    Id = Guid.NewGuid()
+                                });
+                            }
+                        }
+                    }
+                }
+                catch { }
+
                 string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "skua_global_playlist.json");
-                System.IO.File.WriteAllText(tempFile, playlistJson);
+                if (normalizedList.Count > 0)
+                {
+                    System.IO.File.WriteAllText(tempFile, System.Text.Json.JsonSerializer.Serialize(normalizedList));
+                }
+                else
+                {
+                    System.IO.File.WriteAllText(tempFile, playlistJson);
+                }
             }
             foreach (var info in _tabs.Values)
                 if (info.ChildHwnd != IntPtr.Zero)
