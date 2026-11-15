@@ -16,12 +16,47 @@ if (-not (Test-Path -LiteralPath $As3BuildScript -PathType Leaf)) {
     throw "The AS3 compiler script is missing: $As3BuildScript"
 }
 
-Write-Host "Compiling the ActionScript client before packaging..." -ForegroundColor Cyan
-& $As3BuildScript -OutputPath $SwfSource
+# Compile once during packaging. BuildProject.bat deliberately delegates AS3 work here
+# so the packaged client always contains the output from the current ActionScript sources.
+$SwfDirectory = Split-Path -Parent $SwfSource
+$SwfBuildTemp = Join-Path $SwfDirectory "skua.build-$PID-$([guid]::NewGuid().ToString('N')).tmp.swf"
+
+try {
+    Write-Host "Compiling ActionScript sources into a temporary SWF..." -ForegroundColor Cyan
+    & $As3BuildScript -OutputPath $SwfBuildTemp
+
+    if (-not (Test-Path -LiteralPath $SwfBuildTemp -PathType Leaf)) {
+        throw "The AS3 compiler completed without producing the expected SWF: $SwfBuildTemp"
+    }
+
+    # Replace the previous SWF only after compilation succeeds.
+    Move-Item -LiteralPath $SwfBuildTemp -Destination $SwfSource -Force
+}
+finally {
+    if (Test-Path -LiteralPath $SwfBuildTemp -PathType Leaf) {
+        Remove-Item -LiteralPath $SwfBuildTemp -Force
+    }
+}
 
 if (-not (Test-Path -LiteralPath $SwfSource -PathType Leaf)) {
-    throw "The AS3 build completed without producing the required SWF: $SwfSource"
+    throw "The compiled ActionScript client is missing: $SwfSource"
 }
+
+$SwfStream = [System.IO.File]::OpenRead($SwfSource)
+try {
+    $SwfHeader = New-Object byte[] 3
+    [void]$SwfStream.Read($SwfHeader, 0, $SwfHeader.Length)
+}
+finally {
+    $SwfStream.Dispose()
+}
+
+$SwfSignature = [System.Text.Encoding]::ASCII.GetString($SwfHeader)
+if ($SwfSignature -notin @('FWS', 'CWS', 'ZWS')) {
+    throw "The compiled ActionScript client is not a valid SWF (signature: $SwfSignature): $SwfSource"
+}
+
+Write-Host "Using freshly compiled ActionScript client: $SwfSource" -ForegroundColor Green
 
 if (-not (Test-Path -LiteralPath $AppBin -PathType Container)) {
     throw "The application build output is missing. Build Skua.sln before packaging: $AppBin"
