@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+      - '[0-9]*'
   workflow_dispatch:
     inputs:
       version:
@@ -74,7 +75,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $ver = "${{ steps.get_version.outputs.version }}"
-          $tag = "v$ver"
+          $tag = if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME } else { "v$ver" }
           $files = @(Get-ChildItem -Path "Build\Releases" -File | ForEach-Object FullName)
           if (-not $files) {
               throw "No release artifacts were found in Build\Releases."
