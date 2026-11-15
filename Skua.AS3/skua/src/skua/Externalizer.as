@@ -41,8 +41,6 @@ public class Externalizer {
         // Server
         this.addCallback("connectToServer", Server.connectToServer);
         this.addCallback("clickServer", Server.clickServer);
-        this.addCallback("confirmServerSelection", Server.confirmServerSelection);
-        this.addCallback("confirmDirectServerConnection", Server.confirmDirectServerConnection);
         this.addCallback("loadPolicyFile", Server.loadPolicyFile);
         this.addCallback("loadPolicyFiles", Server.loadPolicyFiles);
         this.addCallback("killLoginModals", Server.killLoginModals);
