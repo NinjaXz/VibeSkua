@@ -1010,10 +1010,12 @@ public sealed partial class AccountManagerViewModel : BotControlViewModelBase
 
             _cachedServers = servers;
 
-            // Measure pings before displaying servers
+            // Measure pings before displaying servers.
             await _MeasureServerPings(_cachedServers);
 
-            ServerList.AddRange(_cachedServers);
+            // A settings reload can populate ServerList while ping measurement is running.
+            // Replace the collection to avoid appending duplicate servers and apply the latest thresholds.
+            _RefreshServerLatencyIndicators();
 
             string lastServer = _settingsService.Get<string>("LastServer");
             Server? serverToSelect = null;
