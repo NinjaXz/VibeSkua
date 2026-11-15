@@ -1010,21 +1010,23 @@ public sealed partial class AccountManagerViewModel : BotControlViewModelBase
 
             _cachedServers = servers;
 
-            // Measure pings before displaying servers.
-            await _MeasureServerPings(_cachedServers);
-
-            // A settings reload can populate ServerList while ping measurement is running.
-            // Replace the collection to avoid appending duplicate servers and apply the latest thresholds.
+            // Populate and select a usable server immediately. Latency probes can take several seconds when
+            // a server is slow or unresponsive, and the login selector should not remain blank while they run.
             _RefreshServerLatencyIndicators();
 
-            string lastServer = _settingsService.Get<string>("LastServer");
-            Server? serverToSelect = null;
-            if (!string.IsNullOrEmpty(lastServer))
-                serverToSelect = Enumerable.FirstOrDefault<Server>(ServerList, s => s.Name == lastServer);
+            string? lastServer = _settingsService.Get<string>("LastServer");
+            Server? serverToSelect = !string.IsNullOrWhiteSpace(lastServer)
+                ? ServerList.FirstOrDefault(server => string.Equals(server.Name, lastServer, StringComparison.OrdinalIgnoreCase))
+                : null;
             SelectedServer = serverToSelect ?? ServerList[0];
+
+            // Update the already-visible list when the latency measurements finish.
+            await _MeasureServerPings(_cachedServers);
+            _RefreshServerLatencyIndicators();
         }
-        catch
+        catch (Exception ex)
         {
+            Trace.WriteLine($"Failed to load Manager server list: {ex}");
         }
     }
 
