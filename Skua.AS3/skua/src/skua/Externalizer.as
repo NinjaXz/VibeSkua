@@ -111,6 +111,9 @@ public class Externalizer {
         this.addCallback("GetAurasValue", Auras.GetAurasValue);
         this.addCallback("rebuilduoTree", Auras.rebuilduoTree);
         this.addCallback("rebuildmonTree", Auras.rebuildmonTree);
+        this.addCallback("GetAuraTracker", Auras.GetAuraTracker);
+        this.addCallback("GetAuraIcon", Auras.GetAuraIcon);
+        this.addCallback("GetAuraCasters", Auras.AuraCasters);
 
         // Packets
         this.addCallback("sendClientPacket", Main.sendClientPacket);
