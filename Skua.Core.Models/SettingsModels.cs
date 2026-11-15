@@ -229,6 +229,9 @@ public class ClientSettings
     [JsonPropertyName("AuraTrackerOverlay")]
     public bool AuraTrackerOverlay { get; set; } = false;
 
+    [JsonPropertyName("AuraOverlayFreeDrag")]
+    public bool AuraOverlayFreeDrag { get; set; } = false;
+
     [JsonPropertyName("AuraPriorityOrder")]
     public string AuraPriorityOrder { get; set; } = string.Empty;
 

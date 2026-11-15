@@ -578,6 +578,11 @@ public class Auras {
             if (o == null || typeof o != "object" || o.cmd == null) {
                 return;
             }
+            // A new room reuses the monsters' map ids: nothing kept from the last one applies.
+            if (o.cmd == "moveToArea") {
+                _watchCasters = {};
+                return;
+            }
             var list:Array = null;
             if (o.cmd == "ct" && o.a is Array) {
                 list = o.a;
@@ -612,8 +617,12 @@ public class Auras {
                         continue;
                     }
                     names.push(String(a.nam));
+                    // A new application with no caster, or the aura ending, drops what was kept: an old
+                    // caster must not be shown for a later application.
                     if (cmd.indexOf("aura+") == 0 && c != "") {
                         _watchCasters[tinf + "|" + String(a.nam)] = {c: c, s: src, t: now};
+                    } else if (cmd.indexOf("aura+") == 0 || cmd.indexOf("aura-") == 0) {
+                        delete _watchCasters[tinf + "|" + String(a.nam)];
                     }
                 }
                 _watchLog.push({t: now, cmd: cmd, c: c, tg: tinf, s: src, n: names.join(",")});
@@ -628,20 +637,7 @@ public class Auras {
     // {now, casters: {"m:3|Decay": {c: "p:123", s: "packet"|"skill", t}}, log: [last 30 aura events]}
     public static function AuraCasters():String {
         watchAuras();
-        var now:int = getTimer();
-        var out:Object = {};
-        var old:Array = [];
-        for (var k:String in _watchCasters) {
-            if (now - int(_watchCasters[k].t) > 120000) {
-                old.push(k);
-            } else {
-                out[k] = _watchCasters[k];
-            }
-        }
-        for each (var gone:String in old) {
-            delete _watchCasters[gone];
-        }
-        return JSON.stringify({now: now, casters: out, log: _watchLog.slice(-30)});
+        return JSON.stringify({now: getTimer(), casters: _watchCasters, log: _watchLog.slice(-30)});
     }
 }
 }

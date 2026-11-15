@@ -39,10 +39,11 @@ public partial class AuraOverlayWindow : Window
         InitializeComponent();
     }
 
-    public AuraOverlayWindow(AuraTrackerViewModel vm, Window owner, SubjectType subject) : this()
+    public AuraOverlayWindow(AuraTrackerViewModel vm, Window owner, SubjectType subject, Control? gameHost = null) : this()
     {
         _vm = vm;
         _owner = owner;
+        _gameHost = gameHost;
         _subject = subject;
         DataContext = vm;
 
@@ -97,12 +98,12 @@ public partial class AuraOverlayWindow : Window
     // The game's own rectangle inside the main window (the Flash host under the menu bar), in device pixels
     // from the window's top-left. Panels stay inside it; the saved offset is kept, so a panel squeezed in by
     // a small window goes back to its spot when there is room again.
-    internal static Control? GameHost;
+    private readonly Control? _gameHost;
 
     private PixelRect GameArea()
     {
         double scale = _owner?.RenderScaling ?? 1;
-        if (_owner is not null && GameHost is { IsVisible: true } host && host.Bounds.Width > 50 && host.Bounds.Height > 50
+        if (_owner is not null && _gameHost is { IsVisible: true } host && host.Bounds.Width > 50 && host.Bounds.Height > 50
             && host.TranslatePoint(new Point(0, 0), _owner) is { } at)
             return new PixelRect((int)(at.X * scale), (int)(at.Y * scale), (int)(host.Bounds.Width * scale), (int)(host.Bounds.Height * scale));
         return new PixelRect(0, 0, (int)((_owner?.ClientSize.Width ?? 900) * scale), (int)((_owner?.ClientSize.Height ?? 600) * scale));
@@ -111,6 +112,8 @@ public partial class AuraOverlayWindow : Window
     // An offset moved inside the game's rectangle, for this panel's current size.
     private PixelPoint Inside(PixelPoint offset)
     {
+        if (_vm is { OverlayFreeDrag: true })
+            return offset;
         PixelRect area = GameArea();
         double ownScale = RenderScaling;
         int w = (int)(Bounds.Width * ownScale), h = (int)(Bounds.Height * ownScale);
@@ -255,17 +258,22 @@ public static class AuraOverlay
 
     public static void Attach(Window owner, AuraTrackerViewModel vm, Control? gameHost = null)
     {
-        AuraOverlayWindow.GameHost = gameHost;
         vm.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(AuraTrackerViewModel.ShowOverlay))
-                Sync(owner, vm);
+                Sync(owner, vm, gameHost);
+            else if (e.PropertyName == nameof(AuraTrackerViewModel.OverlayFreeDrag))
+            {
+                // Turned off, panels left outside the game go back inside it.
+                _self?.Place();
+                _target?.Place();
+            }
         };
         owner.Closed += (_, _) => Close();
-        Sync(owner, vm);
+        Sync(owner, vm, gameHost);
     }
 
-    private static void Sync(Window owner, AuraTrackerViewModel vm)
+    private static void Sync(Window owner, AuraTrackerViewModel vm, Control? gameHost)
     {
         if (!vm.ShowOverlay)
         {
@@ -274,8 +282,8 @@ public static class AuraOverlay
         }
         if (_self is not null)
             return;
-        _self = new AuraOverlayWindow(vm, owner, SubjectType.Self);
-        _target = new AuraOverlayWindow(vm, owner, SubjectType.Target);
+        _self = new AuraOverlayWindow(vm, owner, SubjectType.Self, gameHost);
+        _target = new AuraOverlayWindow(vm, owner, SubjectType.Target, gameHost);
         foreach (AuraOverlayWindow w in new[] { _self, _target })
         {
             w.WindowStartupLocation = WindowStartupLocation.Manual;

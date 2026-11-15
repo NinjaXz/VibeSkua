@@ -54,6 +54,7 @@ public partial class AuraTrackerViewModel : BotControlViewModelBase
         _settings = settings;
         _timer = new Timer(_ => Poll(), null, Timeout.Infinite, Timeout.Infinite);
         _showOverlay = settings.Get("AuraTrackerOverlay", false);
+        _overlayFreeDrag = settings.Get("AuraOverlayFreeDrag", false);
         _selfFilter = Enum.TryParse(settings.Get("AuraFilterSelf", string.Empty), out AuraFilter sf) ? sf : AuraFilter.All;
         _targetFilter = Enum.TryParse(settings.Get("AuraFilterTarget", string.Empty), out AuraFilter tf) ? tf : AuraFilter.All;
         List<AuraPriorityGroup> order = AuraClassifier.ParseOrder(settings.Get("AuraPriorityOrder", string.Empty));
@@ -73,6 +74,12 @@ public partial class AuraTrackerViewModel : BotControlViewModelBase
         _settings.Set("AuraTrackerOverlay", value);
         UpdatePolling();
     }
+
+    /// <summary>Off (the default): overlay panels stay inside the game. On: they can be left anywhere on the screen.</summary>
+    [ObservableProperty]
+    private bool _overlayFreeDrag;
+
+    partial void OnOverlayFreeDragChanged(bool value) => _settings.Set("AuraOverlayFreeDrag", value);
 
     /// <summary>Saved "x,y" offset of an overlay panel from the main window, or empty for the default.</summary>
     public string GetOverlayPosition(SubjectType subject) =>

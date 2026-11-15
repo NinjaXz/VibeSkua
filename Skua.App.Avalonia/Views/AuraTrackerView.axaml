@@ -66,6 +66,17 @@
       </Border>
 
       <Border Classes="aura-card">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="Drag panels anywhere" FontWeight="SemiBold" Foreground="{DynamicResource SkuaTextBrush}" />
+            <TextBlock Text="Off: panels stay inside the game. On: a panel can be left anywhere on the screen, and still follows the VibeSkua window."
+                       FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+          </StackPanel>
+          <ToggleSwitch Grid.Column="1" IsChecked="{Binding OverlayFreeDrag}" OnContent="" OffContent="" VerticalAlignment="Center" />
+        </Grid>
+      </Border>
+
+      <Border Classes="aura-card">
         <StackPanel Spacing="4">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <materialIcons:MaterialIcon Kind="AccountOutline" Width="14" Height="14" Foreground="{DynamicResource SkuaAccentBrush}" />
