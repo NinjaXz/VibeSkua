@@ -491,7 +491,7 @@ public partial class AuraRowViewModel : ObservableObject
             Icon = icon;
         StackText = !a.ShowsStacks || (a.Stacks <= 1 && a.MaxStacks <= 1)
             ? string.Empty
-            : a.MaxStacks > 1 ? $"{a.Stacks}/{a.MaxStacks}" : $"x{a.Stacks}" + (a.NoCap ? " (no cap)" : string.Empty);
+            : a.MaxStacks > 1 ? $"{a.Stacks}/{a.MaxStacks}" : $"x{a.Stacks}";
         TimeText = FormatTime(a.Remaining);
         Progress = a.Remaining is double left && a.Duration > 0 ? Math.Clamp(left / a.Duration, 0, 1) : 0;
         EndingSoon = a.Remaining is < 3;
@@ -520,7 +520,7 @@ public partial class AuraRowViewModel : ObservableObject
         StacksDetail = !a.ShowsStacks
             ? string.Empty
             : a.MaxStacks > 1 ? $"{a.Stacks} of {a.MaxStacks}" + (a.IsFull ? " (max)" : string.Empty)
-            : a.NoCap ? $"{a.Stacks} (no cap)" : $"{a.Stacks} (limit unknown; most seen {a.MostSeen})";
+            : $"{a.Stacks} (limit not listed; most seen {a.MostSeen})";
         DurationText = a.Duration > 0 ? $"{a.Duration:0.#}s" : "until removed";
         SourceText = a.EffectSource.Length > 0 ? $"From {a.EffectSource}, AQW Wiki" : string.Empty;
         TagNote = a.TagNote;

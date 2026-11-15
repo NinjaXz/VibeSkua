@@ -25,6 +25,8 @@ public partial class AuraTrackerService : IAuraTrackerService
     private readonly Lazy<AuraData> _data = new(AuraData.Load);
     private readonly ConcurrentDictionary<string, int> _mostSeen = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, WikiInfo?> _wikiCache = new(StringComparer.OrdinalIgnoreCase);
+    // The last stack limit found for an aura name, used while the game names no caster for it.
+    private readonly ConcurrentDictionary<string, int> _lastLimit = new(StringComparer.OrdinalIgnoreCase);
 
     private static readonly SpecialEffect[] Specials =
     {
@@ -131,11 +133,19 @@ public partial class AuraTrackerService : IAuraTrackerService
         if (max == 0 && wiki is not null) max = wiki.Max;
         if (max == 0 && fx?.Max is > 1) max = fx.Max.Value;
         if (max == 0 && proc is not null) max = proc.Max;
-        bool noCap = max == 0 && wiki is { NoCap: true };
+        // The limit comes from the caster's class. While the game names no caster, the limit found for
+        // this aura earlier holds, then the one every class that has the aura agrees on.
+        if (max > 1)
+            _lastLimit[rec.Name] = max;
+        else if (max == 0 && first is null)
+            max = _lastLimit.TryGetValue(rec.Name, out int kept) ? kept : data.AgreedLimit(rec.Name);
 
-        int most = _mostSeen.AddOrUpdate(rec.Name, rec.Stacks, (_, v) => Math.Max(v, rec.Stacks));
+        // The game's HUD count goes up on every application, also past the limit: the limit is the most
+        // an aura can hold, so the count shown never passes it.
+        int count = max > 1 ? Math.Min(rec.Stacks, max) : rec.Stacks;
+        int most = _mostSeen.AddOrUpdate(rec.Name, count, (_, v) => Math.Max(max > 1 ? Math.Min(v, max) : v, count));
         bool stacks = max > 1 || most > 1;
-        bool full = max > 1 && rec.Stacks >= max;
+        bool full = max > 1 && count >= max;
 
         SpecialEffect? sp = Specials.FirstOrDefault(s => s.Pattern.IsMatch(rec.Name));
         // When the caster's class describes the aura, its text decides: Chaos Avenger's "Focus" forces the
@@ -197,10 +207,9 @@ public partial class AuraTrackerService : IAuraTrackerService
             Subject = subject,
             Name = rec.Name,
             Icon = rec.Icon,
-            Stacks = rec.Stacks,
+            Stacks = count,
             MaxStacks = max,
             MostSeen = most,
-            NoCap = noCap,
             ShowsStacks = stacks,
             IsFull = full,
             Duration = rec.Duration,
@@ -277,7 +286,7 @@ public partial class AuraTrackerService : IAuraTrackerService
 
     private sealed record SpecialEffect(Regex Pattern, Regex Evidence, AuraTag Tag, string Text, string Note);
 
-    internal sealed record WikiInfo(string Text, string From, int Max, bool NoCap);
+    internal sealed record WikiInfo(string Text, string From, int Max);
 
     internal sealed record EffectLine(string Text, string From, double? Duration, int? Max);
 
@@ -381,6 +390,22 @@ public partial class AuraTrackerService : IAuraTrackerService
             return lines.TryGetValue(BaseName(aura), out EffectLine? line) ? line : null;
         }
 
+        /// <summary>The stack limit of an aura when every class that lists one for it gives the same number, else 0.</summary>
+        public int AgreedLimit(string aura)
+        {
+            string name = BaseName(aura);
+            int limit = 0;
+            foreach (Dictionary<string, EffectLine> lines in _fx.Values)
+            {
+                if (!lines.TryGetValue(name, out EffectLine? line) || line.Max is not > 1)
+                    continue;
+                if (limit != 0 && limit != line.Max.Value)
+                    return 0;
+                limit = line.Max.Value;
+            }
+            return limit;
+        }
+
         public ProcInfo? Proc(string aura, SubjectType subject)
         {
             if (!_procs.TryGetValue(NormQuotes(aura), out List<ProcInfo>? list) || list.Count == 0)
@@ -446,8 +471,7 @@ public partial class AuraTrackerService : IAuraTrackerService
                 return null;
             string basis = all.Length > 0 ? all : text;
             int max = LimitIn(basis);
-            bool noCap = max == 0 && PerStackRegex().IsMatch(basis);
-            return new WikiInfo(text, from, max, noCap);
+            return new WikiInfo(text, from, max);
         }
 
         [GeneratedRegex(@"\([^)]*\)")]
@@ -466,7 +490,5 @@ public partial class AuraTrackerService : IAuraTrackerService
         private static partial Regex SentenceSplitRegex();
         [GeneratedRegex(@"\b(appl|grant|summon|gain|increas|reduc|decreas|restor|heal)", RegexOptions.IgnoreCase)]
         private static partial Regex SaysRegex();
-        [GeneratedRegex(@"\b(each|per)\s+stack\b", RegexOptions.IgnoreCase)]
-        private static partial Regex PerStackRegex();
     }
 }

@@ -130,7 +130,6 @@ public class AuraTrackerEntry
     public int MaxStacks { get; init; }
     /// <summary>The most stacks seen this session.</summary>
     public int MostSeen { get; init; }
-    public bool NoCap { get; init; }
     public bool ShowsStacks { get; init; }
     public bool IsFull { get; init; }
     public double Duration { get; init; }
