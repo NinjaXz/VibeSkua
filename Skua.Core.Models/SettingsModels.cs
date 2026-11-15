@@ -227,13 +227,11 @@ public class SharedSettings
 public class ClientSettings
 {
     [JsonPropertyName("ServerLatencyThresholdMs")]
-    public int ServerLatencyThresholdMs { get; set; } = 250;
+    public int ServerLatencyThresholdMs { get; set; } = 200;
 
     [JsonPropertyName("ServerLatencyNearThresholdPercent")]
-    public int ServerLatencyNearThresholdPercent { get; set; } = 70;
+    public int ServerLatencyNearThresholdPercent { get; set; } = 75;
 
-    [JsonPropertyName("ServerLatencyWarningDismissed")]
-    public bool ServerLatencyWarningDismissed { get; set; } = false;
 
     [JsonPropertyName("AnimationFrameRate")]
     public int AnimationFrameRate { get; set; } = 60;
