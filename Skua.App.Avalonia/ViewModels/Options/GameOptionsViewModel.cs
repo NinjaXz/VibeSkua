@@ -28,19 +28,14 @@ public class GameOptionsViewModel : BotControlViewModelBase
 
     private readonly IScriptServers _servers;
     private readonly IScriptOption _options;
-    private readonly ISettingsService _settingsService;
-    private readonly IDialogService _dialogService;
     private readonly CBOChoiceOptionItemViewModel _reloginServerItem;
     private readonly List<string> _reloginServerNames;
-    private readonly List<string> _reloginServerLabels;
 
-    public GameOptionsViewModel(List<DisplayOptionItemViewModelBase> gameOptions, IScriptServers servers, IScriptOption options, ISettingsService settingsService, IDialogService dialogService)
+    public GameOptionsViewModel(List<DisplayOptionItemViewModelBase> gameOptions, IScriptServers servers, IScriptOption options)
         : base("Game Options", 800, 720)
     {
         _servers = servers;
         _options = options;
-        _settingsService = settingsService;
-        _dialogService = dialogService;
         _selectedServer = !string.IsNullOrWhiteSpace(options.ReloginServer) ? options.ReloginServer : "Twilly";
         GameOptions = gameOptions;
         ResetOptionsCommand = new RelayCommand(_options.Reset);
@@ -48,9 +43,8 @@ public class GameOptionsViewModel : BotControlViewModelBase
         SaveOptionsCommand = new RelayCommand(_options.Save);
 
         _reloginServerNames = ServersList;
-        _reloginServerLabels = BuildServerLabels();
-        _reloginServerItem = new CBOChoiceOptionItemViewModel("Relogin Server", "Server to log back in to. Indicators show measured server latency.", "ReloginServer",
-            _reloginServerLabels, Math.Max(0, _reloginServerNames.IndexOf(SelectedServer ?? string.Empty)));
+        _reloginServerItem = new CBOChoiceOptionItemViewModel("Relogin Server", "Server to log back in to", "ReloginServer",
+            _reloginServerNames, Math.Max(0, _reloginServerNames.IndexOf(SelectedServer ?? string.Empty)));
         _reloginServerItem.PropertyChanged += ReloginServerItem_PropertyChanged;
 
         BuildGroups();
@@ -63,7 +57,6 @@ public class GameOptionsViewModel : BotControlViewModelBase
         Messenger.Register<GameOptionsViewModel, PropertyChangedMessage<List<Server>>>(this, ServersChanged);
         Messenger.Register<GameOptionsViewModel, PropertyChangedMessage<string>>(this, OptionServerChanged);
         OnPropertyChanged(nameof(ServersList));
-        _ = _servers.GetServers();
     }
 
     public List<DisplayOptionItemViewModelBase> GameOptions { get; }
@@ -178,34 +171,7 @@ public class GameOptionsViewModel : BotControlViewModelBase
         get => _selectedServer ?? _options.ReloginServer ?? "Twilly";
         set
         {
-            if (value is null || string.Equals(_selectedServer, value, StringComparison.OrdinalIgnoreCase))
-                return;
-
-            Server? server = _servers.CachedServers.FirstOrDefault(s => string.Equals(s.Name, value, StringComparison.OrdinalIgnoreCase));
-            if (server is not null)
-            {
-                int thresholdMs = Math.Clamp(_settingsService.Get("ServerLatencyThresholdMs", ServerLatencyClassifier.DefaultThresholdMs), 50, 2000);
-                int nearThresholdPercent = Math.Clamp(_settingsService.Get("ServerLatencyNearThresholdPercent", ServerLatencyClassifier.DefaultNearThresholdPercent), 50, 95);
-                ServerLatencyStatus status = ServerLatencyClassifier.Classify(server.Ping, thresholdMs, nearThresholdPercent);
-
-                if (status is ServerLatencyStatus.High or ServerLatencyStatus.Unavailable
-                    && !_settingsService.Get("ServerLatencyWarningDismissed", false))
-                {
-                    ServerLatencyWarningResult result = _dialogService.ShowServerLatencyWarning(server.Name, server.Ping, thresholdMs);
-                    if (result.DontShowAgain)
-                        _settingsService.Set("ServerLatencyWarningDismissed", true);
-
-                    if (!result.Accepted)
-                    {
-                        int previousIndex = _reloginServerNames.FindIndex(n => string.Equals(n, _selectedServer, StringComparison.OrdinalIgnoreCase));
-                        if (previousIndex >= 0)
-                            _reloginServerItem.Value = previousIndex;
-                        return;
-                    }
-                }
-            }
-
-            if (SetProperty(ref _selectedServer, value))
+            if (SetProperty(ref _selectedServer, value) && value is not null)
             {
                 if (_options.ReloginServer != value)
                     _options.ReloginServer = value;
@@ -227,39 +193,10 @@ public class GameOptionsViewModel : BotControlViewModelBase
             SelectedServer = _reloginServerNames[index];
     }
 
-    private List<string> BuildServerLabels()
-    {
-        return _reloginServerNames.Select(name =>
-        {
-            Server? server = _servers.CachedServers.FirstOrDefault(s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase));
-            return server is null ? name : $"{server.PingIndicator} {name}";
-        }).ToList();
-    }
-
-    private void RefreshServerOptions()
-    {
-        List<string> names = ServersList;
-        _reloginServerNames.Clear();
-        _reloginServerNames.AddRange(names);
-
-        _reloginServerLabels.Clear();
-        foreach (string name in _reloginServerNames)
-        {
-            Server? server = _servers.CachedServers.FirstOrDefault(s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase));
-            _reloginServerLabels.Add(server is null ? name : $"{server.PingIndicator} {name}");
-        }
-
-        int selectedIndex = _reloginServerNames.FindIndex(name => string.Equals(name, SelectedServer, StringComparison.OrdinalIgnoreCase));
-        if (selectedIndex >= 0)
-            _reloginServerItem.Value = selectedIndex;
-
-        OnPropertyChanged(nameof(ServersList));
-    }
-
     private void ServersChanged(GameOptionsViewModel recipient, PropertyChangedMessage<List<Server>> message)
     {
         if (message.PropertyName == nameof(IScriptServers.CachedServers))
-            recipient.RefreshServerOptions();
+            recipient.OnPropertyChanged(nameof(recipient.ServersList));
     }
 
     private void OptionServerChanged(GameOptionsViewModel recipient, PropertyChangedMessage<string> message)
