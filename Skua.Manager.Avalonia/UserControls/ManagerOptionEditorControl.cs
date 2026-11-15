@@ -1,6 +1,5 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Skua.Shared.Avalonia.ViewModels.Options;
 using System;
@@ -48,7 +47,7 @@ public sealed class ManagerOptionEditorControl : ContentControl
         if (option.DisplayType == typeof(int))
         {
             bool isPercentage = option.Tag == "ServerLatencyNearThresholdPercent";
-            int minimum = isPercentage ? 50 : 50;
+            int minimum = 50;
             int maximum = isPercentage ? 95 : 2000;
             string suffix = isPercentage ? "%" : "ms";
 
@@ -72,7 +71,10 @@ public sealed class ManagerOptionEditorControl : ContentControl
 
                 string commandValue = value.ToString(CultureInfo.InvariantCulture);
                 if (option.Command.CanExecute(commandValue))
+                {
                     option.Command.Execute(commandValue);
+                    option.Value = value;
+                }
             };
             input.LostFocus += (_, _) =>
             {
