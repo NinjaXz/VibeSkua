@@ -1,0 +1,461 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Skua.Manager.Avalonia.ViewModels"
+             xmlns:models="clr-namespace:Skua.Core.Models;assembly=Skua.Core.Models"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             x:Class="Skua.Manager.Avalonia.UserControls.SchedulerUserControl"
+             x:DataType="vm:SchedulerViewModel"
+             d:DesignWidth="900"
+             d:DesignHeight="600"
+             mc:Ignorable="d">
+
+    <UserControl.Styles>
+        <Style Selector="Button.card-button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                      VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Border.history-card">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Background" Value="{DynamicResource SkuaSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SkuaBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="7,5" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.1" />
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.1" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.history-card:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SkuaNavHoverBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SkuaBorderStrongBrush}" />
+        </Style>
+        <Style Selector="Border.history-card.selected">
+            <Setter Property="Background" Value="{DynamicResource SkuaAccentTintBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SkuaAccentBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid Margin="12" RowDefinitions="Auto,Auto,*" RowSpacing="10">
+
+        <!-- 1. Header Toolbar (Row 0) -->
+        <Border Grid.Row="0" Background="{DynamicResource SkuaSurfaceBrush}" CornerRadius="8" Padding="12,10" BorderBrush="{DynamicResource SkuaBorderBrush}" BorderThickness="1">
+            <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                
+                <!-- Left Title & Master Status Pill -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <materialIcons:MaterialIcon Kind="CalendarClockOutline" Width="26" Height="26" Foreground="{DynamicResource SkuaAccentBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="Task Scheduler" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource SkuaTextBrush}" VerticalAlignment="Center" />
+
+                    <!-- Master Active / Paused Pill -->
+                    <Border Background="#1AFFFFFF" CornerRadius="12" Padding="8,3" VerticalAlignment="Center"
+                            ToolTip.Tip="Master Scheduler Engine. When active, all enabled tasks are automatically evaluated and triggered according to their schedule. When paused, the background timer stops running tasks.">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <ToggleSwitch IsChecked="{Binding IsSchedulerActive}" OnContent="" OffContent="" Margin="0"
+                                          ToolTip.Tip="Master Scheduler Engine. When active, all enabled tasks are automatically evaluated and triggered according to their schedule. When paused, the background timer stops running tasks." />
+                            <TextBlock Text="{Binding EngineStatusText}" 
+                                       Foreground="{Binding EngineStatusBrush}"
+                                       FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Right Action Buttons -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button Classes="skua-button skua-primary" Height="32" Padding="14,0" Command="{Binding AddJobCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <materialIcons:MaterialIcon Kind="PlusCircleOutline" Width="15" Height="15" />
+                            <TextBlock Text="New Task" FontWeight="Bold" FontSize="11" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 2. Compact Settings & Summary Strip (Row 1) -->
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center" Margin="2,0">
+            <!-- Left: Compact Toggles -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12">
+                <Border Background="#10FFFFFF" CornerRadius="6" Padding="8,3"
+                        ToolTip.Tip="When checked, the Scheduler engine automatically turns on and begins evaluating scheduled tasks whenever VibeSkua Manager is launched.">
+                    <CheckBox IsChecked="{Binding AutoStartWithManager}" Content="Auto-start with Manager" FontSize="11" Margin="0"
+                              ToolTip.Tip="When checked, the Scheduler engine automatically turns on and begins evaluating scheduled tasks whenever VibeSkua Manager is launched." />
+                </Border>
+                <Border Background="#10FFFFFF" CornerRadius="6" Padding="8,3"
+                        ToolTip.Tip="Automatically launches VibeSkua Manager minimized in the system tray when Windows starts so tasks can run unattended.">
+                    <CheckBox IsChecked="{Binding RunOnWindowsStartup}" Content="Run on Windows Boot (Tray)" FontSize="11" Margin="0"
+                              ToolTip.Tip="Automatically launches VibeSkua Manager minimized in the system tray when Windows starts so tasks can run unattended." />
+                </Border>
+                <Border Background="#10FFFFFF" CornerRadius="6" Padding="6,2"
+                        ToolTip.Tip="Select preferred clock format (12-hour AM/PM or 24-hour) across the task scheduler.">
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <materialIcons:MaterialIcon Kind="ClockOutline" Width="13" Height="13" Opacity="0.7" VerticalAlignment="Center" />
+                        <TextBlock Text="Clock:" FontSize="11" VerticalAlignment="Center" />
+                        <ComboBox SelectedIndex="{Binding ClockFormatIndex, Mode=TwoWay}" Width="120" Height="24" FontSize="11" VerticalAlignment="Center">
+                            <ComboBoxItem Content="12-Hour (AM/PM)" />
+                            <ComboBoxItem Content="24-Hour" />
+                        </ComboBox>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- Right: Live Count -->
+            <TextBlock Grid.Column="2" 
+                       Text="{Binding Jobs.Count, StringFormat='{}{0} Tasks Configured'}" 
+                       FontSize="11" 
+                       FontWeight="SemiBold" 
+                       Opacity="0.7" 
+                       VerticalAlignment="Center" />
+        </Grid>
+
+        <!-- 3. Task Cards List (Row 2) -->
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="8">
+
+                <!-- Empty State -->
+                <Border IsVisible="{Binding !Jobs.Count}" Background="{DynamicResource SkuaSurfaceBrush}" CornerRadius="8" Padding="36" Margin="0,20,0,0" HorizontalAlignment="Center">
+                    <StackPanel Spacing="10" HorizontalAlignment="Center">
+                        <materialIcons:MaterialIcon Kind="ClockAlertOutline" Width="44" Height="44" Foreground="{DynamicResource SkuaAccentBrush}" HorizontalAlignment="Center" Opacity="0.5" />
+                        <TextBlock Text="No Scheduled Tasks Yet" FontSize="15" FontWeight="Bold" HorizontalAlignment="Center" />
+                        <TextBlock Text="Click '+ New Task' above to schedule automated script playlists or army presets." 
+                                   FontSize="11" Opacity="0.7" TextAlignment="Center" MaxWidth="340" />
+                        <Button Classes="skua-button skua-primary" Content="+ Create Your First Task" HorizontalAlignment="Center" Margin="0,6,0,0" Command="{Binding AddJobCommand}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Cards List -->
+                <ItemsControl ItemsSource="{Binding Jobs}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="vm:ScheduledJobViewModel">
+                            <Border Background="{DynamicResource SkuaSurfaceBrush}" 
+                                    BorderBrush="{DynamicResource SkuaBorderBrush}" 
+                                    BorderThickness="1" 
+                                    CornerRadius="8" 
+                                    Padding="12,10" 
+                                    Margin="0,0,0,8">
+                                <Grid RowDefinitions="Auto,Auto,Auto">
+
+                                    <!-- Top Row: Status Dot, Name, Toggle, Next Run, Action Toolbar -->
+                                    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10" VerticalAlignment="Center">
+                                        
+                                        <!-- Status Badge -->
+                                        <Border Grid.Column="0" Background="{Binding StatusBrush}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding StatusText}" Foreground="White" FontWeight="Bold" FontSize="10" />
+                                        </Border>
+
+                                        <!-- Task Name + Enable Switch -->
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource SkuaTextBrush}" VerticalAlignment="Center" />
+                                            <ToggleSwitch IsChecked="{Binding IsEnabled}" OnContent="" OffContent="" Margin="0" VerticalAlignment="Center" ToolTip.Tip="Toggle Task Enabled" />
+                                        </StackPanel>
+
+                                        <!-- Next Run Pill -->
+                                        <Border Grid.Column="2" Background="#14FFFFFF" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <materialIcons:MaterialIcon Kind="ClockOutline" Width="12" Height="12" Foreground="{DynamicResource SkuaAccentBrush}" VerticalAlignment="Center" />
+                                                <TextBlock Text="{Binding NextRunCountdownText}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource SkuaAccentBrush}" VerticalAlignment="Center" />
+                                                <TextBlock Text="{Binding NextRunFormatted, StringFormat='{}· {0}'}" FontSize="10" Opacity="0.6" VerticalAlignment="Center" IsVisible="{Binding IsEnabled}" />
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- Quick Action Toolbar -->
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                            <Button Classes="skua-button" Width="28" Height="28" Padding="0" ToolTip.Tip="Run Now" Command="{Binding RunNowCommand}">
+                                                <materialIcons:MaterialIcon Kind="Play" Width="14" Height="14" Foreground="#4CAF50" />
+                                            </Button>
+
+                                            <Button Classes="skua-button" Width="28" Height="28" Padding="0" ToolTip.Tip="Stop Execution" IsVisible="{Binding IsRunning}" Command="{Binding StopJobCommand}">
+                                                <materialIcons:MaterialIcon Kind="Stop" Width="14" Height="14" Foreground="#F44336" />
+                                            </Button>
+
+                                            <Button Classes="skua-button" Width="28" Height="28" Padding="0" ToolTip.Tip="Edit Task"
+                                                    Command="{Binding $parent[UserControl].((vm:SchedulerViewModel)DataContext).EditJobCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <materialIcons:MaterialIcon Kind="Pencil" Width="13" Height="13" />
+                                            </Button>
+
+                                            <Button Classes="skua-button" Width="28" Height="28" Padding="0" ToolTip.Tip="Duplicate Task"
+                                                    Command="{Binding $parent[UserControl].((vm:SchedulerViewModel)DataContext).DuplicateJobCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <materialIcons:MaterialIcon Kind="ContentCopy" Width="13" Height="13" />
+                                            </Button>
+
+                                            <Button Classes="skua-button" Width="28" Height="28" Padding="0" ToolTip.Tip="Delete Task"
+                                                    Command="{Binding $parent[UserControl].((vm:SchedulerViewModel)DataContext).DeleteJobCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <materialIcons:MaterialIcon Kind="DeleteOutline" Width="14" Height="14" Foreground="#F44336" />
+                                            </Button>
+
+                                            <Button Classes="skua-button" Width="28" Height="28" Padding="0" ToolTip.Tip="History &amp; Logs" Command="{Binding ToggleExpandedCommand}">
+                                                <materialIcons:MaterialIcon Kind="{Binding ExpandIconKind}" Width="16" Height="16" />
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- Bottom Row: Metadata Badges Strip -->
+                                    <WrapPanel Grid.Row="1" Orientation="Horizontal" Margin="0,6,0,0">
+                                        <!-- Target Badge -->
+                                        <Border Background="#0DFFFFFF" CornerRadius="4" Padding="5,2" Margin="0,0,6,2"
+                                                ToolTip.Tip="{Binding TargetTooltipText}">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <materialIcons:MaterialIcon Kind="AccountOutline" Width="11" Height="11" Opacity="0.7" VerticalAlignment="Center" />
+                                                <TextBlock Text="{Binding TargetDisplayText}" FontSize="10" FontWeight="Medium" />
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- Trigger Badge -->
+                                        <Border Background="#0DFFFFFF" CornerRadius="4" Padding="5,2" Margin="0,0,6,2"
+                                                ToolTip.Tip="{Binding TriggerTooltipText}">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <materialIcons:MaterialIcon Kind="CalendarSyncOutline" Width="11" Height="11" Opacity="0.7" VerticalAlignment="Center" />
+                                                <TextBlock Text="{Binding TriggerDisplayText}" FontSize="10" FontWeight="Medium" />
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- Scripts Badge -->
+                                        <Border Background="#0DFFFFFF" CornerRadius="4" Padding="5,2" Margin="0,0,6,2"
+                                                ToolTip.Tip="{Binding ScriptsTooltipText}">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <materialIcons:MaterialIcon Kind="FileCodeOutline" Width="11" Height="11" Opacity="0.7" VerticalAlignment="Center" />
+                                                <TextBlock Text="{Binding PipelineDisplayText}" FontSize="10" FontWeight="Medium" />
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- Last Run Badge -->
+                                        <Border Background="#0DFFFFFF" CornerRadius="4" Padding="5,2" Margin="0,0,6,2"
+                                                ToolTip.Tip="{Binding LastRunTooltipText}">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <materialIcons:MaterialIcon Kind="History" Width="11" Height="11" Opacity="0.7" VerticalAlignment="Center" />
+                                                <TextBlock Text="{Binding LastRunDisplayText}" FontSize="10" FontWeight="Medium" />
+                                            </StackPanel>
+                                        </Border>
+                                    </WrapPanel>
+
+                                    <!-- Expandable History & Logs Drawer -->
+                                    <Border Grid.Row="2" IsVisible="{Binding IsExpanded}" 
+                                            Background="Transparent" 
+                                            BorderBrush="{DynamicResource SkuaBorderBrush}" 
+                                            BorderThickness="0,1,0,0" 
+                                            Margin="0,8,0,0" 
+                                            Padding="0,10,0,2">
+                                        <Grid ColumnDefinitions="300,*" ColumnSpacing="14">
+                                            
+                                            <!-- Left: Execution History -->
+                                            <Grid Grid.Column="0" RowDefinitions="Auto,*">
+                                                <!-- Header with Icon, Count & Clear Button -->
+                                                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,6">
+                                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                                        <materialIcons:MaterialIcon Kind="History" Width="13" Height="13" Foreground="{DynamicResource SkuaMutedTextBrush}" VerticalAlignment="Center" />
+                                                        <TextBlock Text="Recent Executions" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource SkuaTextBrush}" VerticalAlignment="Center" />
+                                                        <Border Background="{DynamicResource SkuaSurfaceSubtleBrush}" CornerRadius="8" Padding="5,1" Margin="3,0,0,0" IsVisible="{Binding HasHistory}">
+                                                            <TextBlock Text="{Binding HistoryCountText}" FontSize="8.5" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+                                                        </Border>
+                                                    </StackPanel>
+                                                    
+                                                    <Button Grid.Column="2" Classes="skua-button" Height="20" Padding="5,0" 
+                                                            Command="{Binding ClearHistoryCommand}" ToolTip.Tip="Clear execution history"
+                                                            IsVisible="{Binding HasHistory}">
+                                                        <TextBlock Text="Clear" FontSize="9" />
+                                                    </Button>
+                                                </Grid>
+
+                                                <!-- Execution History List Container -->
+                                                <Border Grid.Row="1" Background="{DynamicResource SkuaSurfaceAltBrush}" BorderBrush="{DynamicResource SkuaBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="6" Height="190">
+                                                    <Grid>
+                                                        <!-- Empty State -->
+                                                        <StackPanel IsVisible="{Binding !HasHistory}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
+                                                            <materialIcons:MaterialIcon Kind="History" Width="24" Height="24" Foreground="{DynamicResource SkuaMutedTextBrush}" Opacity="0.3" HorizontalAlignment="Center" />
+                                                            <TextBlock Text="No past executions recorded" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" HorizontalAlignment="Center" />
+                                                        </StackPanel>
+
+                                                        <!-- History Items -->
+                                                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                                            <ItemsControl ItemsSource="{Binding History}">
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <Button Classes="card-button" Command="{Binding SelectCommand}" ToolTip.Tip="{Binding Tooltip}">
+                                                                            <Border Classes="history-card" Classes.selected="{Binding IsSelected}">
+                                                                                <Grid RowDefinitions="Auto,Auto">
+                                                                                    <!-- Row 0: Timestamp, Duration, Status Pill -->
+                                                                                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                                                                                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                                                                            <materialIcons:MaterialIcon Kind="CalendarClockOutline" Width="10" Height="10" Foreground="{DynamicResource SkuaMutedTextBrush}" VerticalAlignment="Center" />
+                                                                                            <TextBlock Text="{Binding FormattedTime}" FontSize="9.5" FontWeight="Medium" Foreground="{DynamicResource SkuaTextBrush}" VerticalAlignment="Center" />
+                                                                                        </StackPanel>
+
+                                                                                        <Border Grid.Column="1" Background="{DynamicResource SkuaSurfaceSubtleBrush}" CornerRadius="3" Padding="4,1" VerticalAlignment="Center">
+                                                                                            <StackPanel Orientation="Horizontal" Spacing="3">
+                                                                                                <materialIcons:MaterialIcon Kind="ClockOutline" Width="9" Height="9" Foreground="{DynamicResource SkuaMutedTextBrush}" VerticalAlignment="Center" />
+                                                                                                <TextBlock Text="{Binding FormattedDuration}" FontSize="9" Foreground="{DynamicResource SkuaMutedTextBrush}" VerticalAlignment="Center" />
+                                                                                            </StackPanel>
+                                                                                        </Border>
+
+                                                                                        <Border Grid.Column="2" Background="{Binding StatusBgColor}" BorderBrush="{Binding StatusBorderColor}" BorderThickness="1" CornerRadius="3" Padding="4,1" VerticalAlignment="Center">
+                                                                                            <StackPanel Orientation="Horizontal" Spacing="3">
+                                                                                                <materialIcons:MaterialIcon Kind="{Binding StatusIcon}" Width="9" Height="9" Foreground="{Binding StatusColor}" VerticalAlignment="Center" />
+                                                                                                <TextBlock Text="{Binding Status}" FontSize="8.5" FontWeight="Bold" Foreground="{Binding StatusColor}" VerticalAlignment="Center" />
+                                                                                            </StackPanel>
+                                                                                        </Border>
+                                                                                    </Grid>
+
+                                                                                    <!-- Row 1: Failure or status message if present + Viewing indicator -->
+                                                                                    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,3,0,0">
+                                                                                        <TextBlock Grid.Column="0" IsVisible="{Binding HasMessage}" 
+                                                                                                   Text="{Binding Message}" FontSize="9" 
+                                                                                                   Foreground="#F87171" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                                                                        
+                                                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center" IsVisible="{Binding IsSelected}">
+                                                                                            <materialIcons:MaterialIcon Kind="EyeOutline" Width="10" Height="10" Foreground="{DynamicResource SkuaAccentBrush}" VerticalAlignment="Center" />
+                                                                                            <TextBlock Text="Viewing" FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource SkuaAccentBrush}" VerticalAlignment="Center" />
+                                                                                        </StackPanel>
+                                                                                    </Grid>
+                                                                                </Grid>
+                                                                            </Border>
+                                                                        </Button>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                        </ScrollViewer>
+                                                    </Grid>
+                                                </Border>
+                                            </Grid>
+
+                                            <!-- Right: Live / Run Log Console -->
+                                            <Grid Grid.Column="1" RowDefinitions="Auto,*">
+                                                <!-- Header with Title, Count, Copy & Clear -->
+                                                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,6">
+                                                    <!-- Header Title & Mode Info -->
+                                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                                        <!-- Live View Title -->
+                                                        <StackPanel Orientation="Horizontal" Spacing="5" IsVisible="{Binding !IsViewingHistoricalRun}" VerticalAlignment="Center">
+                                                            <materialIcons:MaterialIcon Kind="CodeTags" Width="13" Height="13" Foreground="{DynamicResource SkuaAccentBrush}" VerticalAlignment="Center" />
+                                                            <TextBlock Text="Live Output &amp; Diagnostics" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource SkuaTextBrush}" VerticalAlignment="Center" />
+                                                            <Border Background="{DynamicResource SkuaSurfaceSubtleBrush}" CornerRadius="8" Padding="5,1" Margin="3,0,0,0" IsVisible="{Binding HasActiveLogs}">
+                                                                <TextBlock Text="{Binding ActiveLogsCountText, StringFormat='{}{0} lines'}" FontSize="8.5" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+                                                            </Border>
+                                                        </StackPanel>
+
+                                                        <!-- Historical Run Title -->
+                                                        <StackPanel Orientation="Horizontal" Spacing="5" IsVisible="{Binding IsViewingHistoricalRun}" VerticalAlignment="Center">
+                                                            <materialIcons:MaterialIcon Kind="History" Width="13" Height="13" Foreground="{DynamicResource SkuaAccentBrush}" VerticalAlignment="Center" />
+                                                            <TextBlock Text="{Binding SelectedExecution.FormattedTime, StringFormat='Run Logs · {0}'}" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource SkuaTextBrush}" VerticalAlignment="Center" />
+                                                            <Border Background="{Binding SelectedExecution.StatusBgColor}" BorderBrush="{Binding SelectedExecution.StatusBorderColor}" BorderThickness="1" CornerRadius="8" Padding="5,1" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding SelectedExecution.Status}" FontSize="8.5" FontWeight="Bold" Foreground="{Binding SelectedExecution.StatusColor}" />
+                                                            </Border>
+                                                            <Border Background="{DynamicResource SkuaSurfaceSubtleBrush}" CornerRadius="8" Padding="5,1" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding ActiveLogsCountText, StringFormat='{}{0} lines'}" FontSize="8.5" Foreground="{DynamicResource SkuaMutedTextBrush}" />
+                                                            </Border>
+                                                        </StackPanel>
+                                                    </StackPanel>
+
+                                                    <!-- View Live Button (only in historical mode) -->
+                                                    <Button Grid.Column="2" Classes="skua-button" Height="20" Padding="6,0" Margin="0,0,5,0"
+                                                            Command="{Binding ReturnToLiveLogsCommand}" ToolTip.Tip="Return to live output console"
+                                                            IsVisible="{Binding IsViewingHistoricalRun}">
+                                                        <StackPanel Orientation="Horizontal" Spacing="3">
+                                                            <materialIcons:MaterialIcon Kind="PlayCircleOutline" Width="10" Height="10" Foreground="{DynamicResource SkuaAccentBrush}" VerticalAlignment="Center" />
+                                                            <TextBlock Text="View Live" FontSize="9" VerticalAlignment="Center" />
+                                                        </StackPanel>
+                                                    </Button>
+
+                                                    <!-- Copy Logs Button (Live mode) -->
+                                                    <Button Grid.Column="2" Classes="skua-button" Height="20" Padding="5,0" Margin="0,0,5,0"
+                                                            Command="{Binding CopyLogsCommand}" ToolTip.Tip="Copy live diagnostic logs to clipboard"
+                                                            IsVisible="{Binding !IsViewingHistoricalRun}">
+                                                        <StackPanel Orientation="Horizontal" Spacing="3">
+                                                            <materialIcons:MaterialIcon Kind="ContentCopy" Width="10" Height="10" VerticalAlignment="Center" />
+                                                            <TextBlock Text="{Binding CopyLogsButtonText}" FontSize="9" VerticalAlignment="Center" />
+                                                        </StackPanel>
+                                                    </Button>
+
+                                                    <!-- Copy Logs Button (Historical mode) -->
+                                                    <Button Grid.Column="3" Classes="skua-button" Height="20" Padding="5,0" Margin="0,0,0,0"
+                                                            Command="{Binding CopyLogsCommand}" ToolTip.Tip="Copy this run's captured logs to clipboard"
+                                                            IsVisible="{Binding IsViewingHistoricalRun}">
+                                                        <StackPanel Orientation="Horizontal" Spacing="3">
+                                                            <materialIcons:MaterialIcon Kind="ContentCopy" Width="10" Height="10" VerticalAlignment="Center" />
+                                                            <TextBlock Text="{Binding CopyLogsButtonText}" FontSize="9" VerticalAlignment="Center" />
+                                                        </StackPanel>
+                                                    </Button>
+
+                                                    <!-- Clear Live Logs Button (Live mode) -->
+                                                    <Button Grid.Column="3" Classes="skua-button" Height="20" Padding="5,0" 
+                                                            Command="{Binding ClearLogsCommand}" ToolTip.Tip="Clear output log"
+                                                            IsVisible="{Binding !IsViewingHistoricalRun}">
+                                                        <TextBlock Text="Clear" FontSize="9" />
+                                                    </Button>
+                                                </Grid>
+
+                                                <!-- Console Log Container -->
+                                                <Border Grid.Row="1" Background="{DynamicResource SkuaSurfaceAltBrush}" BorderBrush="{DynamicResource SkuaBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="6" Height="190">
+                                                    <Grid>
+                                                        <!-- Empty State -->
+                                                        <StackPanel IsVisible="{Binding !HasActiveLogs}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
+                                                            <materialIcons:MaterialIcon Kind="CodeTags" Width="24" Height="24" Foreground="{DynamicResource SkuaMutedTextBrush}" Opacity="0.3" HorizontalAlignment="Center" />
+                                                            <TextBlock Text="No diagnostic logs yet. Output will stream here during task runs." FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" HorizontalAlignment="Center" />
+                                                        </StackPanel>
+
+                                                        <!-- Structured Monospace Log View -->
+                                                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                                            <ItemsControl ItemsSource="{Binding ActiveLogs}">
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="6" Margin="0,1.5">
+                                                                            <!-- Monospace Timestamp -->
+                                                                            <TextBlock Grid.Column="0" Text="{Binding Timestamp}" 
+                                                                                       FontFamily="Consolas, monospace" FontSize="9.5" 
+                                                                                       Foreground="{DynamicResource SkuaMutedTextBrush}" VerticalAlignment="Top" />
+
+                                                                            <!-- Category Tag Badge -->
+                                                                            <Border Grid.Column="1" Background="{Binding BadgeBgColor}" 
+                                                                                    CornerRadius="3" Padding="4,0.5" VerticalAlignment="Top">
+                                                                                <TextBlock Text="{Binding Category}" FontSize="8.5" FontWeight="Bold" 
+                                                                                           Foreground="{Binding BadgeTextColor}" FontFamily="Consolas, monospace" />
+                                                                            </Border>
+
+                                                                            <!-- Formatted Message -->
+                                                                            <TextBlock Grid.Column="2" Text="{Binding Message}" 
+                                                                                       FontFamily="Consolas, monospace" FontSize="10" 
+                                                                                       Foreground="{Binding ForegroundColor}" FontWeight="{Binding FontWeight}" 
+                                                                                       TextWrapping="Wrap" VerticalAlignment="Top" />
+                                                                        </Grid>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                        </ScrollViewer>
+                                                    </Grid>
+                                                </Border>
+                                            </Grid>
+
+                                        </Grid>
+                                    </Border>
+
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+            </StackPanel>
+        </ScrollViewer>
+
+    </Grid>
+</UserControl>

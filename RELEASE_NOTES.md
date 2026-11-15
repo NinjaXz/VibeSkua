@@ -1,3 +1,40 @@
+# VibeSkua v2.1.5
+
+## What's New in 2.1.5
+
+### ⏱️ Manager Task Scheduler (New Feature)
+A complete, built-in task automation and recurring job scheduler directly inside VibeSkua Manager.
+- **Flexible Scheduling Modes**: Run automated botting tasks with customizable minute/hour intervals, or at precise daily scheduled times.
+- **Multi-Account & Multi-Script Queueing**: Assign single accounts, multiple saved accounts, or account groups to execute an ordered queue of scripts sequentially.
+- **Client Restart Between Scripts**: Optional setting to cleanly terminate and relaunch the game client between scripts or accounts, eliminating memory bloat, stale cache, and memory leaks during multi-hour schedules.
+- **Windows Startup Integration**: Toggle option to automatically launch VibeSkua Manager and start the Task Scheduler on system boot so your schedules run uninterrupted.
+- **12h / 24h Time Display & Next Run Countdowns**: Easily switch between 12-hour AM/PM and 24-hour military time formats across all scheduled jobs, with dynamic countdown timers showing exact time until the next scheduled trigger.
+- **Interactive Run History & Live Diagnostics**: View detailed execution history for each job run, including script status, account progression, exit codes, and a live output log reader styled to match your client theme.
+
+### 🛡️ Autonomous Script Watchdog
+An intelligent background monitoring system for the game client that keeps farming scripts running without manual intervention.
+- **Automatic Hang & Freeze Detection**: Continuously observes player state, combat flow, and script responsiveness to detect when a script is stuck.
+- **Tiered Autonomous Recovery**: Automatically escalates through progressive recovery actions to unfreeze gameplay:
+  - Clears stale packet and cell states.
+  - Resets combat locks and targets.
+  - Re-joins and repositions to the target room/cell.
+  - Gracefully restarts the active script if the instance becomes unresponsive.
+- **Customizable Watchdog Options**: Configure timeout thresholds and toggle the watchdog on or off in Application Options, complete with detailed descriptive tooltips.
+
+### 📱 Android Remote Controller
+Major updates and stability improvements for the VibeSkua Android Controller app (`skua-remote.apk`).
+- **Robust Item Actions**: Fixed inventory/bank actions (equipping items, moving to bank, withdrawing to inventory) by accepting both item ID and item name seamlessly across remote endpoints.
+- **Enhanced Vault (Bag & Bank)**:
+  - Fixed incomplete item loading in Bag and Bank tabs.
+  - Restored full category navigation tabs: All, Weapons, Classes, Armors, Helms, Capes, Pets, Misc, and AC-tagged items.
+  - Restored a dedicated, persistent **OPEN BANK** button in the Vault header to easily open and refresh your bank in-game at any time.
+- **Army Script Scheduler Upgrades**:
+  - Multi-script queueing: Queue multiple scripts sequentially from the script repository without the dialog closing after each pick.
+  - Dynamic queue reordering: Move queued scripts up (`▲`) or down (`▼`) to fine-tune the exact playlist execution order before starting.
+- **Clean Account Launching**: Saved accounts launched from the Army tab now launch cleanly into tabbed windows without inherited or unwanted auto-loaded scripts.
+
+**Full Changelog**: https://github.com/NinjaXz/VibeSkua/compare/v2.1.4...v2.1.5
+
 # VibeSkua v2.1.4
 
 # Fix ButlerV5 hang and Auto-Relogin issues

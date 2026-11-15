@@ -160,11 +160,14 @@ public class Models {
             if (category == null) return false;
             String c = category.trim().toLowerCase();
             return c.contains("sword") || c.contains("axe") || c.contains("dagger") ||
-                   c.contains("gun") || c.contains("bow") || c.contains("mace") ||
-                   c.contains("polearm") || c.contains("staff") || c.contains("wand") ||
-                   c.contains("class") || c.contains("armor") || c.contains("helm") ||
-                   c.contains("cape") || c.contains("pet") || c.contains("amulet") ||
-                   c.contains("ground") || c.contains("weapon");
+                   c.contains("gun") || c.contains("rifle") || c.contains("bow") ||
+                   c.contains("mace") || c.contains("polearm") || c.contains("staff") ||
+                   c.contains("wand") || c.contains("scythe") || c.contains("gauntlet") ||
+                   c.contains("whip") || c.contains("class") || c.contains("armor") ||
+                   c.contains("helm") || c.contains("hat") || c.contains("hood") ||
+                   c.contains("cape") || c.contains("cloak") || c.contains("wings") ||
+                   c.contains("back") || c.contains("pet") || c.contains("battlepet") ||
+                   c.contains("amulet") || c.contains("ground") || c.contains("weapon");
         }
 
         public String getGroupCategory() {
@@ -172,16 +175,18 @@ public class Models {
             String c = category.trim().toLowerCase();
             if (c.contains("class")) return "Classes";
             if (c.contains("armor")) return "Armors";
-            if (c.contains("helm")) return "Helms";
-            if (c.contains("cape")) return "Capes";
+            if (c.contains("helm") || c.contains("hat") || c.contains("hood") || c.contains("helmet")) return "Helms";
+            if (c.contains("cape") || c.contains("cloak") || c.contains("wings") || c.contains("back")) return "Capes";
             if (c.contains("pet")) return "Pets";
             if (c.contains("sword") || c.contains("axe") || c.contains("dagger") ||
-                c.contains("gun") || c.contains("bow") || c.contains("mace") ||
-                c.contains("polearm") || c.contains("staff") || c.contains("wand") ||
-                c.contains("weapon") || c.contains("scythe") || c.contains("gauntlet") ||
-                c.contains("whip")) return "Weapons";
+                c.contains("gun") || c.contains("rifle") || c.contains("bow") ||
+                c.contains("mace") || c.contains("polearm") || c.contains("staff") ||
+                c.contains("wand") || c.contains("weapon") || c.contains("scythe") ||
+                c.contains("gauntlet") || c.contains("whip")) return "Weapons";
             if (c.contains("enhancement") || c.contains("item") || c.contains("resource") ||
-                c.contains("misc") || c.contains("quest")) return "Misc";
+                c.contains("misc") || c.contains("quest") || c.contains("note") ||
+                c.contains("amulet") || c.contains("necklace") || c.contains("house") ||
+                c.contains("floor") || c.contains("wall")) return "Misc";
             return category;
         }
     }

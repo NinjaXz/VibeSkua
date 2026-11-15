@@ -69,53 +69,110 @@ public class UnifiedSettingsService
         }
     }
 
-    public T? Get<T>(string key)
+    public bool TryGet<T>(string key, out T? value)
     {
         lock (_lock)
         {
             try
             {
                 PropertyInfo? sharedProp = FindPropertyByJsonName(_root.Shared.GetType(), key);
-                if (sharedProp?.GetValue(_root.Shared) is object sharedVal && !IsDefaultOrEmpty(sharedVal))
+                if (sharedProp != null)
                 {
-                    if (typeof(T).IsAssignableFrom(sharedVal.GetType()))
-                        return (T)sharedVal;
+                    object? sharedVal = sharedProp.GetValue(_root.Shared);
+                    if (sharedVal is not null && !IsDefaultOrEmpty(sharedVal))
+                    {
+                        if (typeof(T).IsAssignableFrom(sharedVal.GetType()))
+                        {
+                            value = (T)sharedVal;
+                            return true;
+                        }
+                    }
                 }
 
                 if (_currentRole == AppRole.Manager)
                 {
                     PropertyInfo? managerProp = FindPropertyByJsonName(_root.Manager.GetType(), key);
-                    if (managerProp?.GetValue(_root.Manager) is object managerVal && !IsDefaultOrEmpty(managerVal))
-                        if (typeof(T).IsAssignableFrom(managerVal.GetType()))
-                            return (T)managerVal;
+                    if (managerProp != null)
+                    {
+                        object? managerVal = managerProp.GetValue(_root.Manager);
+                        if (managerVal is not null && !IsDefaultOrEmpty(managerVal))
+                        {
+                            if (typeof(T).IsAssignableFrom(managerVal.GetType()))
+                            {
+                                value = (T)managerVal;
+                                return true;
+                            }
+                        }
+                    }
 
                     PropertyInfo? clientProp = FindPropertyByJsonName(_root.Client.GetType(), key);
-                    if (clientProp?.GetValue(_root.Client) is object clientVal && !IsDefaultOrEmpty(clientVal))
-                        if (typeof(T).IsAssignableFrom(clientVal.GetType()))
-                            return (T)clientVal;
+                    if (clientProp != null)
+                    {
+                        object? clientVal = clientProp.GetValue(_root.Client);
+                        if (clientVal is not null && !IsDefaultOrEmpty(clientVal))
+                        {
+                            if (typeof(T).IsAssignableFrom(clientVal.GetType()))
+                            {
+                                value = (T)clientVal;
+                                return true;
+                            }
+                        }
+                    }
                 }
                 else
                 {
                     PropertyInfo? clientProp = FindPropertyByJsonName(_root.Client.GetType(), key);
-                    if (clientProp?.GetValue(_root.Client) is object clientVal && !IsDefaultOrEmpty(clientVal))
-                        if (typeof(T).IsAssignableFrom(clientVal.GetType()))
-                            return (T)clientVal;
+                    if (clientProp != null)
+                    {
+                        object? clientVal = clientProp.GetValue(_root.Client);
+                        if (clientVal is not null && !IsDefaultOrEmpty(clientVal))
+                        {
+                            if (typeof(T).IsAssignableFrom(clientVal.GetType()))
+                            {
+                                value = (T)clientVal;
+                                return true;
+                            }
+                        }
+                    }
 
                     PropertyInfo? managerProp = FindPropertyByJsonName(_root.Manager.GetType(), key);
-                    if (managerProp?.GetValue(_root.Manager) is object managerVal && !IsDefaultOrEmpty(managerVal))
-                        if (typeof(T).IsAssignableFrom(managerVal.GetType()))
-                            return (T)managerVal;
+                    if (managerProp != null)
+                    {
+                        object? managerVal = managerProp.GetValue(_root.Manager);
+                        if (managerVal is not null && !IsDefaultOrEmpty(managerVal))
+                        {
+                            if (typeof(T).IsAssignableFrom(managerVal.GetType()))
+                            {
+                                value = (T)managerVal;
+                                return true;
+                            }
+                        }
+                    }
                 }
 
-                if (sharedProp?.GetValue(_root.Shared) is object sVal && typeof(T).IsAssignableFrom(sVal.GetType()))
-                    return (T)sVal;
+                if (sharedProp != null)
+                {
+                    object? sVal = sharedProp.GetValue(_root.Shared);
+                    if (sVal is not null && typeof(T).IsAssignableFrom(sVal.GetType()))
+                    {
+                        value = (T)sVal;
+                        return true;
+                    }
+                }
             }
             catch (Exception)
             {
             }
 
-            return default;
+            value = default;
+            return false;
         }
+    }
+
+    public T? Get<T>(string key)
+    {
+        TryGet<T>(key, out T? value);
+        return value;
     }
 
     private static bool IsDefaultOrEmpty(object val)
@@ -129,8 +186,14 @@ public class UnifiedSettingsService
 
     public T Get<T>(string key, T defaultValue)
     {
-        T? value = Get<T>(key);
-        return value is null || value.Equals(default(T)) ? defaultValue : value;
+        if (TryGet<T>(key, out T? value) && value is not null)
+        {
+            if (value is string s && string.IsNullOrEmpty(s) && defaultValue is string defaultStr && !string.IsNullOrEmpty(defaultStr))
+                return defaultValue;
+
+            return value;
+        }
+        return defaultValue;
     }
 
     public void Set<T>(string key, T value)
