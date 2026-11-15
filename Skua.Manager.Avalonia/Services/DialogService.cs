@@ -9,7 +9,6 @@ using Avalonia.VisualTree;
 using Skua.Core.Interfaces;
 using Skua.Core.Interfaces.ViewModels;
 using Skua.Core.Models;
-using Skua.Core.Models.Servers;
 using Skua.Manager.Avalonia.ViewModels;
 using Skua.Shared.Avalonia.Controls.Options;
 using Skua.Shared.Avalonia.Controls.Shell;
@@ -98,72 +97,6 @@ public class DialogService : IDialogService
         return index < 0 ? DialogResult.Cancelled : new DialogResult(clicked, index);
     }
 
-    public ServerLatencyWarningResult ShowServerLatencyWarning(string serverName, long pingMs, int thresholdMs)
-    {
-        if (!Dispatcher.UIThread.CheckAccess())
-            return Dispatcher.UIThread.Invoke(() => ShowServerLatencyWarning(serverName, pingMs, thresholdMs));
-
-        bool accepted = false;
-        CheckBox dontShowAgain = new()
-        {
-            Content = "Don't show this warning again",
-            FontSize = 12
-        };
-        Button cancel = new()
-        {
-            Content = "Cancel",
-            MinWidth = 100,
-            Classes = { "skua-button" },
-            IsCancel = true
-        };
-        Button connect = new()
-        {
-            Content = "Connect Anyway",
-            MinWidth = 132,
-            Classes = { "skua-button", "skua-primary" },
-            IsDefault = true
-        };
-
-        string latency = pingMs >= ServerLatencyClassifier.FailedPing
-            ? "The server did not return a valid AQW latency response."
-            : $"Measured latency: {pingMs} ms (warning threshold: {thresholdMs} ms).";
-
-        TextBlock message = new()
-        {
-            Text = $"{serverName} is not recommended for reliable botting. {latency}\n\nHigh latency can cause delayed actions, missed responses, script failures and disconnects. Continue only if you are prepared for unreliable results.",
-            TextWrapping = TextWrapping.Wrap,
-            FontSize = 13,
-            LineHeight = 20
-        };
-
-        Window dialog = CreateBaseDialog("High Server Latency");
-        dialog.Width = 520;
-
-        cancel.Click += (_, _) => dialog.Close();
-        connect.Click += (_, _) =>
-        {
-            accepted = true;
-            dialog.Close();
-        };
-
-        StackPanel buttons = new()
-        {
-            Orientation = Orientation.Horizontal,
-            HorizontalAlignment = HorizontalAlignment.Right,
-            Spacing = 8,
-            Children = { cancel, connect }
-        };
-        StackPanel content = new()
-        {
-            Margin = new Thickness(16),
-            Spacing = 16,
-            Children = { message, dontShowAgain, buttons }
-        };
-
-        dialog.Content = WrapWithShell("High Server Latency", content);
-        Show(dialog);
-        return new ServerLatencyWarningResult(accepted, dontShowAgain.IsChecked == true);
-    }
 
     public IInputDialogViewModel CreateInputDialog(string title, string dialogHint)
     {
