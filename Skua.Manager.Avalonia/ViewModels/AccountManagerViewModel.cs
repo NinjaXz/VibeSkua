@@ -252,7 +252,7 @@ public sealed partial class AccountManagerViewModel : BotControlViewModelBase
 
     private async Task StartAccountBatch(List<IAccountItemViewModel> accounts, string batchName, bool runScript, bool newWindow = false)
     {
-        if (_isLaunching || accounts.Count == 0 || !_ConfirmSelectedServerLatency())
+        if (_isLaunching || accounts.Count == 0)
             return;
 
         try
@@ -409,9 +409,6 @@ public sealed partial class AccountManagerViewModel : BotControlViewModelBase
 
     private void _StartAccount(IAccountItemViewModel account, bool withScript)
     {
-        if (!_ConfirmSelectedServerLatency())
-            return;
-
         _syncThemes = _settingsService.Get("syncTheme", false);
 
         if (withScript && string.IsNullOrEmpty(ScriptPath))
@@ -439,26 +436,6 @@ public sealed partial class AccountManagerViewModel : BotControlViewModelBase
         await StartAccountBatch(group.Accounts.ToList(), $"group '{group.Name}'", runScript, newWindow);
     }
 
-    private bool _ConfirmSelectedServerLatency()
-    {
-        Server? server = SelectedServer;
-        if (server is null)
-            return true;
-
-        int thresholdMs = Math.Clamp(_settingsService.Get("ServerLatencyThresholdMs", ServerLatencyClassifier.DefaultThresholdMs), 50, 2000);
-        int nearThresholdPercent = Math.Clamp(_settingsService.Get("ServerLatencyNearThresholdPercent", ServerLatencyClassifier.DefaultNearThresholdPercent), 50, 95);
-        ServerLatencyStatus status = ServerLatencyClassifier.Classify(server.Ping, thresholdMs, nearThresholdPercent);
-
-        if (status is not (ServerLatencyStatus.High or ServerLatencyStatus.Unavailable)
-            || _settingsService.Get("ServerLatencyWarningDismissed", false))
-            return true;
-
-        ServerLatencyWarningResult result = _dialogService.ShowServerLatencyWarning(server.Name, server.Ping, thresholdMs);
-        if (result.DontShowAgain)
-            _settingsService.Set("ServerLatencyWarningDismissed", true);
-
-        return result.Accepted;
-    }
 
     private void _LaunchAcc(string username, string password, string? displayName = null, bool? withScript = null, string? hostInstanceId = null)
     {
