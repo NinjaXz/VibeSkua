@@ -100,32 +100,7 @@ if not exist "Build" (
     if errorlevel 1 goto :Failure
 )
 
-set "AS3_REBUILD=0"
-set "AS3_TEMP_SWF=Skua.AS3\skua\bin\skua.build-%RANDOM%-%RANDOM%.tmp.swf"
-if not exist "Skua.AS3\skua\bin\skua.swf" set "AS3_REBUILD=1"
-git diff --quiet HEAD -- "Skua.AS3/skua/bin/skua.swf"
-if errorlevel 1 set "AS3_REBUILD=1"
-if "%AS3_REBUILD%"=="1" (
-    echo Building AS3 Client...
-    if exist "%AS3_TEMP_SWF%" del /F /Q "%AS3_TEMP_SWF%"
-    powershell -NoProfile -ExecutionPolicy Bypass -File "Skua.AS3\compile-as3.ps1" -OutputPath "%AS3_TEMP_SWF%"
-    if errorlevel 1 (
-        if exist "%AS3_TEMP_SWF%" del /F /Q "%AS3_TEMP_SWF%"
-        echo Failed to build AS3 client. The existing skua.swf was preserved.
-        goto :Failure
-    )
-    if not exist "%AS3_TEMP_SWF%" (
-        echo AS3 build completed without producing a temporary SWF. The existing skua.swf was preserved.
-        goto :Failure
-    )
-    move /Y "%AS3_TEMP_SWF%" "Skua.AS3\skua\bin\skua.swf" >nul
-    if errorlevel 1 (
-        echo Failed to replace skua.swf with the successful build output.
-        goto :Failure
-    )
-) else (
-    echo Skipping AS3 build because skua.swf is unchanged.
-)
+echo AS3 compilation is handled once by package-build.ps1.
 
 echo Restoring solution once for faster project builds...
 dotnet restore "Skua.sln"
@@ -143,7 +118,7 @@ if not exist "Build\plugins\Skua.Plugin.Omniscope.dll" (
     goto :Failure
 )
 
-echo Packaging and organizing output to match WPF release structure...
+echo Compiling AS3 once, then packaging and organizing output to match WPF release structure...
 powershell -NoProfile -ExecutionPolicy Bypass -File "package-build.ps1"
 if errorlevel 1 goto :Failure
 if not exist "Build\VibeSkua.exe" (
