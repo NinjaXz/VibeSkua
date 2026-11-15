@@ -222,7 +222,7 @@ internal static class AqwGameClientResolver
                         HttpCompletionOption.ResponseHeadersRead,
                         cancellationToken).ConfigureAwait(false);
 
-                    if (getResponse.StatusCode == HttpStatusCode.TooManyRequests && attempt < MaximumRetries)
+                    if (ShouldRetry(getResponse.StatusCode) && attempt < MaximumRetries)
                     {
                         await DelayForRetryAsync(attempt, cancellationToken).ConfigureAwait(false);
                         continue;
@@ -231,7 +231,7 @@ internal static class AqwGameClientResolver
                     return IsRealSwfResponse(getResponse);
                 }
 
-                if (headResponse.StatusCode == HttpStatusCode.TooManyRequests && attempt < MaximumRetries)
+                if (ShouldRetry(headResponse.StatusCode) && attempt < MaximumRetries)
                 {
                     await DelayForRetryAsync(attempt, cancellationToken).ConfigureAwait(false);
                     continue;

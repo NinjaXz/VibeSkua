@@ -101,7 +101,7 @@ To build the Android application yourself, see [Build Tools](BuildTools/README.m
 - A Java 8 JDK on PATH for first-time Apache Flex setup, unless a compatible Flex SDK is already installed and configured.
 - Network access for package restore and any build-time dependencies that need downloading.
 
-The repository includes the ActionScript 3 sources and compiler setup. Packaging automatically configures Apache Flex when it cannot find an existing SDK; the first-time download requires Java 8. The package separately bundles Java 21 for FFDec, so end users do not need to install Java. The packaging workflow also stages FFDec with a private Java 21 runtime, so end users do not need to install FFDec or Java separately.
+The repository includes the ActionScript 3 sources and compiler setup. Packaging automatically configures Apache Flex when it cannot find an existing SDK; the first-time download requires Java 8. The finished package includes FFDec and a private Java 21 runtime, so end users do not need to install either separately.
 
 ### Fast local build
 
