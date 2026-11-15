@@ -18,8 +18,8 @@ public enum ServerLatencyStatus
 public static class ServerLatencyClassifier
 {
     public const long FailedPing = 9999;
-    public const int DefaultThresholdMs = 250;
-    public const int DefaultNearThresholdPercent = 70;
+    public const int DefaultThresholdMs = 200;
+    public const int DefaultNearThresholdPercent = 75;
 
     /// <summary>
     /// Classifies a measured latency using the configured warning threshold and near-threshold percentage.
