@@ -86,7 +86,7 @@ internal class Options
             }
         }
 
-        return new GameOptionsViewModel(options, s.GetService<IScriptServers>()!, scriptOpt, s.GetRequiredService<ISettingsService>(), s.GetRequiredService<IDialogService>());
+        return new GameOptionsViewModel(options, s.GetService<IScriptServers>()!, scriptOpt);
 
         static RelayCommand<bool> CreateBoolCommand(Action<bool> action) => new(action);
         static BindingOptionItemViewModel<T, ScriptOption> CreateOptionItem<T>(IServiceProvider s, string binding, string tag, IRelayCommand command) => new(Label(s, binding), GetGameOptionDescription(binding), tag, binding, (ScriptOption)s.GetRequiredService<IScriptOption>(), command);
@@ -172,18 +172,6 @@ internal class Options
                     return;
                 Ioc.Default.GetRequiredService<ISettingsService>().Set("ReloginTryDelay", result);
             }), s.GetRequiredService<ISettingsService>().Get<int>("ReloginTryDelay")),
-            new CommandOptionItemViewModel<int>("Server Latency Warning Threshold", "Latency at or above this value triggers a connection warning (default: 250 ms)", "ServerLatencyThresholdMs", "ms", new RelayCommand<string>(value =>
-            {
-                if (!int.TryParse(value, out int result) || result < 50 || result > 2000)
-                    return;
-                Ioc.Default.GetRequiredService<ISettingsService>().Set("ServerLatencyThresholdMs", result);
-            }), s.GetRequiredService<ISettingsService>().Get("ServerLatencyThresholdMs", 250)),
-            new CommandOptionItemViewModel<int>("Server Near-Threshold Band", "Percentage of the warning threshold where the amber warning indicator begins (default: 70%)", "ServerLatencyNearThresholdPercent", "%", new RelayCommand<string>(value =>
-            {
-                if (!int.TryParse(value, out int result) || result < 50 || result > 95)
-                    return;
-                Ioc.Default.GetRequiredService<ISettingsService>().Set("ServerLatencyNearThresholdPercent", result);
-            }), s.GetRequiredService<ISettingsService>().Get("ServerLatencyNearThresholdPercent", 70)),
             CreateSettingOptionItem<bool>("Relogin Watchdog", "Watch for unexpected disconnections, even with no script running, and relog when Auto Relogin (Game Options) is on. Off leaves relogs to kicks and server logouts", "ReloginWatchdog"),
             new CommandOptionItemViewModel<IRelayCommand>("Clear Flash Cache", "ClearFlashCache", new RelayCommand(() =>
             {
