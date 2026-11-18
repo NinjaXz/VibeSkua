@@ -485,6 +485,7 @@ public partial class TabbedHostWindow : Window
     {
         if (_isClosing || _tabs.Count == 0) return;
 
+        UpdateQuickLaunchStatuses();
         var entries = _tabs.Select(kvp => (Tab: kvp.Key, Pid: kvp.Value?.Process?.Id ?? 0)).ToList();
 
         Task.Run(() =>
@@ -534,6 +535,10 @@ public partial class TabbedHostWindow : Window
                     {
                         if (_tabs.TryGetValue(tab, out TabInfo? tInfo))
                         {
+                            // Complete a requested launch only after the expected account is actually logged in.
+                            if (string.Equals(tInfo.Username, username, StringComparison.OrdinalIgnoreCase))
+                                CompleteTabLaunch(tInfo, true);
+
                             // Keep the actual logged-in identity even when the tab has a custom display name.
                             tInfo.Username = username;
                             if (tInfo.IsCustomNamed)
@@ -3440,10 +3445,10 @@ public partial class TabbedHostWindow : Window
             {
                 Dispatcher.UIThread.Post(() =>
                 {
+                    CompleteTabLaunch(info, false);
                     if (!_isClosing)
-                    {
                         CloseTab(newTab);
-                    }
+                    UpdateQuickLaunchStatuses();
                 });
             };
 
@@ -3454,6 +3459,7 @@ public partial class TabbedHostWindow : Window
             catch (Exception ex)
             {
                 p.Dispose();
+                CompleteTabLaunch(info, false);
                 _isSpawning = false;
                 Trace.WriteLine($"VibeSkua failed to start child process for tab '{tabName}': {ex}");
                 Dispatcher.UIThread.Post(() =>
@@ -3651,36 +3657,51 @@ public partial class TabbedHostWindow : Window
 
     #region Group Assignment Helper
 
+    private string? GetProcessLoggedInUsername(TabInfo? info)
+    {
+        if (info?.Process == null || info.Process.HasExited)
+            return null;
+
+        try
+        {
+            string file = Path.Combine(Path.GetTempPath(), "VibeSkuaTabs", $"{info.Process.Id}.txt");
+            if (!File.Exists(file))
+                return null;
+
+            string username = File.ReadAllText(file).Trim();
+            if (!string.IsNullOrWhiteSpace(username)
+                && !username.StartsWith("User ", StringComparison.OrdinalIgnoreCase)
+                && !username.StartsWith("Skua ", StringComparison.OrdinalIgnoreCase))
+                return username;
+        }
+        catch { }
+
+        return null;
+    }
+
     private string? GetTabLoggedInUsername(TabItem tab, TabInfo? info, string currentTitle)
     {
-        if (info?.Process != null && !info.Process.HasExited)
-        {
-            try
-            {
-                string file = Path.Combine(Path.GetTempPath(), "VibeSkuaTabs", $"{info.Process.Id}.txt");
-                if (File.Exists(file))
-                {
-                    string name = File.ReadAllText(file).Trim();
-                    if (!string.IsNullOrWhiteSpace(name) &&
-                        !name.StartsWith("User ", StringComparison.OrdinalIgnoreCase) &&
-                        !name.StartsWith("Skua ", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return name;
-                    }
-                }
-            }
-            catch { }
-        }
+        string? processUsername = GetProcessLoggedInUsername(info);
+        if (!string.IsNullOrWhiteSpace(processUsername))
+            return processUsername;
 
         string title = currentTitle?.Trim() ?? "";
         if (!string.IsNullOrWhiteSpace(title) &&
             !title.StartsWith("User ", StringComparison.OrdinalIgnoreCase) &&
             !title.StartsWith("Skua ", StringComparison.OrdinalIgnoreCase))
-        {
             return title;
-        }
 
         return null;
+    }
+
+    private static void CompleteTabLaunch(TabInfo info, bool success)
+    {
+        Action<bool>? completion = info.LaunchCompletion;
+        if (completion == null)
+            return;
+
+        info.LaunchCompletion = null;
+        completion(success);
     }
 
     private void PopulateAddToGroupMenu(MenuItem parentItem, TabItem tab, TabInfo? info, string currentTitle)
