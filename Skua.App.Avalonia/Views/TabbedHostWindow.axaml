@@ -316,7 +316,7 @@
                                             ToolTip.Tip="Launch selected accounts in a separate VibeSkua window"
                                             Click="AccountQuickLaunchNewWindow_Click" />
                                 </Grid>
-                                <TextBlock Text="Ctrl+Shift+L · ↑↓ navigate · Space select · Enter launch · Esc close"
+                                <TextBlock Text="Ctrl+Shift+L · Space select · Enter launch · Esc close"
                                            FontSize="9"
                                            TextAlignment="Center"
                                            Foreground="{DynamicResource SkuaMutedTextBrush}" />
