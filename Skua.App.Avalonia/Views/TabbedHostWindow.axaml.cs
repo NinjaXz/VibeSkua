@@ -1686,6 +1686,40 @@ public partial class TabbedHostWindow : Window
 
             foreach (string username in accounts)
             {
+                Action<bool> batchCompletion = success =>
+                {
+                    if (batchId != _quickLaunchBatchId)
+                    {
+                        UpdateQuickLaunchStatuses();
+                        return;
+                    }
+
+                    _quickLaunchBatchCompleted++;
+                    if (success)
+                        _quickLaunchFailed.Remove(username);
+                    else
+                    {
+                        _quickLaunchFailed.Add(username);
+                        _quickLaunchBatchFailed++;
+                    }
+
+                    UpdateQuickLaunchStatuses();
+                    UpdateQuickLaunchBatchProgress();
+                };
+
+                // Join an in-flight request before checking running state. The original
+                // launch owns completion, so this batch must wait for its final result.
+                if (_quickLaunchPending.Contains(username))
+                {
+                    if (!_quickLaunchPendingCallbacks.TryGetValue(username, out List<Action<bool>>? callbacks))
+                    {
+                        callbacks = [];
+                        _quickLaunchPendingCallbacks[username] = callbacks;
+                    }
+                    callbacks.Add(batchCompletion);
+                    continue;
+                }
+
                 TabItem? existingTab = FindExistingAccountTab(username);
                 if (existingTab != null)
                 {
@@ -1710,43 +1744,10 @@ public partial class TabbedHostWindow : Window
                     continue;
                 }
 
-                Action<bool> batchCompletion = success =>
-                {
-                    if (batchId != _quickLaunchBatchId)
-                    {
-                        UpdateQuickLaunchStatuses();
-                        return;
-                    }
-
-                    _quickLaunchBatchCompleted++;
-                    if (success)
-                        _quickLaunchFailed.Remove(username);
-                    else
-                    {
-                        _quickLaunchFailed.Add(username);
-                        _quickLaunchBatchFailed++;
-                    }
-
-                    UpdateQuickLaunchStatuses();
-                    UpdateQuickLaunchBatchProgress();
-                };
-
-                if (_quickLaunchPending.Contains(username))
-                {
-                    if (!_quickLaunchPendingCallbacks.TryGetValue(username, out List<Action<bool>>? callbacks))
-                    {
-                        callbacks = [];
-                        _quickLaunchPendingCallbacks[username] = callbacks;
-                    }
-                    callbacks.Add(batchCompletion);
-                    continue;
-                }
-
                 _quickLaunchPending.Add(username);
                 _quickLaunchPendingCallbacks[username] = [batchCompletion];
                 LaunchAccount(username, onCompleted: success => CompleteQuickLaunchPending(username, success));
             }
-
             UpdateQuickLaunchStatuses();
             UpdateQuickLaunchBatchProgress();
         }
