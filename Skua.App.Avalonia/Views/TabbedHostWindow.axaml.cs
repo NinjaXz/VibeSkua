@@ -1521,9 +1521,9 @@ public partial class TabbedHostWindow : Window
             foreach (string argument in launchArguments[0])
                 startInfo.ArgumentList.Add(argument);
 
-            using Process? newHost = Process.Start(startInfo);
-            if (newHost is null)
-                throw new InvalidOperationException("Windows did not return a process for the new VibeSkua window.");
+            // Kept (not disposed here) so the background watcher below can tell when the new window closes.
+            Process newHost = Process.Start(startInfo)
+                ?? throw new InvalidOperationException("Windows did not return a process for the new VibeSkua window.");
 
             AccountQuickLaunchProgressPanel.IsVisible = true;
             AccountQuickLaunchProgressBar.Value = 0;
@@ -1532,20 +1532,14 @@ public partial class TabbedHostWindow : Window
 
             _ = Task.Run(async () =>
             {
+                using Process hostProcess = newHost;
                 int queued = 1;
-                int failed = unavailable;
                 for (int i = 1; i < launchArguments.Count; i++)
                 {
-                    bool sent = await SendClientArgsToHostInstanceAsync(hostInstanceId, launchArguments[i]);
-                    if (sent)
-                    {
-                        queued++;
-                    }
-                    else
-                    {
-                        failed += launchArguments.Count - i;
+                    // Stops retrying the pipe as soon as the new window exits.
+                    if (!await SendClientArgsToHostInstanceAsync(hostInstanceId, launchArguments[i], hostProcess))
                         break;
-                    }
+                    queued++;
                 }
 
                 List<string> queuedUsernames = launchArguments
@@ -1556,20 +1550,28 @@ public partial class TabbedHostWindow : Window
                     .Skip(queued)
                     .Select(arguments => arguments[1])
                     .ToList();
+                // Provisional until the end: undelivered accounts only count as failed if the window is still open.
+                int failed = unavailable + undeliveredUsernames.Count;
 
                 Dispatcher.UIThread.Post(() =>
                 {
                     foreach (string username in queuedUsernames)
                         _quickLaunchPending.Add(username);
-                    foreach (string username in undeliveredUsernames)
-                        _quickLaunchFailed.Add(username);
                     UpdateQuickLaunchStatuses();
                 });
 
+                bool hostClosed = false;
                 int loggedIn = 0;
                 HashSet<string> runningAccounts = new(StringComparer.OrdinalIgnoreCase);
                 for (int elapsedSeconds = 0; elapsedSeconds < 180 && loggedIn < queuedUsernames.Count; elapsedSeconds++)
                 {
+                    // Its accounts can't log in once the new window is gone, so stop waiting for them.
+                    if (HasProcessExited(hostProcess))
+                    {
+                        hostClosed = true;
+                        break;
+                    }
+
                     runningAccounts = GetRunningAccountUsernames();
                     loggedIn = queuedUsernames.Count(runningAccounts.Contains);
                     int currentLoggedIn = loggedIn;
@@ -1593,21 +1595,38 @@ public partial class TabbedHostWindow : Window
                         await Task.Delay(1000);
                 }
 
+                // The window can also exit after the last scan (e.g. right after every account logged in), so check
+                // once more and report from a fresh scan rather than a snapshot taken while it was still open.
+                if (hostClosed || HasProcessExited(hostProcess))
+                {
+                    hostClosed = true;
+                    runningAccounts = GetRunningAccountUsernames();
+                    loggedIn = queuedUsernames.Count(runningAccounts.Contains);
+                    failed = unavailable;
+                }
+
                 List<string> timedOutUsernames = queuedUsernames
                     .Where(username => !runningAccounts.Contains(username))
                     .ToList();
+                int notStarted = timedOutUsernames.Count + (hostClosed ? undeliveredUsernames.Count : 0);
                 Dispatcher.UIThread.Post(() =>
                 {
                     foreach (string username in queuedUsernames)
                         CompleteQuickLaunchPending(username, runningAccounts.Contains(username));
-                    foreach (string username in timedOutUsernames)
-                        _quickLaunchFailed.Add(username);
-                    foreach (string username in undeliveredUsernames)
-                        _quickLaunchFailed.Add(username);
+                    // Decided once, here: a closed window's accounts are "Not running", not failed.
+                    foreach (string username in timedOutUsernames.Concat(undeliveredUsernames))
+                    {
+                        if (hostClosed)
+                            _quickLaunchFailed.Remove(username);
+                        else
+                            _quickLaunchFailed.Add(username);
+                    }
 
                     UpdateQuickLaunchStatuses();
                     AccountQuickLaunchProgressBar.Value = 100;
-                    AccountQuickLaunchProgressText.Text = timedOutUsernames.Count > 0
+                    AccountQuickLaunchProgressText.Text = hostClosed
+                        ? $"New window closed · {loggedIn} running · {notStarted} not started · {alreadyRunning} already running · {failed} unavailable/undelivered"
+                        : timedOutUsernames.Count > 0
                         ? $"New window launch timed out · {loggedIn} running · {timedOutUsernames.Count} timed out · {alreadyRunning} already running · {failed} unavailable/undelivered"
                         : $"New window ready · {loggedIn} accounts running · {alreadyRunning} already running · {failed} unavailable/undelivered";
                     AccountQuickLaunchRetryButton.IsVisible = _quickLaunchFailed.Count > 0;
@@ -1626,13 +1645,17 @@ public partial class TabbedHostWindow : Window
         }
     }
 
-    private static async Task<bool> SendClientArgsToHostInstanceAsync(string hostInstanceId, string[] clientArgs)
+    private static async Task<bool> SendClientArgsToHostInstanceAsync(string hostInstanceId, string[] clientArgs, Process? hostProcess = null)
     {
         string pipeName = $"VibeSkuaTabHostPipe-{hostInstanceId}";
         string payload = $"LAUNCH|{JsonSerializer.Serialize(clientArgs)}";
 
         for (int attempt = 0; attempt < 30; attempt++)
         {
+            // No point retrying a pipe whose window has exited.
+            if (hostProcess is not null && HasProcessExited(hostProcess))
+                return false;
+
             try
             {
                 using NamedPipeClientStream pipeClient = new(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
@@ -1766,6 +1789,18 @@ public partial class TabbedHostWindow : Window
             _quickLaunchBatchAlreadyOpen = 0;
             _quickLaunchBatchFailed = accounts.Count;
             UpdateQuickLaunchBatchProgress();
+        }
+    }
+
+    private static bool HasProcessExited(Process process)
+    {
+        try
+        {
+            return process.HasExited;
+        }
+        catch (Exception)
+        {
+            return true;
         }
     }
 

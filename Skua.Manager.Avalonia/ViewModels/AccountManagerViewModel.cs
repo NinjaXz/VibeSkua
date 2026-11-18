@@ -829,10 +829,7 @@ public sealed partial class AccountManagerViewModel : BotControlViewModelBase
         int nearThresholdPercent = Math.Clamp(_settingsService.Get("ServerLatencyNearThresholdPercent", ServerLatencyClassifier.DefaultNearThresholdPercent), 50, 95);
 
         foreach (Server server in _cachedServers)
-        {
-            ServerLatencyStatus status = ServerLatencyClassifier.Classify(server.Ping, thresholdMs, nearThresholdPercent);
-            server.PingIndicator = ServerLatencyClassifier.GetIndicator(status);
-        }
+            server.LatencyStatus = ServerLatencyClassifier.Classify(server.Ping, thresholdMs, nearThresholdPercent);
 
         // Replacing the same server instances refreshes the selector without losing its selected object.
         ServerList.ReplaceRange(_cachedServers);

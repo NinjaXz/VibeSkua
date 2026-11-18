@@ -137,6 +137,9 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         ResizeGripOverlay.IsVisible = HotKeys.HostHwnd == IntPtr.Zero;
+        // The resize gutter around the game only serves a standalone window; in a tab it is dead space.
+        if (HotKeys.HostHwnd != IntPtr.Zero)
+            FlashHost.Margin = new global::Avalonia.Thickness(0);
         _mainViewModel = Ioc.Default.GetRequiredService<MainViewModel>();
         _mainMenuVm = Ioc.Default.GetRequiredService<MainMenuViewModel>();
         _flash = Ioc.Default.GetRequiredService<IFlashUtil>();
