@@ -556,7 +556,12 @@ public partial class TabbedHostWindow : Window
                         using JsonDocument locationDocument = JsonDocument.Parse(locationJson);
                         if (locationDocument.RootElement.TryGetProperty("LoggedIn", out JsonElement loggedIn)
                             && loggedIn.ValueKind == JsonValueKind.False)
+                        {
                             loggedOutPids.Add(pid);
+                            // Clear the shared identity record so every host stops treating this
+                            // still-open but logged-out client as an active account.
+                            File.WriteAllText(Path.Combine(dir, $"{pid}.txt"), string.Empty);
+                        }
 
                         ArmyClientLocation? location = JsonSerializer.Deserialize<ArmyClientLocation>(locationJson);
                         if (location != null
@@ -580,6 +585,10 @@ public partial class TabbedHostWindow : Window
                         tabInfo?.AccountReservation?.Dispose();
                         if (tabInfo is not null)
                             tabInfo.AccountReservation = null;
+
+                        updates.RemoveAll(update =>
+                            _tabs.TryGetValue(update.Tab, out TabInfo? updateInfo)
+                            && updateInfo.Process?.Id == pid);
                     }
 
                     foreach (var (pid, location) in locations)
