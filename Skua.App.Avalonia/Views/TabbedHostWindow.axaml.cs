@@ -1295,6 +1295,11 @@ public partial class TabbedHostWindow : Window
 
     private void AccountQuickLaunchLaunch_Click(object? sender, RoutedEventArgs e)
     {
+        LaunchSelectedQuickAccounts();
+    }
+
+    private void LaunchSelectedQuickAccounts()
+    {
         List<string> selectedUsernames = _quickLaunchAccounts
             .Where(account => _quickLaunchSelection.Contains(account.Username))
             .Select(account => account.Username)
@@ -1450,7 +1455,7 @@ public partial class TabbedHostWindow : Window
         else if (e.Key == Key.Enter)
         {
             if (_quickLaunchSelection.Count > 0)
-                AccountQuickLaunchLaunch_Click(sender, new RoutedEventArgs());
+                LaunchSelectedQuickAccounts();
             else
                 FocusQuickLaunchCheckBox(0);
             e.Handled = true;
@@ -1714,7 +1719,7 @@ public partial class TabbedHostWindow : Window
                 }
                 else if (args.Key == Key.Enter)
                 {
-                    AccountQuickLaunchLaunch_Click(sender, new RoutedEventArgs());
+                    LaunchSelectedQuickAccounts();
                     args.Handled = true;
                 }
                 else if (args.Key == Key.Escape)
