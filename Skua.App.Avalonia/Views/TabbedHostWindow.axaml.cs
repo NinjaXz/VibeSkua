@@ -1561,6 +1561,9 @@ public partial class TabbedHostWindow : Window
             settings.ReloadSettings();
             Dictionary<string, AccountData>? savedAccounts = settings.Get<Dictionary<string, AccountData>>("ManagedAccounts");
 
+            // Retry applies only to failures from this batch.
+            _quickLaunchFailed.Clear();
+
             int batchId = ++_quickLaunchBatchId;
             _quickLaunchBatchTotal = accounts.Count;
             _quickLaunchBatchCompleted = 0;
@@ -1569,20 +1572,19 @@ public partial class TabbedHostWindow : Window
 
             foreach (string username in accounts)
             {
-                _quickLaunchFailed.Remove(username);
-                if (savedAccounts == null || !savedAccounts.ContainsKey(username))
-                {
-                    _quickLaunchFailed.Add(username);
-                    _quickLaunchBatchFailed++;
-                    _quickLaunchBatchCompleted++;
-                    continue;
-                }
-
                 TabItem? existingTab = FindExistingAccountTab(username);
                 if (existingTab != null)
                 {
                     FocusAccountTab(existingTab);
                     _quickLaunchBatchAlreadyOpen++;
+                    _quickLaunchBatchCompleted++;
+                    continue;
+                }
+
+                if (savedAccounts == null || !savedAccounts.ContainsKey(username))
+                {
+                    _quickLaunchFailed.Add(username);
+                    _quickLaunchBatchFailed++;
                     _quickLaunchBatchCompleted++;
                     continue;
                 }
@@ -1727,13 +1729,11 @@ public partial class TabbedHostWindow : Window
             if (tabInfo.Process == null || tabInfo.Process.HasExited)
                 continue;
 
-            string? loggedInUsername = GetTabLoggedInUsername(tabEntry.Key, tabInfo, GetTabTitle(tabEntry.Key));
-            if (string.Equals(tabInfo.Username, username, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(loggedInUsername, username, StringComparison.OrdinalIgnoreCase))
+            // A tab title or launch argument is not proof of an authenticated account.
+            string? loggedInUsername = GetProcessLoggedInUsername(tabInfo);
+            if (string.Equals(loggedInUsername, username, StringComparison.OrdinalIgnoreCase))
             {
-                if (!string.IsNullOrWhiteSpace(loggedInUsername))
-                    tabInfo.Username = loggedInUsername.Trim();
-
+                tabInfo.Username = loggedInUsername.Trim();
                 return tabEntry.Key;
             }
         }
@@ -1796,7 +1796,14 @@ public partial class TabbedHostWindow : Window
                 try
                 {
                     using Process process = Process.GetProcessById(processId);
-                    if (process.HasExited)
+                    if (process.HasExited
+                        || !string.Equals(process.ProcessName, Process.GetCurrentProcess().ProcessName, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    // A stale username file can outlive its process and be mistaken for a
+                    // new process after Windows reuses the PID.
+                    DateTime processStartUtc = process.StartTime.ToUniversalTime();
+                    if (File.GetLastWriteTimeUtc(file) < processStartUtc)
                         continue;
 
                     string loggedInUsername = File.ReadAllText(file).Trim();
