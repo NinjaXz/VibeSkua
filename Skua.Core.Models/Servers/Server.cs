@@ -71,10 +71,10 @@ public class Server
     public long Ping { get; set; } = -1;
 
     /// <summary>
-    /// Compact latency indicator calculated from the measured ping and configured thresholds.
+    /// Latency class calculated from the measured ping and configured thresholds; colours the server name.
     /// </summary>
     [JsonIgnore]
-    public string PingIndicator { get; set; } = "▫️";
+    public ServerLatencyStatus LatencyStatus { get; set; } = ServerLatencyStatus.Unknown;
 
     public override string ToString()
     {

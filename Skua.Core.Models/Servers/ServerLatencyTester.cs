@@ -101,13 +101,12 @@ public static class ServerLatencyTester
 
         samples.Sort();
         server.Ping = (long)Math.Round(samples[samples.Count / 2], MidpointRounding.AwayFromZero);
-        ServerLatencyStatus status = ServerLatencyClassifier.Classify(server.Ping, thresholdMs, nearThresholdPercent);
-        server.PingIndicator = ServerLatencyClassifier.GetIndicator(status);
+        server.LatencyStatus = ServerLatencyClassifier.Classify(server.Ping, thresholdMs, nearThresholdPercent);
     }
 
     private static void SetUnavailable(Server server)
     {
         server.Ping = ServerLatencyClassifier.FailedPing;
-        server.PingIndicator = ServerLatencyClassifier.GetIndicator(ServerLatencyStatus.Unavailable);
+        server.LatencyStatus = ServerLatencyStatus.Unavailable;
     }
 }

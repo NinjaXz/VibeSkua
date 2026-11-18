@@ -43,16 +43,4 @@ public static class ServerLatencyClassifier
             ? ServerLatencyStatus.NearThreshold
             : ServerLatencyStatus.Good;
     }
-
-    /// <summary>
-    /// Returns the compact indicator used beside server names.
-    /// </summary>
-    public static string GetIndicator(ServerLatencyStatus status) => status switch
-    {
-        ServerLatencyStatus.Good => "✅",
-        ServerLatencyStatus.NearThreshold => "⚠️",
-        ServerLatencyStatus.High => "🛑",
-        ServerLatencyStatus.Unavailable => "❌",
-        _ => "▫️"
-    };
 }
