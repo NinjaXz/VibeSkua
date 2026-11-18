@@ -519,8 +519,13 @@ public partial class TabbedHostWindow : Window
 
                     foreach (var (tab, username) in updates)
                     {
-                        if (_tabs.TryGetValue(tab, out TabInfo? tInfo) && tInfo.IsCustomNamed)
-                            continue;
+                        if (_tabs.TryGetValue(tab, out TabInfo? tInfo))
+                        {
+                            // Keep the actual logged-in identity even when the tab has a custom display name.
+                            tInfo.Username = username;
+                            if (tInfo.IsCustomNamed)
+                                continue;
+                        }
 
                         if (tab.Header is StackPanel headerPanel)
                         {
@@ -1296,12 +1301,25 @@ public partial class TabbedHostWindow : Window
                     continue;
                 }
 
-                TabItem? existingTab = _tabs
-                    .Where(tab => tab.Value.Process != null
-                        && !tab.Value.Process.HasExited
-                        && string.Equals(tab.Value.Username, username, StringComparison.OrdinalIgnoreCase))
-                    .Select(tab => tab.Key)
-                    .FirstOrDefault();
+                TabItem? existingTab = null;
+                foreach (KeyValuePair<TabItem, TabInfo> tabEntry in _tabs)
+                {
+                    TabInfo tabInfo = tabEntry.Value;
+                    if (tabInfo.Process == null || tabInfo.Process.HasExited)
+                        continue;
+
+                    // The process-side username file also covers tabs opened manually or before polling updates TabInfo.
+                    string? loggedInUsername = GetTabLoggedInUsername(tabEntry.Key, tabInfo, GetTabTitle(tabEntry.Key));
+                    if (string.Equals(tabInfo.Username, username, StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(loggedInUsername, username, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (!string.IsNullOrWhiteSpace(loggedInUsername))
+                            tabInfo.Username = loggedInUsername.Trim();
+
+                        existingTab = tabEntry.Key;
+                        break;
+                    }
+                }
 
                 if (existingTab != null)
                 {
