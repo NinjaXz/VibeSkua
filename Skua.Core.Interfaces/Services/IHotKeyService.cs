@@ -9,7 +9,7 @@ public interface IHotKeyService
     List<T> GetHotKeys<T>()
         where T : IHotKey, new();
 
-    List<string> GetAvailableHotKeyBindings();
+    List<string> GetAvailableHotKeyBindings() => new List<string>();
 
     HotKey? ParseToHotKey(string keyGesture);
 }
