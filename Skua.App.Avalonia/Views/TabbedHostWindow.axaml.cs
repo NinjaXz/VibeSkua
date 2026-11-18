@@ -27,6 +27,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Text.Json;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -245,8 +246,40 @@ public partial class TabbedHostWindow : Window
         public IntPtr ChildHwnd { get; set; } = IntPtr.Zero;
         public string? Username { get; set; }
         public Action<bool>? LaunchCompletion { get; set; }
+        public FileStream? AccountReservation { get; set; }
         public bool IsThrottled { get; set; } = false;
         public bool IsCustomNamed { get; set; } = false;
+    }
+
+    private static FileStream? TryAcquireAccountReservation(string username)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "VibeSkuaAccountReservations");
+        string accountKey = Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(username.Trim().ToUpperInvariant())));
+        string reservationPath = Path.Combine(directory, $"{accountKey}.lock");
+
+        try
+        {
+            Directory.CreateDirectory(directory);
+            FileStream reservation = new(reservationPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            reservation.SetLength(0);
+            using (StreamWriter writer = new(reservation, leaveOpen: true))
+            {
+                writer.WriteLine($"{Environment.ProcessId}|{DateTime.UtcNow:O}");
+                writer.Flush();
+            }
+            reservation.Position = 0;
+            return reservation;
+        }
+        catch (IOException)
+        {
+            // Another VibeSkua host currently owns this account reservation.
+            return null;
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Trace.WriteLine($"Could not reserve account '{username}': {ex.Message}");
+            return null;
+        }
     }
 
     public static TabbedHostWindow? Instance { get; private set; }
@@ -3531,7 +3564,7 @@ public partial class TabbedHostWindow : Window
         AddNewInstance(ParseRawCommandLine(rawArgs));
     }
 
-    public void AddNewInstance(string[]? clientArgs = null, Action<bool>? launchCompletion = null)
+    public bool AddNewInstance(string[]? clientArgs = null, Action<bool>? launchCompletion = null)
     {
         clientArgs ??= Array.Empty<string>();
 
@@ -3566,6 +3599,23 @@ public partial class TabbedHostWindow : Window
                     tabName = accountUsername;
                 }
                 break;
+            }
+        }
+
+        FileStream? accountReservation = null;
+        if (!string.IsNullOrWhiteSpace(accountUsername))
+        {
+            if (FindExistingAccountTab(accountUsername) is not null || IsExternalAccountRunning(accountUsername))
+            {
+                launchCompletion?.Invoke(false);
+                return false;
+            }
+
+            accountReservation = TryAcquireAccountReservation(accountUsername);
+            if (accountReservation is null)
+            {
+                launchCompletion?.Invoke(false);
+                return false;
             }
         }
 
@@ -3639,7 +3689,12 @@ public partial class TabbedHostWindow : Window
         closeBtn.PointerEntered += (s, ev) => { closeTxt.Foreground = Brushes.White; closeBtn.Background = new SolidColorBrush(Color.Parse("#EF4444")); };
         closeBtn.PointerExited += (s, ev) => { closeTxt[!TextBlock.ForegroundProperty] = new global::Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SkuaMutedTextBrush"); closeBtn.Background = Brushes.Transparent; };
 
-        TabInfo info = new() { Username = accountUsername, LaunchCompletion = launchCompletion };
+        TabInfo info = new()
+        {
+            Username = accountUsername,
+            LaunchCompletion = launchCompletion,
+            AccountReservation = accountReservation
+        };
 
         Action closeEditMode = () =>
         {
@@ -3708,6 +3763,9 @@ public partial class TabbedHostWindow : Window
         {
             if (_isClosing || !_tabs.ContainsKey(newTab))
             {
+                info.AccountReservation?.Dispose();
+                info.AccountReservation = null;
+                CompleteTabLaunch(info, false);
                 _isSpawning = false;
                 ProcessNextSpawn();
                 return;
@@ -3746,6 +3804,8 @@ public partial class TabbedHostWindow : Window
                 Dispatcher.UIThread.Post(() =>
                 {
                     CompleteTabLaunch(info, false);
+                    info.AccountReservation?.Dispose();
+                    info.AccountReservation = null;
                     if (!_isClosing)
                         CloseTab(newTab);
                     UpdateQuickLaunchStatuses();
@@ -3760,6 +3820,8 @@ public partial class TabbedHostWindow : Window
             {
                 p.Dispose();
                 CompleteTabLaunch(info, false);
+                info.AccountReservation?.Dispose();
+                info.AccountReservation = null;
                 _isSpawning = false;
                 Trace.WriteLine($"VibeSkua failed to start child process for tab '{tabName}': {ex}");
                 Dispatcher.UIThread.Post(() =>
@@ -3772,6 +3834,28 @@ public partial class TabbedHostWindow : Window
             }
 
             info.Process = p;
+
+            // A client that never reports a logged-in identity must not hold the account
+            // reservation forever. Terminate the stalled child so a retry can acquire it.
+            if (!string.IsNullOrWhiteSpace(accountUsername))
+            {
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(TimeSpan.FromMinutes(3));
+                    if (p.HasExited || !string.IsNullOrWhiteSpace(GetProcessLoggedInUsername(info)))
+                        return;
+
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        if (p.HasExited || !string.IsNullOrWhiteSpace(GetProcessLoggedInUsername(info)))
+                            return;
+
+                        CompleteTabLaunch(info, false);
+                        try { p.Kill(entireProcessTree: true); } catch { }
+                    });
+                });
+            }
+
             try
             {
                 EnsureChildJobObject();
@@ -3953,6 +4037,7 @@ public partial class TabbedHostWindow : Window
         });
 
         #endregion Tab Interactions
+        return true;
     }
 
     #region Group Assignment Helper
