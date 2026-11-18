@@ -538,9 +538,15 @@ public partial class TabbedHostWindow : Window
                     string file = Path.Combine(dir, $"{pid}.txt");
                     if (File.Exists(file))
                     {
-                        string username = File.ReadAllText(file).Trim();
-                        if (!string.IsNullOrWhiteSpace(username))
-                            updates.Add((tab, username));
+                        using Process process = Process.GetProcessById(pid);
+                        if (!process.HasExited
+                            && string.Equals(process.ProcessName, Process.GetCurrentProcess().ProcessName, StringComparison.OrdinalIgnoreCase)
+                            && File.GetLastWriteTimeUtc(file) >= process.StartTime.ToUniversalTime())
+                        {
+                            string username = File.ReadAllText(file).Trim();
+                            if (!string.IsNullOrWhiteSpace(username))
+                                updates.Add((tab, username));
+                        }
                     }
 
                     string locationFile = Path.Combine(dir, $"{pid}.location.json");
@@ -1594,7 +1600,7 @@ public partial class TabbedHostWindow : Window
                     AccountQuickLaunchProgressText.Text = timedOutUsernames.Count > 0
                         ? $"New window launch timed out · {loggedIn} running · {timedOutUsernames.Count} timed out · {alreadyRunning} already running · {failed} unavailable/undelivered"
                         : $"New window ready · {loggedIn} accounts running · {alreadyRunning} already running · {failed} unavailable/undelivered";
-                    AccountQuickLaunchRetryButton.IsVisible = totalFailed > 0 || _quickLaunchFailed.Count > 0;
+                    AccountQuickLaunchRetryButton.IsVisible = _quickLaunchFailed.Count > 0;
                 });
             });
         }
