@@ -3167,6 +3167,7 @@ public partial class TabbedHostWindow : Window
 
         if (_tabs.TryGetValue(tab, out TabInfo? info))
         {
+            CompleteTabLaunch(info, false);
             _tabs.Remove(tab);
             Task.Run(() =>
             {
