@@ -23,6 +23,8 @@ public partial class HotKeysViewModel : BotControlViewModelBase, IManagedWindow
         _settingsService = settingsService;
         _dialogService = dialogService;
         HotKeys = new ObservableCollection<HotKeyItemViewModel>(_hotKeyService.GetHotKeys<HotKeyItemViewModel>());
+        foreach (HotKeyItemViewModel hotKey in HotKeys)
+            hotKey.Description = global::Skua.Core.AppStartup.HotKeys.GetDescription(hotKey.Binding);
         HotKeys.CollectionChanged += (_, _) => OnPropertyChanged(nameof(FilteredHotKeys));
         AddCustomCommand = new RelayCommand(AddCustomAction);
         _hotKeyService.Reload();
