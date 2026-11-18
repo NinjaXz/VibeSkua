@@ -220,6 +220,8 @@
                                                        Grid.Column="0"
                                                        FontSize="10"
                                                        VerticalAlignment="Center"
+                                                       TextWrapping="Wrap"
+                                                       MinWidth="0"
                                                        Foreground="{DynamicResource SkuaTextBrush}"
                                                        Text="Ready" />
                                             <Button x:Name="AccountQuickLaunchRetryButton"
