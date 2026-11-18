@@ -1312,6 +1312,25 @@ public partial class TabbedHostWindow : Window
         FilterQuickLaunchAccounts();
     }
 
+    private void AccountQuickLaunchNewWindow_Click(object? sender, RoutedEventArgs e)
+    {
+        LaunchSelectedQuickAccountsInNewWindow();
+    }
+
+    private void LaunchSelectedQuickAccountsInNewWindow()
+    {
+        List<string> selectedUsernames = _quickLaunchAccounts
+            .Where(account => _quickLaunchSelection.Contains(account.Username))
+            .Select(account => account.Username)
+            .ToList();
+        if (selectedUsernames.Count == 0)
+            return;
+
+        LaunchAccountsInNewWindow(selectedUsernames);
+        _quickLaunchSelection.Clear();
+        FilterQuickLaunchAccounts();
+    }
+
     private void AccountQuickLaunchGroupLaunch_Click(object? sender, RoutedEventArgs e)
     {
         if (AccountQuickLaunchGroupCombo.SelectedItem is not ComboBoxItem selectedItem
@@ -1322,6 +1341,178 @@ public partial class TabbedHostWindow : Window
             string.Equals(item.Name, groupName, StringComparison.OrdinalIgnoreCase));
         if (group?.Accounts != null)
             LaunchAccountBatch(group.Accounts);
+    }
+
+    private void AccountQuickLaunchGroupNewWindow_Click(object? sender, RoutedEventArgs e)
+    {
+        if (AccountQuickLaunchGroupCombo.SelectedItem is not ComboBoxItem selectedItem
+            || selectedItem.Tag is not string groupName)
+            return;
+
+        GroupData? group = _quickLaunchGroups.FirstOrDefault(item =>
+            string.Equals(item.Name, groupName, StringComparison.OrdinalIgnoreCase));
+        if (group?.Accounts != null)
+            LaunchAccountsInNewWindow(group.Accounts);
+    }
+
+    private void LaunchAccountsInNewWindow(IEnumerable<string> usernames)
+    {
+        List<string> accounts = usernames
+            .Where(username => !string.IsNullOrWhiteSpace(username))
+            .Select(username => username.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (accounts.Count == 0)
+            return;
+
+        try
+        {
+            ISettingsService settings = Ioc.Default.GetRequiredService<ISettingsService>();
+            settings.ReloadSettings();
+            Dictionary<string, AccountData>? savedAccounts = settings.Get<Dictionary<string, AccountData>>("ManagedAccounts");
+            string defaultServer = settings.Get("LastServer", "Twilly") ?? "Twilly";
+
+            List<string[]> launchArguments = [];
+            int alreadyRunning = 0;
+            int unavailable = 0;
+
+            foreach (string username in accounts)
+            {
+                // Never duplicate an account that is already running in this host.
+                if (FindExistingAccountTab(username) is not null)
+                {
+                    alreadyRunning++;
+                    continue;
+                }
+
+                if (savedAccounts is null || !savedAccounts.TryGetValue(username, out AccountData? account) || account is null)
+                {
+                    unavailable++;
+                    continue;
+                }
+
+                string password = account.Password ?? string.Empty;
+                if (password.StartsWith("enc:", StringComparison.Ordinal))
+                {
+                    try
+                    {
+                        password = Skua.Core.Utils.CryptoUtils.Decrypt(password);
+                    }
+                    catch (Exception ex)
+                    {
+                        Trace.WriteLine($"Could not decrypt saved password for '{username}': {ex.Message}");
+                        unavailable++;
+                        continue;
+                    }
+                }
+
+                launchArguments.Add(["-u", username, "-p", password, "-s", defaultServer]);
+            }
+
+            if (launchArguments.Count == 0)
+            {
+                AccountQuickLaunchProgressPanel.IsVisible = true;
+                AccountQuickLaunchProgressBar.Value = 100;
+                AccountQuickLaunchProgressText.Text = alreadyRunning > 0
+                    ? $"No new window needed · {alreadyRunning} already running · {unavailable} unavailable"
+                    : $"No accounts available to launch · {unavailable} unavailable";
+                AccountQuickLaunchRetryButton.IsVisible = false;
+                return;
+            }
+
+            string hostInstanceId = Guid.NewGuid().ToString("N");
+            string executablePath = Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(executablePath))
+                throw new InvalidOperationException("Could not locate the VibeSkua executable.");
+
+            ProcessStartInfo startInfo = new();
+            if (executablePath.EndsWith("dotnet.exe", StringComparison.OrdinalIgnoreCase)
+                || executablePath.EndsWith("dotnet", StringComparison.OrdinalIgnoreCase))
+            {
+                startInfo.FileName = executablePath;
+                startInfo.ArgumentList.Add(Path.Combine(AppContext.BaseDirectory, "VibeSkua.dll"));
+            }
+            else
+            {
+                startInfo.FileName = executablePath;
+            }
+
+            startInfo.ArgumentList.Add("--host-instance");
+            startInfo.ArgumentList.Add(hostInstanceId);
+            foreach (string argument in launchArguments[0])
+                startInfo.ArgumentList.Add(argument);
+
+            using Process? newHost = Process.Start(startInfo);
+            if (newHost is null)
+                throw new InvalidOperationException("Windows did not return a process for the new VibeSkua window.");
+
+            AccountQuickLaunchProgressPanel.IsVisible = true;
+            AccountQuickLaunchProgressBar.Value = 0;
+            AccountQuickLaunchProgressText.Text = "Opening separate VibeSkua window...";
+            AccountQuickLaunchRetryButton.IsVisible = false;
+
+            _ = Task.Run(async () =>
+            {
+                int queued = 1;
+                int failed = unavailable;
+                for (int i = 1; i < launchArguments.Count; i++)
+                {
+                    bool sent = await SendClientArgsToHostInstanceAsync(hostInstanceId, launchArguments[i]);
+                    if (sent)
+                    {
+                        queued++;
+                    }
+                    else
+                    {
+                        failed += launchArguments.Count - i;
+                        break;
+                    }
+                }
+
+                Dispatcher.UIThread.Post(() =>
+                {
+                    AccountQuickLaunchProgressBar.Value = 100;
+                    AccountQuickLaunchProgressText.Text =
+                        $"New window opened · {queued} accounts queued · {alreadyRunning} already running · {failed} unavailable/failed";
+                });
+            });
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine($"Failed to open a separate VibeSkua window: {ex}");
+            AccountQuickLaunchProgressPanel.IsVisible = true;
+            AccountQuickLaunchProgressText.Text = "Could not open a separate VibeSkua window.";
+            AccountQuickLaunchRetryButton.IsVisible = false;
+        }
+    }
+
+    private static async Task<bool> SendClientArgsToHostInstanceAsync(string hostInstanceId, string[] clientArgs)
+    {
+        string pipeName = $"VibeSkuaTabHostPipe-{hostInstanceId}";
+        string payload = JsonSerializer.Serialize(clientArgs);
+
+        for (int attempt = 0; attempt < 30; attempt++)
+        {
+            try
+            {
+                using NamedPipeClientStream pipeClient = new(".", pipeName, PipeDirection.Out, PipeOptions.Asynchronous);
+                await pipeClient.ConnectAsync(500);
+                using StreamWriter writer = new(pipeClient);
+                await writer.WriteLineAsync(payload);
+                await writer.FlushAsync();
+                return true;
+            }
+            catch (TimeoutException)
+            {
+                await Task.Delay(200);
+            }
+            catch (IOException)
+            {
+                await Task.Delay(200);
+            }
+        }
+
+        return false;
     }
 
     private void AccountQuickLaunchRetry_Click(object? sender, RoutedEventArgs e)
@@ -1577,6 +1768,7 @@ public partial class TabbedHostWindow : Window
 
             AccountQuickLaunchGroupCombo.SelectedIndex = _quickLaunchGroups.Count > 0 ? 0 : -1;
             AccountQuickLaunchGroupButton.IsEnabled = _quickLaunchGroups.Count > 0;
+            AccountQuickLaunchGroupNewWindowButton.IsEnabled = _quickLaunchGroups.Count > 0;
 
             if (savedAccounts != null)
             {
@@ -1750,6 +1942,7 @@ public partial class TabbedHostWindow : Window
             ? "Launch Selected"
             : $"Launch {selectedCount} {(selectedCount == 1 ? "Account" : "Accounts")}";
         AccountQuickLaunchLaunchButton.IsEnabled = selectedCount > 0;
+        AccountQuickLaunchNewWindowButton.IsEnabled = selectedCount > 0;
     }
 
     private void ScrollTabsLeftButton_Click(object? sender, RoutedEventArgs e)
