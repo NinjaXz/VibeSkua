@@ -1617,9 +1617,12 @@ public partial class TabbedHostWindow : Window
         catch (Exception ex)
         {
             Trace.WriteLine($"Failed to open a separate VibeSkua window: {ex}");
+            foreach (string username in accounts)
+                _quickLaunchFailed.Add(username);
             AccountQuickLaunchProgressPanel.IsVisible = true;
-            AccountQuickLaunchProgressText.Text = "Could not open a separate VibeSkua window.";
-            AccountQuickLaunchRetryButton.IsVisible = false;
+            AccountQuickLaunchProgressBar.Value = 100;
+            AccountQuickLaunchProgressText.Text = "Could not open a separate VibeSkua window. All requested accounts failed.";
+            AccountQuickLaunchRetryButton.IsVisible = _quickLaunchFailed.Count > 0;
         }
     }
 
