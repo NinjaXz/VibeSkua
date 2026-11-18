@@ -142,6 +142,7 @@ public class HotKeys
     {
         return binding switch
         {
+            "OpenQuickLaunch" => "Opens Quick Account Launch to launch saved accounts or groups.",
             // IScriptOption
             "ToggleRejectAllDrops" => "When enabled, will reject all items that drop.",
             "ToggleAggroAllMonsters" => "Provokes all monsters in the MAP, causing them to attack you simultaneously.",
