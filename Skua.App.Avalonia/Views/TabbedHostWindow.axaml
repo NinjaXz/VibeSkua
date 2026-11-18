@@ -127,21 +127,130 @@
                     </Button>
                 </Grid>
 
-                <!-- Add Tab Button -->
-                <Button x:Name="AddTabButton"
-                        Grid.Column="1"
-                        Click="AddTabButton_Click"
-                        Width="28"
-                        Height="28"
-                        VerticalAlignment="Center"
-                        Margin="4,0,8,0"
-                        Padding="0"
-                        Classes="skua-button"
-                        CornerRadius="6"
-                        Cursor="Hand"
-                        ToolTip.Tip="Open New Client Tab">
-                    <materialIcons:MaterialIcon Kind="Plus" Width="14" Height="14" Foreground="{DynamicResource SkuaAccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Button>
+                <!-- New Tab & Quick Manager Account Launch -->
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center"
+                            Margin="4,0,8,0"
+                            Spacing="3">
+                    <Button x:Name="AddTabButton"
+                            Click="AddTabButton_Click"
+                            Width="28"
+                            Height="28"
+                            VerticalAlignment="Center"
+                            Padding="0"
+                            Classes="skua-button"
+                            CornerRadius="6"
+                            Cursor="Hand"
+                            ToolTip.Tip="Open New Client Tab">
+                        <materialIcons:MaterialIcon Kind="Plus" Width="14" Height="14" Foreground="{DynamicResource SkuaAccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Button>
+                    <ToggleButton x:Name="AccountLaunchToggle"
+                                  Width="24"
+                                  Height="28"
+                                  VerticalAlignment="Center"
+                                  Padding="0"
+                                  Classes="skua-button"
+                                  CornerRadius="6"
+                                  Cursor="Hand"
+                                  Click="AccountLaunchToggle_Click"
+                                  ToolTip.Tip="Launch saved Manager accounts">
+                        <materialIcons:MaterialIcon Kind="ChevronDown" Width="13" Height="13" Foreground="{DynamicResource SkuaTextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </ToggleButton>
+                    <Popup x:Name="AccountQuickLaunchPopup"
+                           Placement="Bottom"
+                           IsLightDismissEnabled="True"
+                           IsOpen="{Binding IsChecked, ElementName=AccountLaunchToggle, Mode=TwoWay}"
+                           PlacementTarget="{Binding ElementName=AccountLaunchToggle}">
+                        <Border Width="340"
+                                Background="{DynamicResource SkuaSurfaceBrush}"
+                                BorderBrush="{DynamicResource SkuaBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="12">
+                            <StackPanel Spacing="9">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Quick Account Launch"
+                                               FontSize="13"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource SkuaTextBrush}" />
+                                    <TextBlock x:Name="AccountQuickLaunchCountText"
+                                               Text="Loading saved accounts..."
+                                               FontSize="10"
+                                               Foreground="{DynamicResource SkuaMutedTextBrush}" />
+                                </StackPanel>
+                                <TextBox x:Name="AccountQuickLaunchSearch"
+                                         Height="34"
+                                         Watermark="Search by username or display name"
+                                         TextChanged="AccountQuickLaunchSearch_TextChanged" />
+                                <Grid ColumnDefinitions="*,Auto,Auto"
+                                      ColumnSpacing="5">
+                                    <TextBlock x:Name="AccountQuickLaunchSelectionText"
+                                               Grid.Column="0"
+                                               VerticalAlignment="Center"
+                                               FontSize="11"
+                                               Foreground="{DynamicResource SkuaMutedTextBrush}"
+                                               Text="0 selected" />
+                                    <Button Grid.Column="1"
+                                            Height="26"
+                                            Padding="7,0"
+                                            Classes="skua-button"
+                                            Content="Select All"
+                                            Click="AccountQuickLaunchSelectAll_Click" />
+                                    <Button Grid.Column="2"
+                                            Height="26"
+                                            Padding="7,0"
+                                            Classes="skua-button"
+                                            Content="Clear"
+                                            Click="AccountQuickLaunchClear_Click" />
+                                </Grid>
+                                <Border Background="{DynamicResource SkuaSurfaceAltBrush}"
+                                        BorderBrush="{DynamicResource SkuaBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="4">
+                                    <ScrollViewer MaxHeight="260"
+                                                  VerticalScrollBarVisibility="Auto"
+                                                  HorizontalScrollBarVisibility="Disabled">
+                                        <Grid MinHeight="72">
+                                            <TextBlock x:Name="AccountQuickLaunchEmptyText"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       TextAlignment="Center"
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource SkuaMutedTextBrush}"
+                                                       Text="No Manager accounts saved yet."
+                                                       IsVisible="False"
+                                                       Margin="8" />
+                                            <StackPanel x:Name="AccountQuickLaunchRows"
+                                                        Spacing="2" />
+                                        </Grid>
+                                    </ScrollViewer>
+                                </Border>
+                                <Button x:Name="AccountQuickLaunchLaunchButton"
+                                        Height="34"
+                                        Classes="skua-button"
+                                        HorizontalContentAlignment="Center"
+                                        IsEnabled="False"
+                                        Click="AccountQuickLaunchLaunch_Click">
+                                    <StackPanel Orientation="Horizontal"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Spacing="6">
+                                        <materialIcons:MaterialIcon Kind="LoginVariant"
+                                                                    Width="15"
+                                                                    Height="15"
+                                                                    Foreground="{DynamicResource SkuaTextBrush}" />
+                                        <TextBlock x:Name="AccountQuickLaunchLaunchText"
+                                                   Text="Launch Selected"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="12" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+                    </Popup>
+                </StackPanel>
 
                 <!-- Quick Multi-Client Actions (Army Control & Grid View) -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,8,0" Spacing="6" VerticalAlignment="Center">
