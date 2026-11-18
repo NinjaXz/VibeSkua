@@ -1974,6 +1974,10 @@ public partial class TabbedHostWindow : Window
                 {
                     // Ignore files that cannot be read.
                 }
+                catch (System.ComponentModel.Win32Exception)
+                {
+                    // The process may exit or deny access while its identity is checked.
+                }
                 catch (JsonException)
                 {
                     // Ignore malformed location records.
