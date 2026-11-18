@@ -604,6 +604,8 @@ public partial class TabbedHostWindow : Window
 
                             // Keep the actual logged-in identity even when the tab has a custom display name.
                             tInfo.Username = username;
+                            if (tInfo.AccountReservation is null)
+                                tInfo.AccountReservation = TryAcquireAccountReservation(username);
                             if (tInfo.IsCustomNamed)
                                 continue;
                         }
