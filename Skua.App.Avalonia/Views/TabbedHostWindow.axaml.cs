@@ -1594,7 +1594,6 @@ public partial class TabbedHostWindow : Window
                     foreach (string username in undeliveredUsernames)
                         _quickLaunchFailed.Add(username);
 
-                    int totalFailed = failed + timedOutUsernames.Count;
                     UpdateQuickLaunchStatuses();
                     AccountQuickLaunchProgressBar.Value = 100;
                     AccountQuickLaunchProgressText.Text = timedOutUsernames.Count > 0
