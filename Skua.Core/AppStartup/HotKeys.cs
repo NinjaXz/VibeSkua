@@ -208,7 +208,6 @@ public class HotKeys
             "LoadScript" => "Opens the file browser to load a new script.",
             "OpenBank" => "Opens your bank interface.",
             "SearchScripts" => "Opens the Script Repo to search for scripts.",
-            "OpenQuickLaunch" => "Opens the Quick Account Launch picker.",
             "JumpToHome" => "Jumps your character to their home.",
             
             // Army Control
