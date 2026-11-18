@@ -1630,9 +1630,32 @@ public partial class TabbedHostWindow : Window
             if (_isClosing)
                 return;
 
+            // A global hotkey can be triggered while an embedded game window owns
+            // keyboard focus. Activate the host before opening and focusing the popup.
+            if (WindowState == WindowState.Minimized)
+                WindowState = WindowState.Normal;
+
+            Show();
+            Activate();
+            Topmost = true;
+            Topmost = false;
+            Focus();
+
             RefreshQuickLaunchAccounts();
             AccountLaunchToggle.IsChecked = true;
-            Dispatcher.UIThread.Post(() => AccountQuickLaunchSearch.Focus(), DispatcherPriority.Input);
+
+            // Popup content is created after IsOpen changes, so focus it on the
+            // following dispatcher pass rather than leaving focus in the game client.
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (_isClosing || !AccountQuickLaunchPopup.IsOpen)
+                    return;
+
+                Activate();
+                Topmost = true;
+                Topmost = false;
+                AccountQuickLaunchSearch.Focus();
+            }, DispatcherPriority.Input);
         }, DispatcherPriority.Input);
     }
 
