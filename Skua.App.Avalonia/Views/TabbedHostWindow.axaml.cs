@@ -957,7 +957,7 @@ public partial class TabbedHostWindow : Window
                 {
                     pipeServer = new NamedPipeServerStream(
                         App.HostPipeName,
-                        PipeDirection.In,
+                        PipeDirection.InOut,
                         NamedPipeServerStream.MaxAllowedServerInstances,
                         PipeTransmissionMode.Byte,
                         PipeOptions.Asynchronous);
@@ -1025,18 +1025,29 @@ public partial class TabbedHostWindow : Window
                             }
                             else
                             {
+                                bool launchRequest = line.StartsWith("LAUNCH|", StringComparison.Ordinal);
+                                string requestPayload = launchRequest ? line["LAUNCH|".Length..] : line;
                                 string[]? parsedArgs = null;
                                 try
                                 {
-                                    if (line.TrimStart().StartsWith("["))
-                                    {
-                                        parsedArgs = System.Text.Json.JsonSerializer.Deserialize<string[]>(line);
-                                    }
+                                    if (launchRequest || requestPayload.TrimStart().StartsWith("["))
+                                        parsedArgs = JsonSerializer.Deserialize<string[]>(requestPayload);
                                 }
-                                catch { }
+                                catch (JsonException) { }
 
-                                parsedArgs ??= ParseRawCommandLine(line);
-                                Dispatcher.UIThread.Post(() => AddNewInstance(parsedArgs));
+                                if (launchRequest)
+                                {
+                                    bool queued = parsedArgs is not null
+                                        && await Dispatcher.UIThread.InvokeAsync(() => AddNewInstance(parsedArgs));
+                                    using StreamWriter writer = new(pipeServer, leaveOpen: true);
+                                    await writer.WriteLineAsync(queued ? "ACK" : "NACK");
+                                    await writer.FlushAsync();
+                                }
+                                else
+                                {
+                                    parsedArgs ??= ParseRawCommandLine(line);
+                                    Dispatcher.UIThread.Post(() => AddNewInstance(parsedArgs));
+                                }
                             }
                         }
                     }
@@ -1397,6 +1408,8 @@ public partial class TabbedHostWindow : Window
         if (accounts.Count == 0)
             return;
 
+        _quickLaunchFailed.Clear();
+
         try
         {
             ISettingsService settings = Ioc.Default.GetRequiredService<ISettingsService>();
@@ -1506,11 +1519,25 @@ public partial class TabbedHostWindow : Window
                     .Take(queued)
                     .Select(arguments => arguments[1])
                     .ToList();
+                List<string> undeliveredUsernames = launchArguments
+                    .Skip(queued)
+                    .Select(arguments => arguments[1])
+                    .ToList();
+
+                Dispatcher.UIThread.Post(() =>
+                {
+                    foreach (string username in queuedUsernames)
+                        _quickLaunchPending.Add(username);
+                    foreach (string username in undeliveredUsernames)
+                        _quickLaunchFailed.Add(username);
+                    UpdateQuickLaunchStatuses();
+                });
 
                 int loggedIn = 0;
+                HashSet<string> runningAccounts = new(StringComparer.OrdinalIgnoreCase);
                 for (int elapsedSeconds = 0; elapsedSeconds < 180 && loggedIn < queuedUsernames.Count; elapsedSeconds++)
                 {
-                    HashSet<string> runningAccounts = GetRunningAccountUsernames();
+                    runningAccounts = GetRunningAccountUsernames();
                     loggedIn = queuedUsernames.Count(runningAccounts.Contains);
                     int currentLoggedIn = loggedIn;
                     int currentStarting = queuedUsernames.Count - currentLoggedIn;
@@ -1532,6 +1559,25 @@ public partial class TabbedHostWindow : Window
                     if (currentStarting > 0)
                         await Task.Delay(1000);
                 }
+
+                List<string> timedOutUsernames = queuedUsernames
+                    .Where(username => !runningAccounts.Contains(username))
+                    .ToList();
+                Dispatcher.UIThread.Post(() =>
+                {
+                    foreach (string username in queuedUsernames)
+                        _quickLaunchPending.Remove(username);
+                    foreach (string username in timedOutUsernames)
+                        _quickLaunchFailed.Add(username);
+
+                    int totalFailed = failed + timedOutUsernames.Count;
+                    UpdateQuickLaunchStatuses();
+                    AccountQuickLaunchProgressBar.Value = 100;
+                    AccountQuickLaunchProgressText.Text = timedOutUsernames.Count > 0
+                        ? $"New window launch timed out · {loggedIn} running · {timedOutUsernames.Count} timed out · {alreadyRunning} already running · {failed} unavailable/undelivered"
+                        : $"New window ready · {loggedIn} accounts running · {alreadyRunning} already running · {failed} unavailable/undelivered";
+                    AccountQuickLaunchRetryButton.IsVisible = totalFailed > 0 || _quickLaunchFailed.Count > 0;
+                });
             });
         }
         catch (Exception ex)
@@ -1546,18 +1592,21 @@ public partial class TabbedHostWindow : Window
     private static async Task<bool> SendClientArgsToHostInstanceAsync(string hostInstanceId, string[] clientArgs)
     {
         string pipeName = $"VibeSkuaTabHostPipe-{hostInstanceId}";
-        string payload = JsonSerializer.Serialize(clientArgs);
+        string payload = $"LAUNCH|{JsonSerializer.Serialize(clientArgs)}";
 
         for (int attempt = 0; attempt < 30; attempt++)
         {
             try
             {
-                using NamedPipeClientStream pipeClient = new(".", pipeName, PipeDirection.Out, PipeOptions.Asynchronous);
+                using NamedPipeClientStream pipeClient = new(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
                 await pipeClient.ConnectAsync(500);
-                using StreamWriter writer = new(pipeClient);
+                using StreamWriter writer = new(pipeClient, leaveOpen: true);
                 await writer.WriteLineAsync(payload);
                 await writer.FlushAsync();
-                return true;
+
+                using StreamReader reader = new(pipeClient, leaveOpen: true);
+                string? acknowledgement = await reader.ReadLineAsync();
+                return string.Equals(acknowledgement, "ACK", StringComparison.Ordinal);
             }
             catch (TimeoutException)
             {
