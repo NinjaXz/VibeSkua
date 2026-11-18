@@ -130,7 +130,8 @@
 
       <Grid Grid.Row="1"
             Background="#141414">
-        <!-- Keep a native resize gutter clear of the Flash child HWND on the left, right, and bottom edges. -->
+        <!-- Keep a native resize gutter clear of the Flash child HWND on the left, right, and bottom edges.
+             Standalone only: MainWindow drops it in a tab, where the parent host owns resizing. -->
         <controls:WinFormsFlashHost x:Name="FlashHost" Margin="14,0,14,14" IsVisible="False" />
         <ProgressBar x:Name="LoadingBar"
                      Width="150"
