@@ -127,7 +127,7 @@ public class HotKeyService : IHotKeyService, IDisposable
             string binding = split[0];
             string gesture = split.Length > 1 ? split[1] : string.Empty;
 
-            if (!_hotKeys.ContainsKey(binding) && !registeredActions.ContainsKey(binding))
+            if (!_hotKeys.ContainsKey(binding) && !registeredActions.ContainsKey(binding) && !binding.Equals("OpenQuickLaunch", StringComparison.OrdinalIgnoreCase))
                 continue;
 
             // Keep unassigned actions visible so users can assign a key instead of losing them from the editor.
@@ -200,7 +200,7 @@ public class HotKeyService : IHotKeyService, IDisposable
                 if (parts.Length == 0 || !parts[0].Equals(name, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                if (parts.Length < 2 || string.IsNullOrWhiteSpace(parts[1]))
+                if (parts.Length < 2 || string.IsNullOrWhiteSpace(parts[1]) || parts[1].Equals("Unassigned", StringComparison.OrdinalIgnoreCase))
                     hotkeys[i] = $"{name}|{gesture}";
                 return;
             }
