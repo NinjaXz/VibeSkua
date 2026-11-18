@@ -244,6 +244,7 @@ public partial class TabbedHostWindow : Window
         public Process Process { get; set; } = null!;
         public IntPtr ChildHwnd { get; set; } = IntPtr.Zero;
         public string? Username { get; set; }
+        public Action<bool>? LaunchCompletion { get; set; }
         public bool IsThrottled { get; set; } = false;
         public bool IsCustomNamed { get; set; } = false;
     }
@@ -294,7 +295,17 @@ public partial class TabbedHostWindow : Window
     private Queue<Action> _spawnQueue = new Queue<Action>();
     private bool _isSpawning = false;
     private readonly List<(string Username, string DisplayName)> _quickLaunchAccounts = new();
+    private readonly List<GroupData> _quickLaunchGroups = new();
     private readonly HashSet<string> _quickLaunchSelection = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _quickLaunchPending = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _quickLaunchFailed = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<CheckBox> _quickLaunchCheckBoxes = new();
+    private readonly Dictionary<string, (Border Bubble, TextBlock Text)> _quickLaunchStatusBubbles = new(StringComparer.OrdinalIgnoreCase);
+    private int _quickLaunchBatchId;
+    private int _quickLaunchBatchTotal;
+    private int _quickLaunchBatchCompleted;
+    private int _quickLaunchBatchAlreadyOpen;
+    private int _quickLaunchBatchFailed;
 
     private void EnqueueSpawn(Action spawnAction)
     {
@@ -362,6 +373,8 @@ public partial class TabbedHostWindow : Window
     {
         _initialArgs = initialArgs ?? Array.Empty<string>();
         InitializeComponent();
+        HotKeys.RegisterHotkey("OpenQuickLaunch", new CommunityToolkit.Mvvm.Input.RelayCommand(OpenQuickLaunch));
+        AccountQuickLaunchSearch.KeyDown += AccountQuickLaunchSearch_KeyDown;
         LoadArmyJumpSettings();
         Title = $"VibeSkua V{Skua.Core.Models.ClientFileSources.DisplayVersion}";
         MainTitleBar.TitleText = Title;
