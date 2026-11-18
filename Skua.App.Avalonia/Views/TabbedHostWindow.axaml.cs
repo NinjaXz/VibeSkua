@@ -1378,8 +1378,9 @@ public partial class TabbedHostWindow : Window
 
             foreach (string username in accounts)
             {
-                // Never duplicate an account that is already running in this host.
-                if (FindExistingAccountTab(username) is not null)
+                // Never duplicate an account that is already running in any VibeSkua host.
+                if (FindExistingAccountTab(username) is not null
+                    || FindExternalRunningAccountProcess(username) is not null)
                 {
                     alreadyRunning++;
                     continue;
@@ -1563,6 +1564,13 @@ public partial class TabbedHostWindow : Window
                     continue;
                 }
 
+                if (FindExternalRunningAccountProcess(username) is not null)
+                {
+                    _quickLaunchBatchAlreadyOpen++;
+                    _quickLaunchBatchCompleted++;
+                    continue;
+                }
+
                 _quickLaunchPending.Add(username);
                 LaunchAccount(username, onCompleted: success =>
                 {
@@ -1739,11 +1747,62 @@ public partial class TabbedHostWindow : Window
                 return "Launching";
         }
 
+        if (FindExternalRunningAccountProcess(username) != null)
+            return "Running";
+
         if (_quickLaunchPending.Contains(username))
             return "Launching";
         if (_quickLaunchFailed.Contains(username))
             return "Failed";
         return "Not running";
+    }
+
+    /// <summary>
+    /// Finds a logged-in account running in another VibeSkua host by checking
+    /// the per-process username files shared through the temporary tabs directory.
+    /// </summary>
+    private static Process? FindExternalRunningAccountProcess(string username)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "VibeSkuaTabs");
+        if (!Directory.Exists(directory))
+            return null;
+
+        foreach (string file in Directory.EnumerateFiles(directory, "*.txt"))
+        {
+            string fileName = Path.GetFileNameWithoutExtension(file);
+            if (!int.TryParse(fileName, out int processId) || processId == Environment.ProcessId)
+                continue;
+
+            try
+            {
+                Process process = Process.GetProcessById(processId);
+                if (process.HasExited)
+                {
+                    process.Dispose();
+                    continue;
+                }
+
+                string loggedInUsername = File.ReadAllText(file).Trim();
+                if (string.Equals(loggedInUsername, username, StringComparison.OrdinalIgnoreCase))
+                    return process;
+
+                process.Dispose();
+            }
+            catch (ArgumentException)
+            {
+                // The process exited after its username file was enumerated.
+            }
+            catch (IOException)
+            {
+                // The game client may be updating its username file.
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Ignore files that cannot be read.
+            }
+        }
+
+        return null;
     }
 
     private void UpdateQuickLaunchStatuses()
