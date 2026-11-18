@@ -535,9 +535,9 @@ public partial class TabbedHostWindow : Window
                     {
                         if (_tabs.TryGetValue(tab, out TabInfo? tInfo))
                         {
-                            // Complete a requested launch only after the expected account is actually logged in.
-                            if (string.Equals(tInfo.Username, username, StringComparison.OrdinalIgnoreCase))
-                                CompleteTabLaunch(tInfo, true);
+                            // Complete the request when the process reports its logged-in identity.
+                            if (tInfo.LaunchCompletion != null)
+                                CompleteTabLaunch(tInfo, string.Equals(tInfo.Username, username, StringComparison.OrdinalIgnoreCase));
 
                             // Keep the actual logged-in identity even when the tab has a custom display name.
                             tInfo.Username = username;
