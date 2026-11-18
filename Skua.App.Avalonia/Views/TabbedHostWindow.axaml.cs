@@ -3231,7 +3231,7 @@ public partial class TabbedHostWindow : Window
         AddNewInstance(ParseRawCommandLine(rawArgs));
     }
 
-    public void AddNewInstance(string[]? clientArgs = null)
+    public void AddNewInstance(string[]? clientArgs = null, Action<bool>? launchCompletion = null)
     {
         clientArgs ??= Array.Empty<string>();
 
@@ -3339,7 +3339,7 @@ public partial class TabbedHostWindow : Window
         closeBtn.PointerEntered += (s, ev) => { closeTxt.Foreground = Brushes.White; closeBtn.Background = new SolidColorBrush(Color.Parse("#EF4444")); };
         closeBtn.PointerExited += (s, ev) => { closeTxt[!TextBlock.ForegroundProperty] = new global::Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SkuaMutedTextBrush"); closeBtn.Background = Brushes.Transparent; };
 
-        TabInfo info = new() { Username = accountUsername };
+        TabInfo info = new() { Username = accountUsername, LaunchCompletion = launchCompletion };
 
         Action closeEditMode = () =>
         {
