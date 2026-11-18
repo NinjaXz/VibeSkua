@@ -1380,7 +1380,7 @@ public partial class TabbedHostWindow : Window
             {
                 // Never duplicate an account that is already running in any VibeSkua host.
                 if (FindExistingAccountTab(username) is not null
-                    || FindExternalRunningAccountProcess(username) is not null)
+                    || IsExternalAccountRunning(username))
                 {
                     alreadyRunning++;
                     continue;
@@ -1564,7 +1564,7 @@ public partial class TabbedHostWindow : Window
                     continue;
                 }
 
-                if (FindExternalRunningAccountProcess(username) is not null)
+                if (IsExternalAccountRunning(username))
                 {
                     _quickLaunchBatchAlreadyOpen++;
                     _quickLaunchBatchCompleted++;
@@ -1747,7 +1747,7 @@ public partial class TabbedHostWindow : Window
                 return "Launching";
         }
 
-        if (FindExternalRunningAccountProcess(username) != null)
+        if (IsExternalAccountRunning(username))
             return "Running";
 
         if (_quickLaunchPending.Contains(username))
@@ -1761,11 +1761,11 @@ public partial class TabbedHostWindow : Window
     /// Finds a logged-in account running in another VibeSkua host by checking
     /// the per-process username files shared through the temporary tabs directory.
     /// </summary>
-    private static Process? FindExternalRunningAccountProcess(string username)
+    private static bool IsExternalAccountRunning(string username)
     {
         string directory = Path.Combine(Path.GetTempPath(), "VibeSkuaTabs");
         if (!Directory.Exists(directory))
-            return null;
+            return false;
 
         foreach (string file in Directory.EnumerateFiles(directory, "*.txt"))
         {
@@ -1783,10 +1783,10 @@ public partial class TabbedHostWindow : Window
                 }
 
                 string loggedInUsername = File.ReadAllText(file).Trim();
-                if (string.Equals(loggedInUsername, username, StringComparison.OrdinalIgnoreCase))
-                    return process;
-
+                bool isMatch = string.Equals(loggedInUsername, username, StringComparison.OrdinalIgnoreCase);
                 process.Dispose();
+                if (isMatch)
+                    return true;
             }
             catch (ArgumentException)
             {
