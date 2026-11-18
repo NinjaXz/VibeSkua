@@ -134,11 +134,12 @@ public partial class HotKeysViewModel : BotControlViewModelBase, IManagedWindow
     {
         if (SelectedCustomAction == null && !string.IsNullOrWhiteSpace(SearchText))
         {
-            var trimmed = SearchText.Trim();
+            string trimmed = SearchText.Trim();
             string[] terms = trimmed.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            SelectedCustomAction = AvailableCustomActions.FirstOrDefault(a => a.Title.Equals(trimmed, StringComparison.OrdinalIgnoreCase))
-                                ?? AvailableCustomActions.FirstOrDefault(a => a.Title.Contains(trimmed, StringComparison.OrdinalIgnoreCase))
-                                ?? AvailableCustomActions.FirstOrDefault(a => terms.All(t => $"{a.Title} {a.Description} {a.Binding}".Contains(t, StringComparison.OrdinalIgnoreCase)));
+            SelectedCustomAction = AvailableCustomActions.FirstOrDefault(action =>
+                action.Title.Equals(trimmed, StringComparison.OrdinalIgnoreCase))
+                ?? AvailableCustomActions.FirstOrDefault(action =>
+                    terms.All(term => $"{action.Title} {action.Description} {action.Binding}".Contains(term, StringComparison.OrdinalIgnoreCase)));
         }
 
         if (SelectedCustomAction == null)
