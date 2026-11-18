@@ -528,6 +528,7 @@ public partial class TabbedHostWindow : Window
 
             var updates = new List<(TabItem Tab, string Username)>();
             var locations = new List<(int Pid, ArmyClientLocation Location)>();
+            var loggedOutPids = new List<int>();
 
             foreach (var (tab, pid) in entries)
             {
@@ -545,7 +546,13 @@ public partial class TabbedHostWindow : Window
                     string locationFile = Path.Combine(dir, $"{pid}.location.json");
                     if (File.Exists(locationFile))
                     {
-                        ArmyClientLocation? location = JsonSerializer.Deserialize<ArmyClientLocation>(File.ReadAllText(locationFile));
+                        string locationJson = File.ReadAllText(locationFile);
+                        using JsonDocument locationDocument = JsonDocument.Parse(locationJson);
+                        if (locationDocument.RootElement.TryGetProperty("LoggedIn", out JsonElement loggedIn)
+                            && loggedIn.ValueKind == JsonValueKind.False)
+                            loggedOutPids.Add(pid);
+
+                        ArmyClientLocation? location = JsonSerializer.Deserialize<ArmyClientLocation>(locationJson);
                         if (location != null
                             && !string.IsNullOrWhiteSpace(location.Map)
                             && location.UpdatedUtc >= DateTime.UtcNow.AddSeconds(-5))
@@ -555,11 +562,19 @@ public partial class TabbedHostWindow : Window
                 catch { }
             }
 
-            if ((updates.Count > 0 || locations.Count > 0) && !_isClosing)
+            if ((updates.Count > 0 || locations.Count > 0 || loggedOutPids.Count > 0) && !_isClosing)
             {
                 Dispatcher.UIThread.Post(() =>
                 {
                     if (_isClosing) return;
+
+                    foreach (int pid in loggedOutPids)
+                    {
+                        TabInfo? tabInfo = _tabs.Values.FirstOrDefault(info => info.Process?.Id == pid);
+                        tabInfo?.AccountReservation?.Dispose();
+                        if (tabInfo is not null)
+                            tabInfo.AccountReservation = null;
+                    }
 
                     foreach (var (pid, location) in locations)
                         RecordClientLocation(pid, location);
