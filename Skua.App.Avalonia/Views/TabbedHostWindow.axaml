@@ -146,7 +146,7 @@
                         <materialIcons:MaterialIcon Kind="Plus" Width="14" Height="14" Foreground="{DynamicResource SkuaAccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Button>
                     <ToggleButton x:Name="AccountLaunchToggle"
-                                  Width="24"
+                                  Width="28"
                                   Height="28"
                                   VerticalAlignment="Center"
                                   Padding="0"
@@ -169,15 +169,27 @@
                                 CornerRadius="8"
                                 Padding="12">
                             <StackPanel Spacing="9">
-                                <StackPanel Spacing="2">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
                                     <TextBlock Text="Quick Account Launch"
                                                FontSize="13"
                                                FontWeight="SemiBold"
+                                               VerticalAlignment="Center"
                                                Foreground="{DynamicResource SkuaTextBrush}" />
-                                    <TextBlock x:Name="AccountQuickLaunchCountText"
-                                               Text="Loading saved accounts..."
-                                               FontSize="10"
-                                               Foreground="{DynamicResource SkuaMutedTextBrush}" />
+                                    <Border Background="Transparent"
+                                            VerticalAlignment="Center"
+                                            ToolTip.ShowDelay="150">
+                                        <ToolTip.Tip>
+                                            <StackPanel Spacing="4">
+                                                <TextBlock x:Name="AccountQuickLaunchCountText"
+                                                           Text="Loading saved accounts..." />
+                                                <TextBlock Text="Ctrl+Shift+L open · Space select · Enter launch · Esc close" />
+                                            </StackPanel>
+                                        </ToolTip.Tip>
+                                        <materialIcons:MaterialIcon Kind="InformationOutline"
+                                                                    Width="14"
+                                                                    Height="14"
+                                                                    Foreground="{DynamicResource SkuaMutedTextBrush}" />
+                                    </Border>
                                 </StackPanel>
                                 <TextBox x:Name="AccountQuickLaunchSearch"
                                          Height="34"
@@ -207,39 +219,6 @@
                                             ToolTip.Tip="Launch this group in a separate VibeSkua window"
                                             Click="AccountQuickLaunchGroupNewWindow_Click" />
                                 </Grid>
-                                <Border x:Name="AccountQuickLaunchProgressPanel"
-                                        Background="{DynamicResource SkuaSurfaceAltBrush}"
-                                        BorderBrush="{DynamicResource SkuaBorderBrush}"
-                                        BorderThickness="1"
-                                        CornerRadius="6"
-                                        Padding="8"
-                                        IsVisible="False">
-                                    <StackPanel Spacing="6">
-                                        <Grid ColumnDefinitions="*,Auto">
-                                            <TextBlock x:Name="AccountQuickLaunchProgressText"
-                                                       Grid.Column="0"
-                                                       FontSize="10"
-                                                       VerticalAlignment="Center"
-                                                       TextWrapping="Wrap"
-                                                       MinWidth="0"
-                                                       Foreground="{DynamicResource SkuaTextBrush}"
-                                                       Text="Ready" />
-                                            <Button x:Name="AccountQuickLaunchRetryButton"
-                                                    Grid.Column="1"
-                                                    Height="24"
-                                                    Padding="7,0"
-                                                    Classes="skua-button"
-                                                    Content="Retry Failed"
-                                                    IsVisible="False"
-                                                    Click="AccountQuickLaunchRetry_Click" />
-                                        </Grid>
-                                        <ProgressBar x:Name="AccountQuickLaunchProgressBar"
-                                                     Height="4"
-                                                     Minimum="0"
-                                                     Maximum="100"
-                                                     Value="0" />
-                                    </StackPanel>
-                                </Border>
                                 <Grid ColumnDefinitions="*,Auto,Auto"
                                       ColumnSpacing="5">
                                     <TextBlock x:Name="AccountQuickLaunchSelectionText"
@@ -288,6 +267,7 @@
                                     <Button x:Name="AccountQuickLaunchLaunchButton"
                                             Grid.Column="0"
                                             Height="34"
+                                            HorizontalAlignment="Stretch"
                                             Classes="skua-button"
                                             HorizontalContentAlignment="Center"
                                             IsEnabled="False"
@@ -309,6 +289,7 @@
                                     <Button x:Name="AccountQuickLaunchNewWindowButton"
                                             Grid.Column="1"
                                             Height="34"
+                                            HorizontalAlignment="Stretch"
                                             Classes="skua-button"
                                             HorizontalContentAlignment="Center"
                                             IsEnabled="False"
@@ -316,10 +297,39 @@
                                             ToolTip.Tip="Launch selected accounts in a separate VibeSkua window"
                                             Click="AccountQuickLaunchNewWindow_Click" />
                                 </Grid>
-                                <TextBlock Text="Ctrl+Shift+L · Space select · Enter launch · Esc close"
-                                           FontSize="9"
-                                           TextAlignment="Center"
-                                           Foreground="{DynamicResource SkuaMutedTextBrush}" />
+                                <Border x:Name="AccountQuickLaunchProgressPanel"
+                                        Background="{DynamicResource SkuaSurfaceAltBrush}"
+                                        BorderBrush="{DynamicResource SkuaBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="8"
+                                        IsVisible="False">
+                                    <StackPanel Spacing="6">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock x:Name="AccountQuickLaunchProgressText"
+                                                       Grid.Column="0"
+                                                       FontSize="10"
+                                                       VerticalAlignment="Center"
+                                                       TextWrapping="Wrap"
+                                                       MinWidth="0"
+                                                       Foreground="{DynamicResource SkuaTextBrush}"
+                                                       Text="Ready" />
+                                            <Button x:Name="AccountQuickLaunchRetryButton"
+                                                    Grid.Column="1"
+                                                    Height="24"
+                                                    Padding="7,0"
+                                                    Classes="skua-button"
+                                                    Content="Retry Failed"
+                                                    IsVisible="False"
+                                                    Click="AccountQuickLaunchRetry_Click" />
+                                        </Grid>
+                                        <ProgressBar x:Name="AccountQuickLaunchProgressBar"
+                                                     Height="4"
+                                                     Minimum="0"
+                                                     Maximum="100"
+                                                     Value="0" />
+                                    </StackPanel>
+                                </Border>
                             </StackPanel>
                         </Border>
                     </Popup>
