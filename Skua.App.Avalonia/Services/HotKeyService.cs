@@ -166,6 +166,11 @@ public class HotKeyService : IHotKeyService, IDisposable
         return parsed;
     }
 
+    public List<string> GetAvailableHotKeyBindings() => _hotKeys.Keys
+        .Concat(global::Skua.Core.AppStartup.HotKeys.GetRegistry().Keys)
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToList();
+
     public HotKey? ParseToHotKey(string keyGesture)
     {
         if (string.IsNullOrWhiteSpace(keyGesture))
