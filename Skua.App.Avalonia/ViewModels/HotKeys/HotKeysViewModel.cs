@@ -23,6 +23,8 @@ public partial class HotKeysViewModel : BotControlViewModelBase, IManagedWindow
         _settingsService = settingsService;
         _dialogService = dialogService;
         HotKeys = new ObservableCollection<HotKeyItemViewModel>(_hotKeyService.GetHotKeys<HotKeyItemViewModel>());
+        foreach (HotKeyItemViewModel hotKey in HotKeys)
+            hotKey.Description = global::Skua.Core.AppStartup.HotKeys.GetDescription(hotKey.Binding);
         HotKeys.CollectionChanged += (_, _) => OnPropertyChanged(nameof(FilteredHotKeys));
         AddCustomCommand = new RelayCommand(AddCustomAction);
         _hotKeyService.Reload();
@@ -77,8 +79,8 @@ public partial class HotKeysViewModel : BotControlViewModelBase, IManagedWindow
         {
             if (_cachedAvailableActions == null)
             {
-                _cachedAvailableActions = global::Skua.Core.AppStartup.HotKeys.GetRegistry().Keys
-                    .Where(k => !HotKeys.Any(h => h.Binding == k))
+                _cachedAvailableActions = _hotKeyService.GetAvailableHotKeyBindings()
+                    .Where(k => !HotKeys.Any(h => string.Equals(h.Binding, k, StringComparison.OrdinalIgnoreCase)))
                     .Select(k => new HotKeyItemViewModel
                     {
                         Binding = k,
@@ -132,11 +134,12 @@ public partial class HotKeysViewModel : BotControlViewModelBase, IManagedWindow
     {
         if (SelectedCustomAction == null && !string.IsNullOrWhiteSpace(SearchText))
         {
-            var trimmed = SearchText.Trim();
+            string trimmed = SearchText.Trim();
             string[] terms = trimmed.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            SelectedCustomAction = AvailableCustomActions.FirstOrDefault(a => a.Title.Equals(trimmed, StringComparison.OrdinalIgnoreCase))
-                                ?? AvailableCustomActions.FirstOrDefault(a => a.Title.Contains(trimmed, StringComparison.OrdinalIgnoreCase))
-                                ?? AvailableCustomActions.FirstOrDefault(a => terms.All(t => $"{a.Title} {a.Description} {a.Binding}".Contains(t, StringComparison.OrdinalIgnoreCase)));
+            SelectedCustomAction = AvailableCustomActions.FirstOrDefault(action =>
+                action.Title.Equals(trimmed, StringComparison.OrdinalIgnoreCase))
+                ?? AvailableCustomActions.FirstOrDefault(action =>
+                    terms.All(term => $"{action.Title} {action.Description} {action.Binding}".Contains(term, StringComparison.OrdinalIgnoreCase)));
         }
 
         if (SelectedCustomAction == null)
