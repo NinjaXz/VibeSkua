@@ -181,6 +181,7 @@
                                 </StackPanel>
                                 <TextBox x:Name="AccountQuickLaunchSearch"
                                          Height="34"
+                                         PlaceholderText="Search by username or display name"
                                          TextChanged="AccountQuickLaunchSearch_TextChanged" />
                                 <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="5">
                                     <ComboBox x:Name="AccountQuickLaunchGroupCombo"
