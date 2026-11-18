@@ -200,12 +200,35 @@ public class HotKeyService : IHotKeyService, IDisposable
                 if (parts.Length == 0 || !parts[0].Equals(name, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                if (parts.Length < 2 || string.IsNullOrWhiteSpace(parts[1]) || parts[1].Equals("Unassigned", StringComparison.OrdinalIgnoreCase))
-                    hotkeys[i] = $"{name}|{gesture}";
+                // An explicit Unassigned value is a user choice and must survive reloads.
+                if (parts.Length < 2 || string.IsNullOrWhiteSpace(parts[1]))
+                {
+                    bool gestureInUse = hotkeys.Cast<string?>().Any(existing =>
+                    {
+                        if (string.IsNullOrWhiteSpace(existing))
+                            return false;
+
+                        string[] existingParts = existing.Split('|');
+                        return existingParts.Length > 1
+                            && !existingParts[0].Equals(name, StringComparison.OrdinalIgnoreCase)
+                            && existingParts[1].Equals(gesture, StringComparison.OrdinalIgnoreCase);
+                    });
+
+                    hotkeys[i] = $"{name}|{(gestureInUse ? "Unassigned" : gesture)}";
+                }
                 return;
             }
 
-            hotkeys.Add($"{name}|{gesture}");
+            bool alreadyAssigned = hotkeys.Cast<string?>().Any(existing =>
+            {
+                if (string.IsNullOrWhiteSpace(existing))
+                    return false;
+
+                string[] existingParts = existing.Split('|');
+                return existingParts.Length > 1
+                    && existingParts[1].Equals(gesture, StringComparison.OrdinalIgnoreCase);
+            });
+            hotkeys.Add($"{name}|{(alreadyAssigned ? "Unassigned" : gesture)}");
         }
 
         if (hotkeys.Count == 0)
