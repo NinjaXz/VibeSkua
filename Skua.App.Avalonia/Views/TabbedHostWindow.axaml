@@ -183,7 +183,7 @@
                                          Height="34"
                                          Watermark="Search by username or display name"
                                          TextChanged="AccountQuickLaunchSearch_TextChanged" />
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="5">
                                     <ComboBox x:Name="AccountQuickLaunchGroupCombo"
                                               Grid.Column="0"
                                               Height="32"
@@ -192,11 +192,20 @@
                                     <Button x:Name="AccountQuickLaunchGroupButton"
                                             Grid.Column="1"
                                             Height="32"
-                                            Padding="9,0"
+                                            Padding="8,0"
                                             Classes="skua-button"
                                             Content="Launch Group"
                                             IsEnabled="False"
                                             Click="AccountQuickLaunchGroupLaunch_Click" />
+                                    <Button x:Name="AccountQuickLaunchGroupNewWindowButton"
+                                            Grid.Column="2"
+                                            Height="32"
+                                            Padding="8,0"
+                                            Classes="skua-button"
+                                            Content="New Window"
+                                            IsEnabled="False"
+                                            ToolTip.Tip="Launch this group in a separate VibeSkua window"
+                                            Click="AccountQuickLaunchGroupNewWindow_Click" />
                                 </Grid>
                                 <Border x:Name="AccountQuickLaunchProgressPanel"
                                         Background="{DynamicResource SkuaSurfaceAltBrush}"
@@ -273,26 +282,38 @@
                                         </Grid>
                                     </ScrollViewer>
                                 </Border>
-                                <Button x:Name="AccountQuickLaunchLaunchButton"
-                                        Height="34"
-                                        Classes="skua-button"
-                                        HorizontalContentAlignment="Center"
-                                        IsEnabled="False"
-                                        Click="AccountQuickLaunchLaunch_Click">
-                                    <StackPanel Orientation="Horizontal"
-                                                HorizontalAlignment="Center"
-                                                VerticalAlignment="Center"
-                                                Spacing="6">
-                                        <materialIcons:MaterialIcon Kind="LoginVariant"
-                                                                    Width="15"
-                                                                    Height="15"
-                                                                    Foreground="{DynamicResource SkuaTextBrush}" />
-                                        <TextBlock x:Name="AccountQuickLaunchLaunchText"
-                                                   Text="Launch Selected"
-                                                   FontWeight="SemiBold"
-                                                   FontSize="12" />
-                                    </StackPanel>
-                                </Button>
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+                                    <Button x:Name="AccountQuickLaunchLaunchButton"
+                                            Grid.Column="0"
+                                            Height="34"
+                                            Classes="skua-button"
+                                            HorizontalContentAlignment="Center"
+                                            IsEnabled="False"
+                                            Click="AccountQuickLaunchLaunch_Click">
+                                        <StackPanel Orientation="Horizontal"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Spacing="6">
+                                            <materialIcons:MaterialIcon Kind="LoginVariant"
+                                                                        Width="15"
+                                                                        Height="15"
+                                                                        Foreground="{DynamicResource SkuaTextBrush}" />
+                                            <TextBlock x:Name="AccountQuickLaunchLaunchText"
+                                                       Text="Launch Selected"
+                                                       FontWeight="SemiBold"
+                                                       FontSize="12" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="AccountQuickLaunchNewWindowButton"
+                                            Grid.Column="1"
+                                            Height="34"
+                                            Classes="skua-button"
+                                            HorizontalContentAlignment="Center"
+                                            IsEnabled="False"
+                                            Content="New Window"
+                                            ToolTip.Tip="Launch selected accounts in a separate VibeSkua window"
+                                            Click="AccountQuickLaunchNewWindow_Click" />
+                                </Grid>
                                 <TextBlock Text="Ctrl+Shift+L · ↑↓ navigate · Space select · Enter launch · Esc close"
                                            FontSize="9"
                                            TextAlignment="Center"
