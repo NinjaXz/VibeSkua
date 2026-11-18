@@ -131,6 +131,7 @@ public class HotKeys
     {
         if (binding == "ToggleScript") return "Start Script";
         if (binding == "ArmyLoadScriptAll") return "Load Script to All";
+        if (binding == "OpenQuickLaunch") return "Open Quick Account Launch";
         string decamelized = Regex.Replace(binding, "([a-z])([A-Z])", "$1 $2");
         if (decamelized.StartsWith("Toggle ")) return decamelized.Substring(7);
         if (decamelized.StartsWith("Toggle")) return decamelized.Substring(6);
@@ -206,6 +207,7 @@ public class HotKeys
             "LoadScript" => "Opens the file browser to load a new script.",
             "OpenBank" => "Opens your bank interface.",
             "SearchScripts" => "Opens the Script Repo to search for scripts.",
+            "OpenQuickLaunch" => "Opens the Quick Account Launch picker.",
             "JumpToHome" => "Jumps your character to their home.",
             
             // Army Control
