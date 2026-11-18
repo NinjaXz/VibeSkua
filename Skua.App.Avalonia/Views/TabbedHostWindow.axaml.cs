@@ -1849,7 +1849,8 @@ public partial class TabbedHostWindow : Window
             string? loggedInUsername = GetProcessLoggedInUsername(tabInfo);
             if (string.Equals(loggedInUsername, username, StringComparison.OrdinalIgnoreCase))
                 return "Running";
-            if (string.Equals(tabInfo.Username, username, StringComparison.OrdinalIgnoreCase))
+            if (tabInfo.LaunchCompletion != null
+                && string.Equals(tabInfo.Username, username, StringComparison.OrdinalIgnoreCase))
                 return "Launching";
         }
 
@@ -1928,6 +1929,10 @@ public partial class TabbedHostWindow : Window
                 catch (UnauthorizedAccessException)
                 {
                     // Ignore files that cannot be read.
+                }
+                catch (JsonException)
+                {
+                    // Ignore malformed location records.
                 }
             }
         }
