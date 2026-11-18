@@ -20,12 +20,12 @@
                     <StackPanel Spacing="14" Margin="6,10,6,6" Width="440" HorizontalAlignment="Left">
                         <StackPanel Spacing="4">
                             <TextBlock Text="Task Name *" FontWeight="SemiBold" FontSize="11" />
-                            <TextBox Text="{Binding Name}" Watermark="e.g. Daily Ultras &amp; Dailies" Width="440" HorizontalAlignment="Left" />
+                            <TextBox Text="{Binding Name}" PlaceholderText="e.g. Daily Ultras &amp; Dailies" Width="440" HorizontalAlignment="Left" />
                         </StackPanel>
 
                         <StackPanel Spacing="4">
                             <TextBlock Text="Description / Notes (Optional)" FontWeight="SemiBold" FontSize="11" />
-                            <TextBox Text="{Binding Description}" Watermark="Notes or context about this schedule" AcceptsReturn="True" Height="70" Width="440" HorizontalAlignment="Left" />
+                            <TextBox Text="{Binding Description}" PlaceholderText="Notes or context about this schedule" AcceptsReturn="True" Height="70" Width="440" HorizontalAlignment="Left" />
                         </StackPanel>
 
                         <Border Background="{DynamicResource SkuaBorderBrush}" Height="1" Margin="0,2" />
@@ -207,7 +207,7 @@
                     <StackPanel Grid.Row="1" Spacing="6" IsVisible="{Binding IsPlaylistFileMode}">
                         <TextBlock Text="Playlist File (.json)" FontWeight="SemiBold" FontSize="11" />
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                            <TextBox Grid.Column="0" Text="{Binding PlaylistPath}" Watermark="Select playlist file saved from Script Scheduler..." />
+                            <TextBox Grid.Column="0" Text="{Binding PlaylistPath}" PlaceholderText="Select playlist file saved from Script Scheduler..." />
                             <Button Grid.Column="1" Classes="skua-button" Content="Browse..." Command="{Binding BrowsePlaylistCommand}" />
                         </Grid>
                     </StackPanel>

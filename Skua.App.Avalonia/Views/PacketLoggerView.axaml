@@ -28,7 +28,7 @@
 
     <!-- Search and filters -->
     <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-      <TextBox Grid.Column="0" Watermark="Search packets" Text="{Binding PacketSearchText}">
+      <TextBox Grid.Column="0" PlaceholderText="Search packets" Text="{Binding PacketSearchText}">
         <TextBox.InnerLeftContent>
           <materialIcons:MaterialIcon Kind="Magnify" Width="15" Height="15" Margin="10,0,0,0" Foreground="{DynamicResource SkuaMutedTextBrush}" />
         </TextBox.InnerLeftContent>

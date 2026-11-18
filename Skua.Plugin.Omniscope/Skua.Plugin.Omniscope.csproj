@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Skua.Plugin.Omniscope</AssemblyName>
+    <RootNamespace>Skua.Plugin.Omniscope</RootNamespace>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Material.Icons.Avalonia" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Skua.Core.Interfaces\Skua.Core.Interfaces.csproj" />
+    <ProjectReference Include="..\Skua.Core.Models\Skua.Core.Models.csproj" />
+    <ProjectReference Include="..\Skua.Shared.Avalonia\Skua.Shared.Avalonia.csproj" />
+  </ItemGroup>
+  <Target Name="StageOmniscopePlugin" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+    <MakeDir Directories="$(MSBuildProjectDirectory)\..\Build\plugins" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MSBuildProjectDirectory)\..\Build\plugins" />
+  </Target>
+</Project>

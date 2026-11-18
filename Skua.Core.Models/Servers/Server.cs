@@ -70,6 +70,12 @@ public class Server
     [JsonIgnore]
     public long Ping { get; set; } = -1;
 
+    /// <summary>
+    /// Compact latency indicator calculated from the measured ping and configured thresholds.
+    /// </summary>
+    [JsonIgnore]
+    public string PingIndicator { get; set; } = "▫️";
+
     public override string ToString()
     {
         return $"{Name} - {PlayerCount}";

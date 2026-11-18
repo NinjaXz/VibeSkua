@@ -69,9 +69,9 @@ echo   [3] VibeSkua-%VERSION%-full.nupkg - Background auto-update payload
 echo   [4] releases.win.json           - Update manifest for GitHub Releases
 echo.
 echo Next steps:
-echo   1. Push your code to GitHub: git push origin latestreleasereadyimo:main
-echo   2. Go to https://github.com/NinjaXz/VibeSkua/releases/new
-echo   3. Create tag 'v%VERSION%' and upload the files from Build\Releases\
+echo   1. Push the intended source commit to the repository used for releases.
+echo   2. Push tag 'v%VERSION%' to trigger the automated GitHub Actions release workflow.
+echo   3. For manual publishing, upload the files from Build\Releases\ to the matching GitHub release.
 echo ==========================================================
 echo.
 pause

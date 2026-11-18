@@ -71,7 +71,7 @@
                      CornerRadius="6"
                      VerticalContentAlignment="Center"
                      Padding="28,0,8,0"
-                     Watermark="Search tools..."
+                     PlaceholderText="Search tools..."
                      Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
             <materialIcons:MaterialIcon Kind="Magnify"
                                         Width="14" Height="14"

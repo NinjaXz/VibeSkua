@@ -18,9 +18,8 @@
         Title="{Binding Title}"
         Icon="avares://Skua.Shared.Avalonia/Assets/SkuaClientIcon.ico"
 
-        SystemDecorations="BorderOnly"
+        WindowDecorations="BorderOnly"
         ExtendClientAreaToDecorationsHint="True"
-        ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaTitleBarHeightHint="32"
         >
 
@@ -130,8 +129,9 @@
       </Border>
 
       <Grid Grid.Row="1"
-            Background="{DynamicResource SkuaPageBrush}">
-        <controls:WinFormsFlashHost x:Name="FlashHost" IsVisible="False" />
+            Background="#141414">
+        <!-- Keep a native resize gutter clear of the Flash child HWND on the left, right, and bottom edges. -->
+        <controls:WinFormsFlashHost x:Name="FlashHost" Margin="14,0,14,14" IsVisible="False" />
         <ProgressBar x:Name="LoadingBar"
                      Width="150"
                      Height="8"
@@ -144,6 +144,42 @@
                 <TextBlock Foreground="{DynamicResource SkuaTextBrush}" HorizontalAlignment="Center" FontSize="18" FontWeight="SemiBold" Text="Headless Mode Active" />
                 <TextBlock Foreground="{DynamicResource SkuaMutedTextBrush}" HorizontalAlignment="Center" FontSize="12" Text="Viewport suspended to minimize CPU and GPU usage" />
             </StackPanel>
+        </Grid>
+
+        <!-- Resize grips are only for the standalone client. In tabbed mode the parent host owns resizing. -->
+        <Grid x:Name="ResizeGripOverlay">
+            <Border Width="14"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Stretch"
+                    Background="Transparent"
+                    Cursor="SizeWestEast"
+                    PointerPressed="ResizeWestGrip_PointerPressed" />
+            <Border Width="14"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Stretch"
+                    Background="Transparent"
+                    Cursor="SizeWestEast"
+                    PointerPressed="ResizeEastGrip_PointerPressed" />
+            <Border Height="14"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Bottom"
+                    Background="Transparent"
+                    Cursor="SizeNorthSouth"
+                    PointerPressed="ResizeSouthGrip_PointerPressed" />
+            <Border Width="14"
+                    Height="14"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Bottom"
+                    Background="Transparent"
+                    Cursor="BottomLeftCorner"
+                    PointerPressed="ResizeSouthWestGrip_PointerPressed" />
+            <Border Width="14"
+                    Height="14"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Background="Transparent"
+                    Cursor="BottomRightCorner"
+                    PointerPressed="ResizeSouthEastGrip_PointerPressed" />
         </Grid>
       </Grid>
     </Grid>

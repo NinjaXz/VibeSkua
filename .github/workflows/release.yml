@@ -24,6 +24,16 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
+      - name: Set up Java 8 for Apache Flex
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '8'
+
+      - name: Install Apache Flex SDK
+        shell: pwsh
+        run: ./Skua.AS3/Setup-Flex.ps1
+
       - name: Setup .NET 10 SDK
         uses: actions/setup-dotnet@v4
         with:
@@ -53,9 +63,35 @@ jobs:
           INPUT_VERSION: ${{ github.event.inputs.version }}
 
       - name: Build Project & Assemble Output
-        shell: cmd
+        shell: pwsh
         run: |
-          call BuildProject.bat --no-pause
+          dotnet restore Skua.sln
+          if ($LASTEXITCODE -ne 0) {
+              throw "Solution restore failed with exit code $LASTEXITCODE."
+          }
+
+          dotnet build Skua.sln --configuration Release --no-restore --verbosity minimal
+          if ($LASTEXITCODE -ne 0) {
+              throw "Solution build failed with exit code $LASTEXITCODE."
+          }
+
+          ./BuildTools/package-build.ps1
+
+      - name: Verify bundled FFDec Java runtime
+        shell: pwsh
+        run: |
+          $javaPath = Join-Path $PWD "Build/FFDec/Runtime/bin/java.exe"
+          if (-not (Test-Path $javaPath)) {
+            throw "The portable FFDec Java runtime was not staged: $javaPath"
+          }
+          $javaStdOut = Join-Path $env:RUNNER_TEMP "ffdec-java-version.stdout.txt"
+          $javaStdErr = Join-Path $env:RUNNER_TEMP "ffdec-java-version.stderr.txt"
+          $javaProcess = Start-Process -FilePath $javaPath -ArgumentList "-version" -Wait -PassThru -NoNewWindow -RedirectStandardOutput $javaStdOut -RedirectStandardError $javaStdErr
+          $javaVersion = ((Get-Content $javaStdOut -Raw -ErrorAction SilentlyContinue) + (Get-Content $javaStdErr -Raw -ErrorAction SilentlyContinue)).Trim()
+          if ($javaProcess.ExitCode -ne 0 -or $javaVersion -notmatch 'version "21(?:\.|")') {
+            throw "The portable FFDec Java runtime failed its startup check (exit code $($javaProcess.ExitCode)): $javaVersion"
+          }
+          Write-Host $javaVersion
 
       - name: Package Release with Velopack
         shell: pwsh

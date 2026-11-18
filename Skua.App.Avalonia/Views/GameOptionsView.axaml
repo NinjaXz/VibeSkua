@@ -10,7 +10,7 @@
              mc:Ignorable="d" d:DesignHeight="680" d:DesignWidth="640">
 
   <Grid Margin="12" RowDefinitions="Auto,Auto,*,Auto" RowSpacing="10">
-    <TextBox Grid.Row="0" Watermark="Search game options" Text="{Binding SearchText, Mode=TwoWay}">
+    <TextBox Grid.Row="0" PlaceholderText="Search game options" Text="{Binding SearchText, Mode=TwoWay}">
       <TextBox.InnerLeftContent>
         <materialIcons:MaterialIcon Kind="Magnify" Width="15" Height="15" Margin="10,0,0,0" Foreground="{DynamicResource SkuaMutedTextBrush}" />
       </TextBox.InnerLeftContent>

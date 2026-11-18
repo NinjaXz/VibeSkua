@@ -172,6 +172,18 @@ internal class Options
                     return;
                 Ioc.Default.GetRequiredService<ISettingsService>().Set("ReloginTryDelay", result);
             }), s.GetRequiredService<ISettingsService>().Get<int>("ReloginTryDelay")),
+            new CommandOptionItemViewModel<int>("High Latency Threshold", "Servers at or above this ping are marked high latency in the Manager server list (default: 200 ms)", "ServerLatencyThresholdMs", "ms", new RelayCommand<string>(value =>
+            {
+                if (!int.TryParse(value, out int result) || result < 50 || result > 2000)
+                    return;
+                Ioc.Default.GetRequiredService<ISettingsService>().Set("ServerLatencyThresholdMs", result);
+            }), s.GetRequiredService<ISettingsService>().Get<int>("ServerLatencyThresholdMs", 200)),
+            new CommandOptionItemViewModel<int>("Approaching Latency Threshold", "Amber status begins at this percentage of the high-latency threshold (default: 75%)", "ServerLatencyNearThresholdPercent", "%", new RelayCommand<string>(value =>
+            {
+                if (!int.TryParse(value, out int result) || result < 50 || result > 95)
+                    return;
+                Ioc.Default.GetRequiredService<ISettingsService>().Set("ServerLatencyNearThresholdPercent", result);
+            }), s.GetRequiredService<ISettingsService>().Get<int>("ServerLatencyNearThresholdPercent", 75)),
             CreateSettingOptionItem<bool>("Relogin Watchdog", "Watch for unexpected disconnections, even with no script running, and relog when Auto Relogin (Game Options) is on. Off leaves relogs to kicks and server logouts", "ReloginWatchdog"),
             new CommandOptionItemViewModel<IRelayCommand>("Clear Flash Cache", "ClearFlashCache", new RelayCommand(() =>
             {

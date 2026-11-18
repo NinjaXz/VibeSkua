@@ -19,7 +19,7 @@
                     <Grid ColumnDefinitions="*,Auto,Auto">
                         <Grid ColumnDefinitions="*,Auto" Margin="0,0,12,0">
                             <TextBox Grid.Column="0"
-                                     Watermark="Theme Name"
+                                     PlaceholderText="Theme Name"
                                      Text="{Binding ThemeSettings.ThemeName, Mode=TwoWay}" />
                             <Button Grid.Column="1"
                                     Margin="6,0,0,0"
@@ -85,7 +85,7 @@
                                 <TextBox Grid.Column="0"
                                          Text="{Binding ManagerTitleBarArtworkPath, Mode=OneWay}"
                                          IsReadOnly="True"
-                                         Watermark="No custom image selected"
+                                         PlaceholderText="No custom image selected"
                                          VerticalContentAlignment="Center" />
                                 <Button Grid.Column="1"
                                         Content="Browse"

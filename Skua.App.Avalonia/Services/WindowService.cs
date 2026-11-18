@@ -151,9 +151,8 @@ public class WindowService : IWindowService
         Window window = new()
         {
             Title = title,
-            SystemDecorations = SystemDecorations.BorderOnly,
+            WindowDecorations = WindowDecorations.BorderOnly,
             ExtendClientAreaToDecorationsHint = true,
-            ExtendClientAreaChromeHints = global::Avalonia.Platform.ExtendClientAreaChromeHints.NoChrome,
             ExtendClientAreaTitleBarHeightHint = 32,
             WindowStartupLocation = startupLoc,
             SizeToContent = sizeToContent,

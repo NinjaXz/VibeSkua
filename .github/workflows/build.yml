@@ -6,6 +6,7 @@ on:
       - main
       - feature/advanced-stats-metrics
       - feature/client-intelligence-suite
+      - feature/avalonia-12-modernization
   pull_request:
     branches:
       - main
@@ -22,11 +23,21 @@ jobs:
   build:
     name: Build solution (.NET 10 / Windows)
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set up Java 8 for Apache Flex
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '8'
+
+      - name: Install Apache Flex SDK
+        shell: pwsh
+        run: ./Skua.AS3/Setup-Flex.ps1
 
       - name: Install .NET 10 SDK
         uses: actions/setup-dotnet@v4
@@ -41,3 +52,51 @@ jobs:
 
       - name: Build solution
         run: dotnet build Skua.sln --configuration Release --no-restore --verbosity minimal
+
+      - name: Package client and verify OMNISCOPE and portable Java
+        shell: pwsh
+        run: |
+          ./BuildTools/package-build.ps1
+          $appPath = Join-Path $PWD "Build/VibeSkua.exe"
+          $managerPath = Join-Path $PWD "Build/VibeSkua.Manager.exe"
+          $swfPath = Join-Path $PWD "Build/skua.swf"
+          $sourceSwfPath = Join-Path $PWD "Skua.AS3/skua/bin/skua.swf"
+          $appSwfPath = Join-Path $PWD "Skua.App.Avalonia/bin/Release/net10.0-windows/skua.swf"
+          foreach ($requiredPath in @($appPath, $managerPath, $swfPath, $sourceSwfPath, $appSwfPath)) {
+            if (-not (Test-Path $requiredPath)) {
+              throw "A required client package file is missing: $requiredPath"
+            }
+          }
+          $pluginPath = Join-Path $PWD "Build/plugins/Skua.Plugin.Omniscope.dll"
+          if (-not (Test-Path $pluginPath)) {
+            throw "OMNISCOPE was not included in the packaged client: $pluginPath"
+          }
+          $javaPath = Join-Path $PWD "Build/FFDec/Runtime/bin/java.exe"
+          if (-not (Test-Path $javaPath)) {
+            throw "The private FFDec Java runtime was not included in the packaged client: $javaPath"
+          }
+          $javaStdOut = Join-Path $env:RUNNER_TEMP "ffdec-java-version.stdout.txt"
+          $javaStdErr = Join-Path $env:RUNNER_TEMP "ffdec-java-version.stderr.txt"
+          $javaProcess = Start-Process -FilePath $javaPath -ArgumentList "-version" -Wait -PassThru -NoNewWindow -RedirectStandardOutput $javaStdOut -RedirectStandardError $javaStdErr
+          $javaVersion = ((Get-Content $javaStdOut -Raw -ErrorAction SilentlyContinue) + (Get-Content $javaStdErr -Raw -ErrorAction SilentlyContinue)).Trim()
+          if ($javaProcess.ExitCode -ne 0 -or $javaVersion -notmatch 'version "21(?:\.|")') {
+            throw "The packaged FFDec Java runtime failed its startup check (exit code $($javaProcess.ExitCode)): $javaVersion"
+          }
+          Write-Host $javaVersion
+          $sourceHash = (Get-FileHash $sourceSwfPath -Algorithm SHA256).Hash
+          foreach ($packagedSwf in @($appSwfPath, $swfPath)) {
+            $packagedHash = (Get-FileHash $packagedSwf -Algorithm SHA256).Hash
+            if ($packagedHash -ne $sourceHash) {
+              throw "Packaged SWF does not match the freshly compiled source: $packagedSwf"
+            }
+          }
+          Get-Item $appPath, $managerPath, $sourceSwfPath, $appSwfPath, $swfPath, $pluginPath, $javaPath | Format-List FullName, Length, LastWriteTimeUtc
+
+      - name: Upload Windows test build
+        uses: actions/upload-artifact@v4
+        with:
+          name: VibeSkua-Avalonia12-Windows-x64-${{ github.sha }}
+          path: Build/**
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7

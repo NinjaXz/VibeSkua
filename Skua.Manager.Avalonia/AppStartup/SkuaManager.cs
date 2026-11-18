@@ -38,7 +38,19 @@ internal class SkuaManager
     {
         List<DisplayOptionItemViewModelBase> options = new()
         {
-            CreateSettingOptionItem<bool>("Use Manager theme on VibeSkua", "Whether to use, when launching from the Launcher tab, the same theme as the Manager in any launched App", "syncTheme")
+            CreateSettingOptionItem<bool>("Use Manager theme on VibeSkua", "Whether to use, when launching from the Launcher tab, the same theme as the Manager in any launched App", "syncTheme"),
+            new CommandOptionItemViewModel<int>("High Latency Threshold", "Servers at or above this ping are marked high latency in the Manager server list (default: 200 ms).", "ServerLatencyThresholdMs", "ms", new RelayCommand<string>(value =>
+            {
+                if (!int.TryParse(value, out int result) || result < 50 || result > 2000)
+                    return;
+                Ioc.Default.GetRequiredService<ISettingsService>().Set("ServerLatencyThresholdMs", result);
+            }), s.GetRequiredService<ISettingsService>().Get<int>("ServerLatencyThresholdMs", 200)),
+            new CommandOptionItemViewModel<int>("Approaching Latency Threshold", "The warning indicator starts at this percentage of the high-latency threshold (default: 75%).", "ServerLatencyNearThresholdPercent", "%", new RelayCommand<string>(value =>
+            {
+                if (!int.TryParse(value, out int result) || result < 50 || result > 95)
+                    return;
+                Ioc.Default.GetRequiredService<ISettingsService>().Set("ServerLatencyNearThresholdPercent", result);
+            }), s.GetRequiredService<ISettingsService>().Get<int>("ServerLatencyNearThresholdPercent", 75))
         };
 
         return new(options, s.GetRequiredService<ISettingsService>(), s.GetRequiredService<IFileDialogService>());

@@ -10,9 +10,11 @@ using Skua.App.Avalonia.Services;
 using Skua.App.Avalonia.ViewModels;
 using Skua.App.Avalonia.ViewModels.MainMenu;
 using Skua.Core.Interfaces;
+using Skua.Core.Models.Servers;
 using Skua.Core.Messaging;
 using System;
 using System.Collections.Specialized;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -69,6 +71,15 @@ public partial class MainWindow : Window
     }
 
     private const int WM_NCACTIVATE = 0x0086;
+    private const int WM_NCHITTEST = 0x0084;
+    private const int HTLEFT = 10;
+    private const int HTRIGHT = 11;
+    private const int HTTOP = 12;
+    private const int HTTOPLEFT = 13;
+    private const int HTTOPRIGHT = 14;
+    private const int HTBOTTOM = 15;
+    private const int HTBOTTOMLEFT = 16;
+    private const int HTBOTTOMRIGHT = 17;
     private const int WM_WINDOWPOSCHANGED = 0x0047;
     private const int WM_DPICHANGED = 0x02E0;
     private const int WM_GETDPISCALEDSIZE = 0x02E4;
@@ -125,6 +136,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        ResizeGripOverlay.IsVisible = HotKeys.HostHwnd == IntPtr.Zero;
         _mainViewModel = Ioc.Default.GetRequiredService<MainViewModel>();
         _mainMenuVm = Ioc.Default.GetRequiredService<MainMenuViewModel>();
         _flash = Ioc.Default.GetRequiredService<IFlashUtil>();
@@ -468,6 +480,7 @@ public partial class MainWindow : Window
 
     private void OnFlashCall(string function, params object[] args)
     {
+
         if (function == "loaded" && !_isFlashLoaded)
         {
             _isFlashLoaded = true;
@@ -488,7 +501,88 @@ public partial class MainWindow : Window
         }
     }
 
+
 #if IS_WINDOWS
+    /// <summary>
+    /// Starts a native resize operation from one of the transparent Avalonia resize grips.
+    /// </summary>
+    /// <param name="edge">The edge or corner to resize from.</param>
+    /// <param name="e">The pointer event that initiated the resize.</param>
+    private void BeginGripResize(WindowEdge edge, PointerPressedEventArgs e)
+    {
+        if (HotKeys.HostHwnd != IntPtr.Zero || !CanResize || WindowState != WindowState.Normal ||
+            !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+            return;
+
+        e.Handled = true;
+        BeginResizeDrag(edge, e);
+    }
+
+    /// <summary>Starts resizing from the left edge.</summary>
+    private void ResizeWestGrip_PointerPressed(object? sender, PointerPressedEventArgs e) => BeginGripResize(WindowEdge.West, e);
+
+    /// <summary>Starts resizing from the right edge.</summary>
+    private void ResizeEastGrip_PointerPressed(object? sender, PointerPressedEventArgs e) => BeginGripResize(WindowEdge.East, e);
+
+    /// <summary>Starts resizing from the bottom edge.</summary>
+    private void ResizeSouthGrip_PointerPressed(object? sender, PointerPressedEventArgs e) => BeginGripResize(WindowEdge.South, e);
+
+    /// <summary>Starts resizing from the bottom-left corner.</summary>
+    private void ResizeSouthWestGrip_PointerPressed(object? sender, PointerPressedEventArgs e) => BeginGripResize(WindowEdge.SouthWest, e);
+
+    /// <summary>Starts resizing from the bottom-right corner.</summary>
+    private void ResizeSouthEastGrip_PointerPressed(object? sender, PointerPressedEventArgs e) => BeginGripResize(WindowEdge.SouthEast, e);
+
+    /// <summary>
+    /// Returns the Windows non-client resize code for all eight edges and corners of the top-level window.
+    /// </summary>
+    /// <param name="hWnd">The VibeSkua top-level window handle.</param>
+    /// <param name="lParam">The screen-space pointer coordinates from WM_NCHITTEST.</param>
+    /// <param name="hitTest">The native resize hit-test code for the pointer location.</param>
+    /// <returns><see langword="true"/> when the point should start a window resize.</returns>
+    private static bool TryGetResizeHitTest(IntPtr hWnd, IntPtr lParam, out IntPtr hitTest)
+    {
+        hitTest = IntPtr.Zero;
+        if (!GetWindowRect(hWnd, out RECT bounds))
+            return false;
+
+        long packedPoint = lParam.ToInt64();
+        int x = unchecked((short)(packedPoint & 0xFFFF));
+        int y = unchecked((short)((packedPoint >> 16) & 0xFFFF));
+        uint dpi = GetDpiForWindow(hWnd);
+        double scale = dpi > 0 ? dpi / 96.0 : 1.0;
+        int resizeBand = Math.Max(8, (int)Math.Ceiling(12 * scale));
+
+        if (x < bounds.Left || x >= bounds.Right || y < bounds.Top || y >= bounds.Bottom)
+            return false;
+
+        bool left = x < bounds.Left + resizeBand;
+        bool right = x >= bounds.Right - resizeBand;
+        bool top = y < bounds.Top + resizeBand;
+        bool bottom = y >= bounds.Bottom - resizeBand;
+
+        if (top && left)
+            hitTest = (IntPtr)HTTOPLEFT;
+        else if (top && right)
+            hitTest = (IntPtr)HTTOPRIGHT;
+        else if (bottom && left)
+            hitTest = (IntPtr)HTBOTTOMLEFT;
+        else if (bottom && right)
+            hitTest = (IntPtr)HTBOTTOMRIGHT;
+        else if (left)
+            hitTest = (IntPtr)HTLEFT;
+        else if (right)
+            hitTest = (IntPtr)HTRIGHT;
+        else if (top)
+            hitTest = (IntPtr)HTTOP;
+        else if (bottom)
+            hitTest = (IntPtr)HTBOTTOM;
+        else
+            return false;
+
+        return true;
+    }
+
     private IntPtr WindowSubclassProc(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam, nuint uIdSubclass, IntPtr dwRefData)
     {
         if (uMsg == WM_NCACTIVATE)
@@ -505,6 +599,17 @@ public partial class MainWindow : Window
                     }
                 }
             }
+        }
+
+        // The native Flash host can occupy the top-level resize border with its child HWNDs.
+        // Pass those edge points through and return the correct native resize hit here.
+        if (uMsg == WM_NCHITTEST &&
+            CanResize &&
+            WindowState == WindowState.Normal &&
+            HotKeys.HostHwnd == IntPtr.Zero &&
+            TryGetResizeHitTest(hWnd, lParam, out IntPtr resizeHit))
+        {
+            return resizeHit;
         }
 
         // The tab host sizes this window to its tab area. On a monitor with another scale, keep that size instead of

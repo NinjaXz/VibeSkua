@@ -3,6 +3,10 @@
              x:Class="Skua.Shared.Avalonia.Controls.Settings.ServerStatusInline"
              x:Name="Root">
   <StackPanel Orientation="Horizontal" Spacing="4">
+    <TextBlock Text="{Binding Server.PingIndicator, ElementName=Root}"
+               FontSize="12"
+               VerticalAlignment="Center"
+               ToolTip.Tip="Server latency status" />
     <TextBlock Text="{Binding Server.Name, ElementName=Root}" FontWeight="SemiBold" />
     <TextBlock Text="{Binding Server, ElementName=Root, Converter={StaticResource ServerMembershipTextConverter}}"
                FontSize="11"

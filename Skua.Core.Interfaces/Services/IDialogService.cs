@@ -5,7 +5,7 @@ namespace Skua.Core.Interfaces;
 
 public interface IDialogService
 {
-    bool? ShowDialog<TViewModel>(TViewModel viewModel)
+bool? ShowDialog<TViewModel>(TViewModel viewModel)
         where TViewModel : class;
 
     bool? ShowDialog<TViewModel>(TViewModel viewModel, string Title)

@@ -45,7 +45,7 @@
                          Text="{Binding SearchText, Mode=TwoWay}"
                          MinimumPrefixLength="0"
                          MaxDropDownHeight="320"
-                         Watermark="Add an action..."
+                         PlaceholderText="Add an action..."
                          ValueMemberBinding="{Binding Title}">
           <AutoCompleteBox.ItemTemplate>
             <DataTemplate>
@@ -90,7 +90,7 @@
       </Border>
       <TextBox Grid.Column="3"
                Text="{Binding FilterHotKeysText, Mode=TwoWay}"
-               Watermark="Filter">
+               PlaceholderText="Filter">
         <TextBox.InnerLeftContent>
           <materialIcons:MaterialIcon Kind="Magnify" Width="15" Height="15" Margin="10,0,0,0" Foreground="{DynamicResource SkuaMutedTextBrush}" />
         </TextBox.InnerLeftContent>

@@ -62,7 +62,7 @@
           </DataTemplate>
         </ListBox.ItemTemplate>
       </ListBox>
-      <TextBox Grid.Column="1" Width="220" Watermark="Search options"
+      <TextBox Grid.Column="1" Width="220" PlaceholderText="Search options"
                IsVisible="{Binding IsOptionsTabSelected}"
                Text="{Binding OptionsTab.SearchText, Mode=TwoWay}">
         <TextBox.InnerLeftContent>

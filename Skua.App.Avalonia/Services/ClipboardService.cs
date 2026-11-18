@@ -27,7 +27,7 @@ public class ClipboardService : IClipboardService
 
     public string GetText()
     {
-        return GetClipboard()?.GetTextAsync().GetAwaiter().GetResult() ?? string.Empty;
+        return GetClipboard()?.TryGetTextAsync().GetAwaiter().GetResult() ?? string.Empty;
     }
 
     private static global::Avalonia.Input.Platform.IClipboard? GetClipboard()

@@ -103,6 +103,7 @@ public class DialogService : IDialogService
         return index < 0 ? DialogResult.Cancelled : new DialogResult(clicked, index);
     }
 
+
     public IInputDialogViewModel CreateInputDialog(string title, string dialogHint)
     {
         return new InputDialogViewModel(title, dialogHint);
@@ -824,9 +825,8 @@ public class DialogService : IDialogService
             Width = 420,
             SizeToContent = SizeToContent.Height,
             WindowStartupLocation = WindowStartupLocation.Manual,
-            SystemDecorations = SystemDecorations.BorderOnly,
+            WindowDecorations = WindowDecorations.BorderOnly,
             ExtendClientAreaToDecorationsHint = true,
-            ExtendClientAreaChromeHints = global::Avalonia.Platform.ExtendClientAreaChromeHints.NoChrome,
             ExtendClientAreaTitleBarHeightHint = 32,
             CanResize = false,
             ShowActivated = true,

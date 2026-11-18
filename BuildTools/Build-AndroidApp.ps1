@@ -1,7 +1,7 @@
 # Build-AndroidApp.ps1
 # Automates building the Skua Remote Controller Android APK
 
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$scriptDir = Split-Path -Parent $PSScriptRoot
 $androidDir = Join-Path $scriptDir "Skua.App.Android"
 
 Write-Host "=== Building Skua Android Controller ===" -ForegroundColor Cyan

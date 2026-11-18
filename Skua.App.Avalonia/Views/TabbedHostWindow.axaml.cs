@@ -34,6 +34,8 @@ namespace Skua.App.Avalonia.Views;
 
 public partial class TabbedHostWindow : Window
 {
+    private static readonly DataFormat<TabItem> TabItemDataFormat = DataFormat.CreateInProcessFormat<TabItem>("skua-tab-item");
+
     #region Win32 API
 
     public delegate IntPtr SubclassProc(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam, nuint uIdSubclass, IntPtr dwRefData);
@@ -241,6 +243,7 @@ public partial class TabbedHostWindow : Window
     {
         public Process Process { get; set; } = null!;
         public IntPtr ChildHwnd { get; set; } = IntPtr.Zero;
+        public string? Username { get; set; }
         public bool IsThrottled { get; set; } = false;
         public bool IsCustomNamed { get; set; } = false;
     }
@@ -290,6 +293,8 @@ public partial class TabbedHostWindow : Window
 
     private Queue<Action> _spawnQueue = new Queue<Action>();
     private bool _isSpawning = false;
+    private readonly List<(string Username, string DisplayName)> _quickLaunchAccounts = new();
+    private readonly HashSet<string> _quickLaunchSelection = new(StringComparer.OrdinalIgnoreCase);
 
     private void EnqueueSpawn(Action spawnAction)
     {
@@ -1233,6 +1238,221 @@ public partial class TabbedHostWindow : Window
     private void AddTabButton_Click(object? sender, RoutedEventArgs e)
     {
         AddNewInstance();
+    }
+
+    private void AccountLaunchToggle_Click(object? sender, RoutedEventArgs e)
+    {
+        RefreshQuickLaunchAccounts();
+    }
+
+    private void AccountQuickLaunchSearch_TextChanged(object? sender, TextChangedEventArgs e)
+    {
+        FilterQuickLaunchAccounts();
+    }
+
+    private void AccountQuickLaunchSelectAll_Click(object? sender, RoutedEventArgs e)
+    {
+        string search = AccountQuickLaunchSearch.Text?.Trim() ?? string.Empty;
+        foreach ((string Username, string DisplayName) account in _quickLaunchAccounts)
+        {
+            if (string.IsNullOrWhiteSpace(search)
+                || account.Username.Contains(search, StringComparison.OrdinalIgnoreCase)
+                || account.DisplayName.Contains(search, StringComparison.OrdinalIgnoreCase))
+                _quickLaunchSelection.Add(account.Username);
+        }
+
+        FilterQuickLaunchAccounts();
+    }
+
+    private void AccountQuickLaunchClear_Click(object? sender, RoutedEventArgs e)
+    {
+        _quickLaunchSelection.Clear();
+        FilterQuickLaunchAccounts();
+    }
+
+    private void AccountQuickLaunchLaunch_Click(object? sender, RoutedEventArgs e)
+    {
+        List<string> selectedUsernames = _quickLaunchAccounts
+            .Where(account => _quickLaunchSelection.Contains(account.Username))
+            .Select(account => account.Username)
+            .ToList();
+        if (selectedUsernames.Count == 0)
+            return;
+
+        try
+        {
+            ISettingsService settings = Ioc.Default.GetRequiredService<ISettingsService>();
+            settings.ReloadSettings();
+            Dictionary<string, AccountData>? savedAccounts = settings.Get<Dictionary<string, AccountData>>("ManagedAccounts");
+            int launchedCount = 0;
+            int focusedCount = 0;
+            int skippedCount = 0;
+
+            foreach (string username in selectedUsernames)
+            {
+                if (savedAccounts == null || !savedAccounts.ContainsKey(username))
+                {
+                    skippedCount++;
+                    continue;
+                }
+
+                TabItem? existingTab = _tabs
+                    .Where(tab => tab.Value.Process != null
+                        && !tab.Value.Process.HasExited
+                        && string.Equals(tab.Value.Username, username, StringComparison.OrdinalIgnoreCase))
+                    .Select(tab => tab.Key)
+                    .FirstOrDefault();
+
+                if (existingTab != null)
+                {
+                    InstancesTabControl.SelectedItem = existingTab;
+                    ScrollTabIntoView(existingTab);
+                    focusedCount++;
+                    continue;
+                }
+
+                // LaunchAccount reads the current Manager credentials and server, then uses the normal tab spawn queue.
+                LaunchAccount(username);
+                launchedCount++;
+            }
+
+            Trace.WriteLine($"Quick Account Launch: opened {launchedCount}, focused {focusedCount}, skipped {skippedCount}.");
+            _quickLaunchSelection.Clear();
+            FilterQuickLaunchAccounts();
+            AccountQuickLaunchPopup.IsOpen = false;
+            AccountLaunchToggle.IsChecked = false;
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine($"Quick Account Launch failed: {ex}");
+        }
+    }
+
+    private void RefreshQuickLaunchAccounts()
+    {
+        try
+        {
+            ISettingsService settings = Ioc.Default.GetRequiredService<ISettingsService>();
+            settings.ReloadSettings();
+            Dictionary<string, AccountData>? savedAccounts = settings.Get<Dictionary<string, AccountData>>("ManagedAccounts");
+
+            _quickLaunchAccounts.Clear();
+            if (savedAccounts != null)
+            {
+                foreach (KeyValuePair<string, AccountData> account in savedAccounts)
+                {
+                    if (string.IsNullOrWhiteSpace(account.Key))
+                        continue;
+
+                    string displayName = string.IsNullOrWhiteSpace(account.Value?.DisplayName)
+                        ? account.Key
+                        : account.Value.DisplayName;
+                    _quickLaunchAccounts.Add((account.Key, displayName));
+                }
+            }
+
+            _quickLaunchSelection.RemoveWhere(username =>
+                !_quickLaunchAccounts.Any(account => string.Equals(account.Username, username, StringComparison.OrdinalIgnoreCase)));
+
+            AccountQuickLaunchCountText.Text = _quickLaunchAccounts.Count == 1
+                ? "1 saved Manager account"
+                : $"{_quickLaunchAccounts.Count} saved Manager accounts";
+            FilterQuickLaunchAccounts();
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine($"Failed to load Manager accounts for Quick Account Launch: {ex}");
+            _quickLaunchAccounts.Clear();
+            _quickLaunchSelection.Clear();
+            AccountQuickLaunchCountText.Text = "Manager accounts unavailable";
+            AccountQuickLaunchRows.Children.Clear();
+            AccountQuickLaunchRows.IsVisible = false;
+            AccountQuickLaunchEmptyText.Text = "Could not load Manager accounts.";
+            AccountQuickLaunchEmptyText.IsVisible = true;
+            UpdateQuickLaunchSelectionSummary();
+        }
+    }
+
+    private void FilterQuickLaunchAccounts()
+    {
+        string search = AccountQuickLaunchSearch.Text?.Trim() ?? string.Empty;
+        List<(string Username, string DisplayName)> visibleAccounts = _quickLaunchAccounts
+            .Where(account => string.IsNullOrWhiteSpace(search)
+                || account.Username.Contains(search, StringComparison.OrdinalIgnoreCase)
+                || account.DisplayName.Contains(search, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        AccountQuickLaunchRows.Children.Clear();
+        foreach ((string Username, string DisplayName) account in visibleAccounts)
+        {
+            StackPanel accountContent = new()
+            {
+                Orientation = Orientation.Vertical,
+                Spacing = 1,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            TextBlock displayName = new()
+            {
+                Text = account.DisplayName,
+                FontSize = 12,
+                FontWeight = FontWeight.SemiBold,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            displayName[!TextBlock.ForegroundProperty] =
+                new global::Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SkuaTextBrush");
+            accountContent.Children.Add(displayName);
+
+            if (!string.Equals(account.DisplayName, account.Username, StringComparison.OrdinalIgnoreCase))
+            {
+                TextBlock username = new()
+                {
+                    Text = account.Username,
+                    FontSize = 10,
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                username[!TextBlock.ForegroundProperty] =
+                    new global::Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SkuaMutedTextBrush");
+                accountContent.Children.Add(username);
+            }
+
+            CheckBox checkBox = new()
+            {
+                Content = accountContent,
+                IsChecked = _quickLaunchSelection.Contains(account.Username),
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Center,
+                Padding = new Thickness(6, 3)
+            };
+            checkBox.Click += (sender, args) =>
+            {
+                if (checkBox.IsChecked == true)
+                    _quickLaunchSelection.Add(account.Username);
+                else
+                    _quickLaunchSelection.Remove(account.Username);
+
+                UpdateQuickLaunchSelectionSummary();
+            };
+
+            AccountQuickLaunchRows.Children.Add(checkBox);
+        }
+
+        AccountQuickLaunchRows.IsVisible = visibleAccounts.Count > 0;
+        AccountQuickLaunchEmptyText.IsVisible = visibleAccounts.Count == 0;
+        AccountQuickLaunchEmptyText.Text = _quickLaunchAccounts.Count == 0
+            ? "No Manager accounts saved yet."
+            : "No accounts match your search.";
+        UpdateQuickLaunchSelectionSummary();
+    }
+
+    private void UpdateQuickLaunchSelectionSummary()
+    {
+        int selectedCount = _quickLaunchSelection.Count;
+        AccountQuickLaunchSelectionText.Text = $"{selectedCount} selected";
+        AccountQuickLaunchLaunchText.Text = selectedCount == 0
+            ? "Launch Selected"
+            : $"Launch {selectedCount} {(selectedCount == 1 ? "Account" : "Accounts")}";
+        AccountQuickLaunchLaunchButton.IsEnabled = selectedCount > 0;
     }
 
     private void ScrollTabsLeftButton_Click(object? sender, RoutedEventArgs e)
@@ -2743,12 +2963,16 @@ public partial class TabbedHostWindow : Window
         }
 
         string tabName = "User " + availableId;
+        string? accountUsername = null;
         for (int i = 0; i < clientArgs.Length; i++)
         {
             if ((clientArgs[i] == "-u" || clientArgs[i] == "--user") && i + 1 < clientArgs.Length)
             {
                 if (!string.IsNullOrWhiteSpace(clientArgs[i + 1]))
-                    tabName = clientArgs[i + 1];
+                {
+                    accountUsername = clientArgs[i + 1].Trim();
+                    tabName = accountUsername;
+                }
                 break;
             }
         }
@@ -2823,7 +3047,7 @@ public partial class TabbedHostWindow : Window
         closeBtn.PointerEntered += (s, ev) => { closeTxt.Foreground = Brushes.White; closeBtn.Background = new SolidColorBrush(Color.Parse("#EF4444")); };
         closeBtn.PointerExited += (s, ev) => { closeTxt[!TextBlock.ForegroundProperty] = new global::Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SkuaMutedTextBrush"); closeBtn.Background = Brushes.Transparent; };
 
-        TabInfo info = new TabInfo();
+        TabInfo info = new() { Username = accountUsername };
 
         Action closeEditMode = () =>
         {
@@ -3063,6 +3287,7 @@ public partial class TabbedHostWindow : Window
         newTab.ContextMenu = ctx;
 
         Point startPoint = new Point();
+        PointerPressedEventArgs? dragStartEvent = null;
         headerPanel.PointerPressed += (s, ev) =>
         {
             var prop = ev.GetCurrentPoint(headerPanel).Properties;
@@ -3076,6 +3301,7 @@ public partial class TabbedHostWindow : Window
                 return;
 
             startPoint = ev.GetPosition(null);
+            dragStartEvent = ev;
             InstancesTabControl.SelectedItem = newTab;
 
             if (_isGridViewEnabled)
@@ -3102,6 +3328,8 @@ public partial class TabbedHostWindow : Window
             }
         };
 
+        headerPanel.PointerReleased += (s, ev) => dragStartEvent = null;
+
         headerPanel.PointerMoved += async (s, ev) =>
         {
             if (editTitle.IsVisible) return;
@@ -3110,27 +3338,24 @@ public partial class TabbedHostWindow : Window
             {
                 Point mousePos = ev.GetPosition(null);
                 Vector diff = startPoint - mousePos;
-                if (Math.Abs(diff.X) > 4 || Math.Abs(diff.Y) > 4)
+                if ((Math.Abs(diff.X) > 4 || Math.Abs(diff.Y) > 4) && dragStartEvent is { } dragStart)
                 {
-                    var dragData = new global::Avalonia.Input.DataObject();
-                    dragData.Set("TabItem", newTab);
-                    await DragDrop.DoDragDrop(ev, dragData, DragDropEffects.Move);
+                    dragStartEvent = null;
+                    DataTransfer dragData = new();
+                    dragData.Add(DataTransferItem.Create(TabItemDataFormat, newTab));
+                    await DragDrop.DoDragDropAsync(dragStart, dragData, DragDropEffects.Move);
                 }
             }
         };
 
         newTab.AddHandler(DragDrop.DropEvent, (s, ev) =>
         {
-            if (ev.Data.Contains("TabItem"))
+            if (ev.DataTransfer.TryGetValue(TabItemDataFormat) is TabItem droppedTab && droppedTab != newTab)
             {
-                TabItem? droppedTab = ev.Data.Get("TabItem") as TabItem;
-                if (droppedTab != null && droppedTab != newTab)
-                {
-                    int targetIndex = InstancesTabControl.Items.IndexOf(newTab);
-                    InstancesTabControl.Items.Remove(droppedTab);
-                    InstancesTabControl.Items.Insert(targetIndex, droppedTab);
-                    InstancesTabControl.SelectedItem = droppedTab;
-                }
+                int targetIndex = InstancesTabControl.Items.IndexOf(newTab);
+                InstancesTabControl.Items.Remove(droppedTab);
+                InstancesTabControl.Items.Insert(targetIndex, droppedTab);
+                InstancesTabControl.SelectedItem = droppedTab;
             }
         });
 

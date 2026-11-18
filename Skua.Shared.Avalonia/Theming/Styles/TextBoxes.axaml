@@ -114,7 +114,7 @@
             <ControlTemplate TargetType="AutoCompleteBox">
                 <Grid>
                     <TextBox x:Name="PART_TextBox"
-                             Watermark="{TemplateBinding Watermark}"
+                             PlaceholderText="{TemplateBinding Watermark}"
                              Width="{TemplateBinding Width}"
                              Foreground="{TemplateBinding Foreground}"
                              Background="{TemplateBinding Background}"
