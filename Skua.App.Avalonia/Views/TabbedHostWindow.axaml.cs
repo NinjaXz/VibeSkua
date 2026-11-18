@@ -1802,7 +1802,7 @@ public partial class TabbedHostWindow : Window
             }
         }
 
-        return null;
+        return false;
     }
 
     private void UpdateQuickLaunchStatuses()
