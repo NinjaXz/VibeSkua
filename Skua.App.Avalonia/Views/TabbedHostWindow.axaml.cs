@@ -1470,12 +1470,36 @@ public partial class TabbedHostWindow : Window
                     }
                 }
 
-                Dispatcher.UIThread.Post(() =>
+                List<string> queuedUsernames = launchArguments
+                    .Take(queued)
+                    .Select(arguments => arguments[1])
+                    .ToList();
+
+                int loggedIn = 0;
+                for (int elapsedSeconds = 0; elapsedSeconds < 180 && loggedIn < queuedUsernames.Count; elapsedSeconds++)
                 {
-                    AccountQuickLaunchProgressBar.Value = 100;
-                    AccountQuickLaunchProgressText.Text =
-                        $"New window opened · {queued} accounts queued · {alreadyRunning} already running · {failed} unavailable/failed";
-                });
+                    HashSet<string> runningAccounts = GetRunningAccountUsernames();
+                    loggedIn = queuedUsernames.Count(runningAccounts.Contains);
+                    int currentLoggedIn = loggedIn;
+                    int currentStarting = queuedUsernames.Count - currentLoggedIn;
+
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        if (_isClosing)
+                            return;
+
+                        UpdateQuickLaunchStatuses();
+                        AccountQuickLaunchProgressBar.Value = queuedUsernames.Count == 0
+                            ? 100
+                            : currentLoggedIn * 100d / queuedUsernames.Count;
+                        AccountQuickLaunchProgressText.Text = currentStarting == 0
+                            ? $"New window ready · {currentLoggedIn} accounts running · {alreadyRunning} already running · {failed} unavailable/failed"
+                            : $"New window opened · {queued} queued · {currentLoggedIn}/{queuedUsernames.Count} logged in · {currentStarting} still starting · {alreadyRunning} already running · {failed} unavailable/failed";
+                    });
+
+                    if (currentStarting > 0)
+                        await Task.Delay(1000);
+                }
             });
         }
         catch (Exception ex)
@@ -1763,46 +1787,66 @@ public partial class TabbedHostWindow : Window
     /// </summary>
     private static bool IsExternalAccountRunning(string username)
     {
+        return GetRunningAccountUsernames().Contains(username);
+    }
+
+    /// <summary>
+    /// Reads the shared per-process username records for every active game client.
+    /// These records allow Quick Launch to detect accounts hosted by other windows.
+    /// </summary>
+    private static HashSet<string> GetRunningAccountUsernames()
+    {
+        HashSet<string> runningAccounts = new(StringComparer.OrdinalIgnoreCase);
         string directory = Path.Combine(Path.GetTempPath(), "VibeSkuaTabs");
         if (!Directory.Exists(directory))
-            return false;
+            return runningAccounts;
 
-        foreach (string file in Directory.EnumerateFiles(directory, "*.txt"))
+        try
         {
-            string fileName = Path.GetFileNameWithoutExtension(file);
-            if (!int.TryParse(fileName, out int processId) || processId == Environment.ProcessId)
-                continue;
-
-            try
+            foreach (string file in Directory.EnumerateFiles(directory, "*.txt"))
             {
-                Process process = Process.GetProcessById(processId);
-                if (process.HasExited)
-                {
-                    process.Dispose();
+                string fileName = Path.GetFileNameWithoutExtension(file);
+                if (!int.TryParse(fileName, out int processId) || processId == Environment.ProcessId)
                     continue;
-                }
 
-                string loggedInUsername = File.ReadAllText(file).Trim();
-                bool isMatch = string.Equals(loggedInUsername, username, StringComparison.OrdinalIgnoreCase);
-                process.Dispose();
-                if (isMatch)
-                    return true;
-            }
-            catch (ArgumentException)
-            {
-                // The process exited after its username file was enumerated.
-            }
-            catch (IOException)
-            {
-                // The game client may be updating its username file.
-            }
-            catch (UnauthorizedAccessException)
-            {
-                // Ignore files that cannot be read.
+                try
+                {
+                    using Process process = Process.GetProcessById(processId);
+                    if (process.HasExited)
+                        continue;
+
+                    string loggedInUsername = File.ReadAllText(file).Trim();
+                    if (!string.IsNullOrWhiteSpace(loggedInUsername))
+                        runningAccounts.Add(loggedInUsername);
+                }
+                catch (ArgumentException)
+                {
+                    // The process exited after its username file was enumerated.
+                }
+                catch (IOException)
+                {
+                    // The game client may be updating its username file.
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    // Ignore files that cannot be read.
+                }
             }
         }
+        catch (DirectoryNotFoundException)
+        {
+            // The shared directory may be cleaned up while scanning it.
+        }
+        catch (IOException)
+        {
+            // Ignore transient directory access failures.
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // The shared directory is not accessible.
+        }
 
-        return false;
+        return runningAccounts;
     }
 
     private void UpdateQuickLaunchStatuses()
