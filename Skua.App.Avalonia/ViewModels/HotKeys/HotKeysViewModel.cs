@@ -79,8 +79,8 @@ public partial class HotKeysViewModel : BotControlViewModelBase, IManagedWindow
         {
             if (_cachedAvailableActions == null)
             {
-                _cachedAvailableActions = global::Skua.Core.AppStartup.HotKeys.GetRegistry().Keys
-                    .Where(k => !HotKeys.Any(h => h.Binding == k))
+                _cachedAvailableActions = _hotKeyService.GetAvailableHotKeyBindings()
+                    .Where(k => !HotKeys.Any(h => string.Equals(h.Binding, k, StringComparison.OrdinalIgnoreCase)))
                     .Select(k => new HotKeyItemViewModel
                     {
                         Binding = k,
