@@ -130,16 +130,14 @@ public class HotKeyService : IHotKeyService, IDisposable
             if (!_hotKeys.ContainsKey(binding) && !registeredActions.ContainsKey(binding))
                 continue;
 
-            if (!string.IsNullOrWhiteSpace(gesture) && !gesture.Equals("Unassigned", StringComparison.OrdinalIgnoreCase))
+            // Keep unassigned actions visible so users can assign a key instead of losing them from the editor.
+            cleaned.Add($"{binding}|{(string.IsNullOrWhiteSpace(gesture) ? "Unassigned" : gesture)}");
+            parsed.Add(new()
             {
-                cleaned.Add($"{binding}|{gesture}");
-                parsed.Add(new()
-                {
-                    Binding = binding,
-                    Title = global::Skua.Core.AppStartup.HotKeys.GetFormattedTitle(binding),
-                    KeyGesture = gesture
-                });
-            }
+                Binding = binding,
+                Title = global::Skua.Core.AppStartup.HotKeys.GetFormattedTitle(binding),
+                KeyGesture = string.IsNullOrWhiteSpace(gesture) ? "Unassigned" : gesture
+            });
         }
 
         if (parsed.Count == 0)
@@ -190,16 +188,24 @@ public class HotKeyService : IHotKeyService, IDisposable
 
     private void EnsureDefaultBindingsExist(StringCollection hotkeys)
     {
-        bool HasBinding(string name)
+        void EnsureDefaultGesture(string name, string gesture)
         {
-            foreach (string? item in hotkeys)
+            for (int i = 0; i < hotkeys.Count; i++)
             {
-                if (string.IsNullOrWhiteSpace(item)) continue;
+                string? item = hotkeys[i];
+                if (string.IsNullOrWhiteSpace(item))
+                    continue;
+
                 string[] parts = item.Split('|');
-                if (parts.Length > 0 && parts[0].Equals(name, StringComparison.OrdinalIgnoreCase))
-                    return true;
+                if (parts.Length == 0 || !parts[0].Equals(name, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (parts.Length < 2 || string.IsNullOrWhiteSpace(parts[1]))
+                    hotkeys[i] = $"{name}|{gesture}";
+                return;
             }
-            return false;
+
+            hotkeys.Add($"{name}|{gesture}");
         }
 
         if (hotkeys.Count == 0)
@@ -214,10 +220,8 @@ public class HotKeyService : IHotKeyService, IDisposable
             return;
         }
 
-        if (!HasBinding("OpenBank"))
-            hotkeys.Add("OpenBank|F2");
-        if (!HasBinding("OpenQuickLaunch"))
-            hotkeys.Add("OpenQuickLaunch|Ctrl+Shift+L");
+        EnsureDefaultGesture("OpenBank", "F2");
+        EnsureDefaultGesture("OpenQuickLaunch", "Ctrl+Shift+L");
     }
 
     private void AttachMainWindow()
