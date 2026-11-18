@@ -1297,66 +1297,250 @@ public partial class TabbedHostWindow : Window
         if (selectedUsernames.Count == 0)
             return;
 
+        LaunchAccountBatch(selectedUsernames);
+        _quickLaunchSelection.Clear();
+        FilterQuickLaunchAccounts();
+    }
+
+    private void AccountQuickLaunchGroupLaunch_Click(object? sender, RoutedEventArgs e)
+    {
+        if (AccountQuickLaunchGroupCombo.SelectedItem is not ComboBoxItem selectedItem
+            || selectedItem.Tag is not string groupName)
+            return;
+
+        GroupData? group = _quickLaunchGroups.FirstOrDefault(item =>
+            string.Equals(item.Name, groupName, StringComparison.OrdinalIgnoreCase));
+        if (group?.Accounts != null)
+            LaunchAccountBatch(group.Accounts);
+    }
+
+    private void AccountQuickLaunchRetry_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_quickLaunchFailed.Count > 0)
+            LaunchAccountBatch(_quickLaunchFailed.ToArray());
+    }
+
+    private void LaunchAccountBatch(IEnumerable<string> usernames)
+    {
+        List<string> accounts = usernames
+            .Where(username => !string.IsNullOrWhiteSpace(username))
+            .Select(username => username.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (accounts.Count == 0)
+            return;
+
         try
         {
             ISettingsService settings = Ioc.Default.GetRequiredService<ISettingsService>();
             settings.ReloadSettings();
             Dictionary<string, AccountData>? savedAccounts = settings.Get<Dictionary<string, AccountData>>("ManagedAccounts");
-            int launchedCount = 0;
-            int focusedCount = 0;
-            int skippedCount = 0;
 
-            foreach (string username in selectedUsernames)
+            int batchId = ++_quickLaunchBatchId;
+            _quickLaunchBatchTotal = accounts.Count;
+            _quickLaunchBatchCompleted = 0;
+            _quickLaunchBatchAlreadyOpen = 0;
+            _quickLaunchBatchFailed = 0;
+
+            foreach (string username in accounts)
             {
+                _quickLaunchFailed.Remove(username);
                 if (savedAccounts == null || !savedAccounts.ContainsKey(username))
                 {
-                    skippedCount++;
+                    _quickLaunchFailed.Add(username);
+                    _quickLaunchBatchFailed++;
+                    _quickLaunchBatchCompleted++;
                     continue;
                 }
 
-                TabItem? existingTab = null;
-                foreach (KeyValuePair<TabItem, TabInfo> tabEntry in _tabs)
-                {
-                    TabInfo tabInfo = tabEntry.Value;
-                    if (tabInfo.Process == null || tabInfo.Process.HasExited)
-                        continue;
-
-                    // The process-side username file also covers tabs opened manually or before polling updates TabInfo.
-                    string? loggedInUsername = GetTabLoggedInUsername(tabEntry.Key, tabInfo, GetTabTitle(tabEntry.Key));
-                    if (string.Equals(tabInfo.Username, username, StringComparison.OrdinalIgnoreCase)
-                        || string.Equals(loggedInUsername, username, StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (!string.IsNullOrWhiteSpace(loggedInUsername))
-                            tabInfo.Username = loggedInUsername.Trim();
-
-                        existingTab = tabEntry.Key;
-                        break;
-                    }
-                }
-
+                TabItem? existingTab = FindExistingAccountTab(username);
                 if (existingTab != null)
                 {
-                    InstancesTabControl.SelectedItem = existingTab;
-                    ScrollTabIntoView(existingTab);
-                    focusedCount++;
+                    FocusAccountTab(existingTab);
+                    _quickLaunchBatchAlreadyOpen++;
+                    _quickLaunchBatchCompleted++;
                     continue;
                 }
 
-                // LaunchAccount reads the current Manager credentials and server, then uses the normal tab spawn queue.
-                LaunchAccount(username);
-                launchedCount++;
+                _quickLaunchPending.Add(username);
+                LaunchAccount(username, onCompleted: success =>
+                {
+                    _quickLaunchPending.Remove(username);
+                    if (batchId != _quickLaunchBatchId)
+                    {
+                        UpdateQuickLaunchStatuses();
+                        return;
+                    }
+
+                    _quickLaunchBatchCompleted++;
+                    if (success)
+                        _quickLaunchFailed.Remove(username);
+                    else
+                    {
+                        _quickLaunchFailed.Add(username);
+                        _quickLaunchBatchFailed++;
+                    }
+
+                    UpdateQuickLaunchStatuses();
+                    UpdateQuickLaunchBatchProgress();
+                });
             }
 
-            Trace.WriteLine($"Quick Account Launch: opened {launchedCount}, focused {focusedCount}, skipped {skippedCount}.");
-            _quickLaunchSelection.Clear();
-            FilterQuickLaunchAccounts();
-            AccountQuickLaunchPopup.IsOpen = false;
-            AccountLaunchToggle.IsChecked = false;
+            UpdateQuickLaunchStatuses();
+            UpdateQuickLaunchBatchProgress();
         }
         catch (Exception ex)
         {
-            Trace.WriteLine($"Quick Account Launch failed: {ex}");
+            Trace.WriteLine($"Quick Account Launch batch failed: {ex}");
+            foreach (string username in accounts)
+                _quickLaunchFailed.Add(username);
+            _quickLaunchBatchTotal = accounts.Count;
+            _quickLaunchBatchCompleted = accounts.Count;
+            _quickLaunchBatchAlreadyOpen = 0;
+            _quickLaunchBatchFailed = accounts.Count;
+            UpdateQuickLaunchBatchProgress();
         }
+    }
+
+    private void UpdateQuickLaunchBatchProgress()
+    {
+        if (_quickLaunchBatchTotal <= 0)
+        {
+            AccountQuickLaunchProgressPanel.IsVisible = false;
+            return;
+        }
+
+        AccountQuickLaunchProgressPanel.IsVisible = true;
+        int completed = Math.Min(_quickLaunchBatchCompleted, _quickLaunchBatchTotal);
+        AccountQuickLaunchProgressBar.Value = completed * 100d / _quickLaunchBatchTotal;
+        AccountQuickLaunchProgressText.Text = completed >= _quickLaunchBatchTotal
+            ? $"Finished: {_quickLaunchBatchTotal - _quickLaunchBatchAlreadyOpen - _quickLaunchBatchFailed} launched · {_quickLaunchBatchAlreadyOpen} already running · {_quickLaunchBatchFailed} failed"
+            : $"Launching: {completed}/{_quickLaunchBatchTotal} complete · {_quickLaunchBatchAlreadyOpen} already running · {_quickLaunchBatchFailed} failed";
+        AccountQuickLaunchRetryButton.IsVisible = _quickLaunchBatchFailed > 0;
+    }
+
+    private void OpenQuickLaunch()
+    {
+        if (_isClosing)
+            return;
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_isClosing)
+                return;
+
+            RefreshQuickLaunchAccounts();
+            AccountLaunchToggle.IsChecked = true;
+            Dispatcher.UIThread.Post(() => AccountQuickLaunchSearch.Focus(), DispatcherPriority.Input);
+        }, DispatcherPriority.Input);
+    }
+
+    private void AccountQuickLaunchSearch_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Down)
+        {
+            FocusQuickLaunchCheckBox(0);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Enter)
+        {
+            if (_quickLaunchSelection.Count > 0)
+                AccountQuickLaunchLaunch_Click(sender, new RoutedEventArgs());
+            else
+                FocusQuickLaunchCheckBox(0);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            CloseQuickLaunchPopup();
+            e.Handled = true;
+        }
+    }
+
+    private void FocusQuickLaunchCheckBox(int index)
+    {
+        if (_quickLaunchCheckBoxes.Count == 0)
+            return;
+
+        int targetIndex = Math.Clamp(index, 0, _quickLaunchCheckBoxes.Count - 1);
+        _quickLaunchCheckBoxes[targetIndex].Focus();
+    }
+
+    private void CloseQuickLaunchPopup()
+    {
+        AccountQuickLaunchPopup.IsOpen = false;
+        AccountLaunchToggle.IsChecked = false;
+        AccountLaunchToggle.Focus();
+    }
+
+    private void FocusAccountTab(TabItem tab)
+    {
+        InstancesTabControl.SelectedItem = tab;
+        ScrollTabIntoView(tab);
+    }
+
+    private TabItem? FindExistingAccountTab(string username)
+    {
+        foreach (KeyValuePair<TabItem, TabInfo> tabEntry in _tabs)
+        {
+            TabInfo tabInfo = tabEntry.Value;
+            if (tabInfo.Process == null || tabInfo.Process.HasExited)
+                continue;
+
+            string? loggedInUsername = GetTabLoggedInUsername(tabEntry.Key, tabInfo, GetTabTitle(tabEntry.Key));
+            if (string.Equals(tabInfo.Username, username, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(loggedInUsername, username, StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.IsNullOrWhiteSpace(loggedInUsername))
+                    tabInfo.Username = loggedInUsername.Trim();
+
+                return tabEntry.Key;
+            }
+        }
+
+        return null;
+    }
+
+    private string GetQuickLaunchAccountStatus(string username)
+    {
+        foreach (TabInfo tabInfo in _tabs.Values)
+        {
+            if (tabInfo.Process == null || tabInfo.Process.HasExited)
+                continue;
+
+            string? loggedInUsername = GetProcessLoggedInUsername(tabInfo);
+            if (string.Equals(loggedInUsername, username, StringComparison.OrdinalIgnoreCase))
+                return "Running";
+            if (string.Equals(tabInfo.Username, username, StringComparison.OrdinalIgnoreCase))
+                return "Launching";
+        }
+
+        if (_quickLaunchPending.Contains(username))
+            return "Launching";
+        if (_quickLaunchFailed.Contains(username))
+            return "Failed";
+        return "Not running";
+    }
+
+    private void UpdateQuickLaunchStatuses()
+    {
+        foreach (KeyValuePair<string, (Border Bubble, TextBlock Text)> entry in _quickLaunchStatusBubbles)
+            SetQuickLaunchStatusBubble(entry.Value.Bubble, entry.Value.Text, GetQuickLaunchAccountStatus(entry.Key));
+    }
+
+    private static void SetQuickLaunchStatusBubble(Border bubble, TextBlock text, string status)
+    {
+        (string Background, string Foreground) colors = status switch
+        {
+            "Running" => ("#174B35", "#8DE2B5"),
+            "Launching" => ("#493A18", "#F5D58A"),
+            "Failed" => ("#542A2A", "#FFAAAA"),
+            _ => ("#343943", "#C4CAD4")
+        };
+
+        text.Text = status;
+        text.Foreground = new SolidColorBrush(Color.Parse(colors.Foreground));
+        bubble.Background = new SolidColorBrush(Color.Parse(colors.Background));
     }
 
     private void RefreshQuickLaunchAccounts()
