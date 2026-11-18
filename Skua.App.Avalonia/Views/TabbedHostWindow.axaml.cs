@@ -3929,12 +3929,20 @@ public partial class TabbedHostWindow : Window
         });
     }
 
-    public void LaunchAccount(string username, string? password = null, string? server = null)
+    public void LaunchAccount(string username, string? password = null, string? server = null, Action<bool>? onCompleted = null)
     {
         Dispatcher.UIThread.Post(() =>
         {
-            var settings = Ioc.Default.GetRequiredService<ISettingsService>();
-            var accs = settings.Get<Dictionary<string, AccountData>>("ManagedAccounts");
+            if (FindExistingAccountTab(username) is TabItem existingTab)
+            {
+                FocusAccountTab(existingTab);
+                onCompleted?.Invoke(true);
+                return;
+            }
+
+            ISettingsService settings = Ioc.Default.GetRequiredService<ISettingsService>();
+            settings.ReloadSettings();
+            Dictionary<string, AccountData>? accs = settings.Get<Dictionary<string, AccountData>>("ManagedAccounts");
             string pass = password ?? string.Empty;
             if (string.IsNullOrEmpty(pass) && accs != null && accs.TryGetValue(username, out var acc))
             {
@@ -3950,26 +3958,22 @@ public partial class TabbedHostWindow : Window
             }
             string srv = !string.IsNullOrEmpty(server) ? server : (settings.Get("LastServer", "Twilly") ?? "Twilly");
 
-            var args = new List<string> { "-u", username, "-p", pass, "-s", srv };
-            AddNewInstance(args.ToArray());
+            string[] args = { "-u", username, "-p", pass, "-s", srv };
+            AddNewInstance(args, onCompleted);
         });
     }
 
     public void LaunchGroup(string groupName)
     {
-        Dispatcher.UIThread.Post(async () =>
+        Dispatcher.UIThread.Post(() =>
         {
-            var settings = Ioc.Default.GetRequiredService<ISettingsService>();
-            var groups = settings.Get<List<GroupData>>("AccountGroups");
-            var group = groups?.FirstOrDefault(g => g.Name.Equals(groupName, StringComparison.OrdinalIgnoreCase));
-            if (group != null && group.Accounts != null)
-            {
-                foreach (var username in group.Accounts)
-                {
-                    LaunchAccount(username);
-                    await Task.Delay(1200);
-                }
-            }
+            ISettingsService settings = Ioc.Default.GetRequiredService<ISettingsService>();
+            settings.ReloadSettings();
+            List<GroupData> groups = settings.Get<List<GroupData>>("AccountGroups") ?? new List<GroupData>();
+            GroupData? group = groups.FirstOrDefault(item =>
+                string.Equals(item.Name, groupName, StringComparison.OrdinalIgnoreCase));
+            if (group?.Accounts != null)
+                LaunchAccountBatch(group.Accounts);
         });
     }
 
