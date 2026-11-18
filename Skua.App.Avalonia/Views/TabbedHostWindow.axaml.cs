@@ -331,6 +331,7 @@ public partial class TabbedHostWindow : Window
     private readonly List<GroupData> _quickLaunchGroups = new();
     private readonly HashSet<string> _quickLaunchSelection = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _quickLaunchPending = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, List<Action<bool>>> _quickLaunchPendingCallbacks = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _quickLaunchFailed = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, (Border Bubble, TextBlock Text)> _quickLaunchStatusBubbles = new(StringComparer.OrdinalIgnoreCase);
     private int _quickLaunchBatchId;
@@ -1566,8 +1567,10 @@ public partial class TabbedHostWindow : Window
                 Dispatcher.UIThread.Post(() =>
                 {
                     foreach (string username in queuedUsernames)
-                        _quickLaunchPending.Remove(username);
+                        CompleteQuickLaunchPending(username, runningAccounts.Contains(username));
                     foreach (string username in timedOutUsernames)
+                        _quickLaunchFailed.Add(username);
+                    foreach (string username in undeliveredUsernames)
                         _quickLaunchFailed.Add(username);
 
                     int totalFailed = failed + timedOutUsernames.Count;
@@ -1678,10 +1681,8 @@ public partial class TabbedHostWindow : Window
                     continue;
                 }
 
-                _quickLaunchPending.Add(username);
-                LaunchAccount(username, onCompleted: success =>
+                Action<bool> batchCompletion = success =>
                 {
-                    _quickLaunchPending.Remove(username);
                     if (batchId != _quickLaunchBatchId)
                     {
                         UpdateQuickLaunchStatuses();
@@ -1699,7 +1700,22 @@ public partial class TabbedHostWindow : Window
 
                     UpdateQuickLaunchStatuses();
                     UpdateQuickLaunchBatchProgress();
-                });
+                };
+
+                if (_quickLaunchPending.Contains(username))
+                {
+                    if (!_quickLaunchPendingCallbacks.TryGetValue(username, out List<Action<bool>>? callbacks))
+                    {
+                        callbacks = [];
+                        _quickLaunchPendingCallbacks[username] = callbacks;
+                    }
+                    callbacks.Add(batchCompletion);
+                    continue;
+                }
+
+                _quickLaunchPending.Add(username);
+                _quickLaunchPendingCallbacks[username] = [batchCompletion];
+                LaunchAccount(username, onCompleted: success => CompleteQuickLaunchPending(username, success));
             }
 
             UpdateQuickLaunchStatuses();
@@ -1887,6 +1903,15 @@ public partial class TabbedHostWindow : Window
                     DateTime processStartUtc = process.StartTime.ToUniversalTime();
                     if (File.GetLastWriteTimeUtc(file) < processStartUtc)
                         continue;
+
+                    string locationFile = Path.Combine(directory, $"{processId}.location.json");
+                    if (File.Exists(locationFile))
+                    {
+                        using JsonDocument location = JsonDocument.Parse(File.ReadAllText(locationFile));
+                        if (location.RootElement.TryGetProperty("LoggedIn", out JsonElement loggedIn)
+                            && loggedIn.ValueKind == JsonValueKind.False)
+                            continue;
+                    }
 
                     string loggedInUsername = File.ReadAllText(file).Trim();
                     if (!string.IsNullOrWhiteSpace(loggedInUsername))
@@ -4098,9 +4123,20 @@ public partial class TabbedHostWindow : Window
 
         try
         {
-            string file = Path.Combine(Path.GetTempPath(), "VibeSkuaTabs", $"{info.Process.Id}.txt");
-            if (!File.Exists(file))
+            string directory = Path.Combine(Path.GetTempPath(), "VibeSkuaTabs");
+            string file = Path.Combine(directory, $"{info.Process.Id}.txt");
+            if (!File.Exists(file)
+                || File.GetLastWriteTimeUtc(file) < info.Process.StartTime.ToUniversalTime())
                 return null;
+
+            string locationFile = Path.Combine(directory, $"{info.Process.Id}.location.json");
+            if (File.Exists(locationFile))
+            {
+                using JsonDocument location = JsonDocument.Parse(File.ReadAllText(locationFile));
+                if (location.RootElement.TryGetProperty("LoggedIn", out JsonElement loggedIn)
+                    && loggedIn.ValueKind == JsonValueKind.False)
+                    return null;
+            }
 
             string username = File.ReadAllText(file).Trim();
             if (!string.IsNullOrWhiteSpace(username)
