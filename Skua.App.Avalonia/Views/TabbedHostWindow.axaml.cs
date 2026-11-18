@@ -299,7 +299,6 @@ public partial class TabbedHostWindow : Window
     private readonly HashSet<string> _quickLaunchSelection = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _quickLaunchPending = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _quickLaunchFailed = new(StringComparer.OrdinalIgnoreCase);
-    private readonly List<CheckBox> _quickLaunchCheckBoxes = new();
     private readonly Dictionary<string, (Border Bubble, TextBlock Text)> _quickLaunchStatusBubbles = new(StringComparer.OrdinalIgnoreCase);
     private int _quickLaunchBatchId;
     private int _quickLaunchBatchTotal;
@@ -1927,7 +1926,6 @@ public partial class TabbedHostWindow : Window
             .ToList();
 
         AccountQuickLaunchRows.Children.Clear();
-        _quickLaunchCheckBoxes.Clear();
         _quickLaunchStatusBubbles.Clear();
         foreach ((string Username, string DisplayName) account in visibleAccounts)
         {
@@ -2018,7 +2016,6 @@ public partial class TabbedHostWindow : Window
                 }
             };
 
-            _quickLaunchCheckBoxes.Add(checkBox);
             AccountQuickLaunchRows.Children.Add(checkBox);
         }
 
