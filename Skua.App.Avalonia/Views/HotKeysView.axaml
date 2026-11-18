@@ -46,7 +46,8 @@
                          MinimumPrefixLength="0"
                          MaxDropDownHeight="320"
                          PlaceholderText="Add an action..."
-                         ValueMemberBinding="{Binding Title}">
+                         ValueMemberBinding="{Binding Title}"
+                         GotFocus="ActionAutoComplete_GotFocus">
           <AutoCompleteBox.ItemTemplate>
             <DataTemplate>
               <StackPanel Spacing="1" Margin="0,4">
@@ -56,19 +57,12 @@
             </DataTemplate>
           </AutoCompleteBox.ItemTemplate>
         </AutoCompleteBox>
-        <materialIcons:MaterialIcon Kind="PlusCircleOutline"
+        <materialIcons:MaterialIcon Kind="Magnify"
                                     Width="16" Height="16"
                                     Margin="10,0,0,0"
                                     HorizontalAlignment="Left"
                                     Foreground="{DynamicResource SkuaMutedTextBrush}"
                                     IsHitTestVisible="False" />
-        <Button Classes="icon"
-                HorizontalAlignment="Right"
-                Margin="0,0,3,0"
-                Click="ToggleDropdown_Click"
-                ToolTip.Tip="Browse all actions">
-          <materialIcons:MaterialIcon Kind="ChevronDown" Width="16" Height="16" Foreground="{DynamicResource SkuaMutedTextBrush}" />
-        </Button>
       </Grid>
 
       <Button Grid.Column="1"
