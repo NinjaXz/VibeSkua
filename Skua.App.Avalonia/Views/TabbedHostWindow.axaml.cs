@@ -1552,6 +1552,22 @@ public partial class TabbedHostWindow : Window
             Dictionary<string, AccountData>? savedAccounts = settings.Get<Dictionary<string, AccountData>>("ManagedAccounts");
 
             _quickLaunchAccounts.Clear();
+            _quickLaunchGroups.Clear();
+            AccountQuickLaunchGroupCombo.Items.Clear();
+
+            List<GroupData> savedGroups = settings.Get<List<GroupData>>("AccountGroups") ?? new List<GroupData>();
+            foreach (GroupData group in savedGroups)
+            {
+                if (string.IsNullOrWhiteSpace(group.Name) || group.Accounts == null)
+                    continue;
+
+                _quickLaunchGroups.Add(group);
+                AccountQuickLaunchGroupCombo.Items.Add(new ComboBoxItem { Content = group.Name, Tag = group.Name });
+            }
+
+            AccountQuickLaunchGroupCombo.SelectedIndex = _quickLaunchGroups.Count > 0 ? 0 : -1;
+            AccountQuickLaunchGroupButton.IsEnabled = _quickLaunchGroups.Count > 0;
+
             if (savedAccounts != null)
             {
                 foreach (KeyValuePair<string, AccountData> account in savedAccounts)
@@ -1598,9 +1614,11 @@ public partial class TabbedHostWindow : Window
             .ToList();
 
         AccountQuickLaunchRows.Children.Clear();
+        _quickLaunchCheckBoxes.Clear();
+        _quickLaunchStatusBubbles.Clear();
         foreach ((string Username, string DisplayName) account in visibleAccounts)
         {
-            StackPanel accountContent = new()
+            StackPanel accountNameContent = new()
             {
                 Orientation = Orientation.Vertical,
                 Spacing = 1,
@@ -1616,7 +1634,7 @@ public partial class TabbedHostWindow : Window
             };
             displayName[!TextBlock.ForegroundProperty] =
                 new global::Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SkuaTextBrush");
-            accountContent.Children.Add(displayName);
+            accountNameContent.Children.Add(displayName);
 
             if (!string.Equals(account.DisplayName, account.Username, StringComparison.OrdinalIgnoreCase))
             {
@@ -1628,8 +1646,33 @@ public partial class TabbedHostWindow : Window
                 };
                 username[!TextBlock.ForegroundProperty] =
                     new global::Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SkuaMutedTextBrush");
-                accountContent.Children.Add(username);
+                accountNameContent.Children.Add(username);
             }
+
+            StackPanel accountContent = new()
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 8,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            accountContent.Children.Add(accountNameContent);
+
+            TextBlock statusText = new()
+            {
+                FontSize = 9,
+                FontWeight = FontWeight.SemiBold,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Border statusBubble = new()
+            {
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(6, 2),
+                VerticalAlignment = VerticalAlignment.Center,
+                Child = statusText
+            };
+            SetQuickLaunchStatusBubble(statusBubble, statusText, GetQuickLaunchAccountStatus(account.Username));
+            _quickLaunchStatusBubbles[account.Username] = (statusBubble, statusText);
+            accountContent.Children.Add(statusBubble);
 
             CheckBox checkBox = new()
             {
@@ -1648,7 +1691,35 @@ public partial class TabbedHostWindow : Window
 
                 UpdateQuickLaunchSelectionSummary();
             };
+            checkBox.KeyDown += (sender, args) =>
+            {
+                int currentIndex = _quickLaunchCheckBoxes.IndexOf(checkBox);
+                if (args.Key == Key.Down)
+                {
+                    FocusQuickLaunchCheckBox(currentIndex + 1);
+                    args.Handled = true;
+                }
+                else if (args.Key == Key.Up)
+                {
+                    if (currentIndex <= 0)
+                        AccountQuickLaunchSearch.Focus();
+                    else
+                        FocusQuickLaunchCheckBox(currentIndex - 1);
+                    args.Handled = true;
+                }
+                else if (args.Key == Key.Enter)
+                {
+                    AccountQuickLaunchLaunch_Click(sender, new RoutedEventArgs());
+                    args.Handled = true;
+                }
+                else if (args.Key == Key.Escape)
+                {
+                    CloseQuickLaunchPopup();
+                    args.Handled = true;
+                }
+            };
 
+            _quickLaunchCheckBoxes.Add(checkBox);
             AccountQuickLaunchRows.Children.Add(checkBox);
         }
 
@@ -1658,6 +1729,7 @@ public partial class TabbedHostWindow : Window
             ? "No Manager accounts saved yet."
             : "No accounts match your search.";
         UpdateQuickLaunchSelectionSummary();
+        UpdateQuickLaunchStatuses();
     }
 
     private void UpdateQuickLaunchSelectionSummary()
