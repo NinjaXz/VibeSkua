@@ -262,7 +262,7 @@ public partial class TabbedHostWindow : Window
             Directory.CreateDirectory(directory);
             FileStream reservation = new(reservationPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             reservation.SetLength(0);
-            using (StreamWriter writer = new(reservation, leaveOpen: true))
+            using (StreamWriter writer = new(reservation, System.Text.Encoding.UTF8, 1024, leaveOpen: true))
             {
                 writer.WriteLine($"{Environment.ProcessId}|{DateTime.UtcNow:O}");
                 writer.Flush();
@@ -1072,7 +1072,7 @@ public partial class TabbedHostWindow : Window
                                 {
                                     bool queued = parsedArgs is not null
                                         && await Dispatcher.UIThread.InvokeAsync(() => AddNewInstance(parsedArgs));
-                                    using StreamWriter writer = new(pipeServer, leaveOpen: true);
+                                    using StreamWriter writer = new(pipeServer, System.Text.Encoding.UTF8, 1024, leaveOpen: true);
                                     await writer.WriteLineAsync(queued ? "ACK" : "NACK");
                                     await writer.FlushAsync();
                                 }
@@ -1634,11 +1634,11 @@ public partial class TabbedHostWindow : Window
             {
                 using NamedPipeClientStream pipeClient = new(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
                 await pipeClient.ConnectAsync(500);
-                using StreamWriter writer = new(pipeClient, leaveOpen: true);
+                using StreamWriter writer = new(pipeClient, System.Text.Encoding.UTF8, 1024, leaveOpen: true);
                 await writer.WriteLineAsync(payload);
                 await writer.FlushAsync();
 
-                using StreamReader reader = new(pipeClient, leaveOpen: true);
+                using StreamReader reader = new(pipeClient, System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
                 string? acknowledgement = await reader.ReadLineAsync();
                 return string.Equals(acknowledgement, "ACK", StringComparison.Ordinal);
             }
