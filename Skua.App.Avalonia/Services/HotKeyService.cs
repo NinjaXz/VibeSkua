@@ -61,10 +61,9 @@ public class HotKeyService : IHotKeyService, IDisposable
 
         _settingsService.ReloadSettings();
         StringCollection hotkeys = _settingsService.Get<StringCollection>("HotKeys") ?? new StringCollection();
-        int initialCount = hotkeys.Count;
         EnsureDefaultBindingsExist(hotkeys);
-        if (hotkeys.Count != initialCount)
-            _settingsService.Set("HotKeys", hotkeys);
+        // Defaults can update an existing empty binding without changing the collection count.
+        _settingsService.Set("HotKeys", hotkeys);
 
         AttachMainWindow();
         List<HotKeyBinding> bindings = [];
