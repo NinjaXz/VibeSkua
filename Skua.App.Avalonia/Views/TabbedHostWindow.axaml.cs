@@ -1754,6 +1754,18 @@ public partial class TabbedHostWindow : Window
         }
     }
 
+    private void CompleteQuickLaunchPending(string username, bool success)
+    {
+        _quickLaunchPending.Remove(username);
+        if (_quickLaunchPendingCallbacks.Remove(username, out List<Action<bool>>? callbacks))
+        {
+            foreach (Action<bool> callback in callbacks)
+                callback(success);
+        }
+
+        UpdateQuickLaunchStatuses();
+    }
+
     private void UpdateQuickLaunchBatchProgress()
     {
         if (_quickLaunchBatchTotal <= 0)
