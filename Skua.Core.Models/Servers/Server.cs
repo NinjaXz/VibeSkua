@@ -1,12 +1,13 @@
 ﻿using Newtonsoft.Json;
 using Skua.Core.Models.Converters;
+using System.ComponentModel;
 
 namespace Skua.Core.Models.Servers;
 
 /// <summary>
 /// A class holding information about a game server.
 /// </summary>
-public class Server
+public class Server : INotifyPropertyChanged
 {
     /// <summary>
     /// The name of the game server.
@@ -72,9 +73,25 @@ public class Server
 
     /// <summary>
     /// Latency class calculated from the measured ping and configured thresholds; colours the server name.
+    /// Raises <see cref="PropertyChanged"/> so views showing this server can restyle without being rebound.
     /// </summary>
     [JsonIgnore]
-    public ServerLatencyStatus LatencyStatus { get; set; } = ServerLatencyStatus.Unknown;
+    public ServerLatencyStatus LatencyStatus
+    {
+        get => _latencyStatus;
+        set
+        {
+            if (_latencyStatus == value)
+                return;
+
+            _latencyStatus = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LatencyStatus)));
+        }
+    }
+
+    private ServerLatencyStatus _latencyStatus = ServerLatencyStatus.Unknown;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     public override string ToString()
     {
