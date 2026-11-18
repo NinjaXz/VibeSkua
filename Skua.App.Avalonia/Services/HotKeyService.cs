@@ -137,7 +137,6 @@ public class HotKeyService : IHotKeyService, IDisposable
                 {
                     Binding = binding,
                     Title = global::Skua.Core.AppStartup.HotKeys.GetFormattedTitle(binding),
-                    Description = global::Skua.Core.AppStartup.HotKeys.GetDescription(binding),
                     KeyGesture = gesture
                 });
             }
@@ -157,7 +156,6 @@ public class HotKeyService : IHotKeyService, IDisposable
                     {
                         Binding = binding,
                         Title = global::Skua.Core.AppStartup.HotKeys.GetFormattedTitle(binding),
-                        Description = global::Skua.Core.AppStartup.HotKeys.GetDescription(binding),
                         KeyGesture = gesture
                     });
                 }
