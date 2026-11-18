@@ -29,17 +29,9 @@ public partial class HotKeysView : UserControl
         }
     }
 
-    private void ToggleDropdown_Click(object? sender, RoutedEventArgs e)
+    private void ActionAutoComplete_GotFocus(object? sender, RoutedEventArgs e)
     {
-        var autoBox = this.FindControl<AutoCompleteBox>("ActionAutoComplete");
-        if (autoBox != null)
-        {
-            // The browse button should always reveal the complete action list, not the
-            // previous search result set (which may be empty).
-            autoBox.Text = string.Empty;
-            autoBox.MinimumPrefixLength = 0;
+        if (sender is AutoCompleteBox autoBox)
             autoBox.IsDropDownOpen = true;
-            autoBox.Focus();
-        }
     }
 }
