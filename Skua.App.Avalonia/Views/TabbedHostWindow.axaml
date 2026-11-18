@@ -183,6 +183,52 @@
                                          Height="34"
                                          Watermark="Search by username or display name"
                                          TextChanged="AccountQuickLaunchSearch_TextChanged" />
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                    <ComboBox x:Name="AccountQuickLaunchGroupCombo"
+                                              Grid.Column="0"
+                                              Height="32"
+                                              VerticalAlignment="Center"
+                                              ToolTip.Tip="Choose a saved account group" />
+                                    <Button x:Name="AccountQuickLaunchGroupButton"
+                                            Grid.Column="1"
+                                            Height="32"
+                                            Padding="9,0"
+                                            Classes="skua-button"
+                                            Content="Launch Group"
+                                            IsEnabled="False"
+                                            Click="AccountQuickLaunchGroupLaunch_Click" />
+                                </Grid>
+                                <Border x:Name="AccountQuickLaunchProgressPanel"
+                                        Background="{DynamicResource SkuaSurfaceAltBrush}"
+                                        BorderBrush="{DynamicResource SkuaBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="8"
+                                        IsVisible="False">
+                                    <StackPanel Spacing="6">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock x:Name="AccountQuickLaunchProgressText"
+                                                       Grid.Column="0"
+                                                       FontSize="10"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource SkuaTextBrush}"
+                                                       Text="Ready" />
+                                            <Button x:Name="AccountQuickLaunchRetryButton"
+                                                    Grid.Column="1"
+                                                    Height="24"
+                                                    Padding="7,0"
+                                                    Classes="skua-button"
+                                                    Content="Retry Failed"
+                                                    IsVisible="False"
+                                                    Click="AccountQuickLaunchRetry_Click" />
+                                        </Grid>
+                                        <ProgressBar x:Name="AccountQuickLaunchProgressBar"
+                                                     Height="4"
+                                                     Minimum="0"
+                                                     Maximum="100"
+                                                     Value="0" />
+                                    </StackPanel>
+                                </Border>
                                 <Grid ColumnDefinitions="*,Auto,Auto"
                                       ColumnSpacing="5">
                                     <TextBlock x:Name="AccountQuickLaunchSelectionText"
@@ -247,6 +293,10 @@
                                                    FontSize="12" />
                                     </StackPanel>
                                 </Button>
+                                <TextBlock Text="Ctrl+Shift+L · ↑↓ navigate · Space select · Enter launch · Esc close"
+                                           FontSize="9"
+                                           TextAlignment="Center"
+                                           Foreground="{DynamicResource SkuaMutedTextBrush}" />
                             </StackPanel>
                         </Border>
                     </Popup>
