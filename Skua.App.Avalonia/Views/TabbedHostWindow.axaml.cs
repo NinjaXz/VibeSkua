@@ -1693,17 +1693,11 @@ public partial class TabbedHostWindow : Window
 
     private void AccountQuickLaunchSearch_KeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Down)
-        {
-            FocusQuickLaunchCheckBox(0);
-            e.Handled = true;
-        }
-        else if (e.Key == Key.Enter)
+        if (e.Key == Key.Enter)
         {
             if (_quickLaunchSelection.Count > 0)
                 LaunchSelectedQuickAccounts();
-            else
-                FocusQuickLaunchCheckBox(0);
+
             e.Handled = true;
         }
         else if (e.Key == Key.Escape)
@@ -1711,15 +1705,6 @@ public partial class TabbedHostWindow : Window
             CloseQuickLaunchPopup();
             e.Handled = true;
         }
-    }
-
-    private void FocusQuickLaunchCheckBox(int index)
-    {
-        if (_quickLaunchCheckBoxes.Count == 0)
-            return;
-
-        int targetIndex = Math.Clamp(index, 0, _quickLaunchCheckBoxes.Count - 1);
-        _quickLaunchCheckBoxes[targetIndex].Focus();
     }
 
     private void CloseQuickLaunchPopup()
@@ -2021,21 +2006,7 @@ public partial class TabbedHostWindow : Window
             };
             checkBox.KeyDown += (sender, args) =>
             {
-                int currentIndex = _quickLaunchCheckBoxes.IndexOf(checkBox);
-                if (args.Key == Key.Down)
-                {
-                    FocusQuickLaunchCheckBox(currentIndex + 1);
-                    args.Handled = true;
-                }
-                else if (args.Key == Key.Up)
-                {
-                    if (currentIndex <= 0)
-                        AccountQuickLaunchSearch.Focus();
-                    else
-                        FocusQuickLaunchCheckBox(currentIndex - 1);
-                    args.Handled = true;
-                }
-                else if (args.Key == Key.Enter)
+                if (args.Key == Key.Enter)
                 {
                     LaunchSelectedQuickAccounts();
                     args.Handled = true;
