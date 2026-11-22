@@ -48,7 +48,7 @@ The remote-control service uses port **8088** by default. Configure the host add
 
 ### Automation and scripting
 
-- **Script Watchdog:** Tracks script progress and network activity, detects prolonged stalls, and provides diagnostic feedback. Optional Discord notifications are supported.
+- **Script Watchdog:** Tracks script progress (kills, drops, map moves and your own hits in combat), detects prolonged stalls, and provides diagnostic feedback. Optional Discord notifications are supported.
 - **Resilient quest loading:** Improved handling of disconnects, relogins, failed batches, and account state transitions.
 - **Script Scheduler:** Queue scripts with independent option profiles, custom display names, and saved playlists.
 - **Script repository:** Search, filter, sort, and manage community scripts, alongside local scripts and custom script directories.

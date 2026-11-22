@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.Messaging;
+using Newtonsoft.Json.Linq;
 using Skua.Core.Interfaces;
 using Skua.Core.Interfaces.Services;
 using Skua.Core.Messaging;
@@ -31,7 +32,9 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
     private CancellationTokenSource? _timerCts;
     private Task? _monitorTask;
     private long _lastProgressTimestamp;
-    private long _lastPacketTimestamp;
+    // "p:<uid>": how the server names this player as the actor in combat results. Refreshed every check, since a
+    // relog gives a new uid; null while no script is watched.
+    private volatile string? _myActorTag;
     private int _currentTier;
     private bool _isRunning;
     private bool _disposed;
@@ -99,9 +102,8 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
         StrongReferenceMessenger.Default.Register<ScriptWatchdogService, CellChangedMessage, int>(this, (int)MessageChannels.GameEvents, (r, _) => r.Heartbeat());
         StrongReferenceMessenger.Default.Register<ScriptWatchdogService, MapChangedMessage, int>(this, (int)MessageChannels.GameEvents, (r, _) => r.Heartbeat());
 
-        // Network activity indicators
-        StrongReferenceMessenger.Default.Register<ScriptWatchdogService, PacketMessage, int>(this, (int)MessageChannels.GameEvents, (r, _) => r.OnPacketReceived());
-        StrongReferenceMessenger.Default.Register<ScriptWatchdogService, ExtensionPacketMessage, int>(this, (int)MessageChannels.GameEvents, (r, _) => r.OnPacketReceived());
+        // A long boss fight has no kills, drops or jumps for minutes; the player's own hits show it is alive
+        StrongReferenceMessenger.Default.Register<ScriptWatchdogService, ExtensionPacketMessage, int>(this, (int)MessageChannels.GameEvents, (r, m) => r.OnExtensionPacket(m));
     }
 
     public void Heartbeat()
@@ -110,16 +112,62 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
         Volatile.Write(ref _currentTier, 0);
     }
 
-    private void OnPacketReceived()
-    {
-        Volatile.Write(ref _lastPacketTimestamp, Stopwatch.GetTimestamp());
-    }
-
     public void Reset()
     {
         Volatile.Write(ref _lastProgressTimestamp, Stopwatch.GetTimestamp());
-        Volatile.Write(ref _lastPacketTimestamp, Stopwatch.GetTimestamp());
         Volatile.Write(ref _currentTier, 0);
+    }
+
+    // Counts this player's own damage on a monster as progress. Other players' hits don't count, so one stuck
+    // client in a group fight is still caught. Runs on the Flash callback thread, so it must never throw.
+    private void OnExtensionPacket(ExtensionPacketMessage message)
+    {
+        string? me = _myActorTag;
+        if (me is null)
+            return;
+
+        try
+        {
+            if (message.Packet is not JObject packet
+                || packet["params"] is not JObject parameters
+                || (string?)parameters["type"] != "json"
+                || parameters["dataObj"] is not JObject data)
+                return;
+
+            bool hit = (string?)data["cmd"] switch
+            {
+                "ct" => data["sarsa"] is JArray results && results.Any(r => r is JObject result && IsOwnHitOnMonster(result, me)),
+                "sars" => IsOwnHitOnMonster(data, me),
+                _ => false
+            };
+            if (hit)
+                Heartbeat();
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine($"[Watchdog] Could not read combat packet: {ex.Message}");
+        }
+    }
+
+    // One action result: {cInf: "p:<uid>", iRes: 1, a: [{tInf: "m:<id>", hp: <damage>}, ...]}. Negative hp is a heal.
+    private static bool IsOwnHitOnMonster(JObject result, string me)
+    {
+        if ((string?)result["cInf"] != me || (int?)result["iRes"] != 1 || result["a"] is not JArray targets)
+            return false;
+
+        foreach (JToken target in targets)
+        {
+            if (target is JObject t && ((string?)t["tInf"])?.StartsWith("m:", StringComparison.Ordinal) == true && (double?)t["hp"] > 0)
+                return true;
+        }
+
+        return false;
+    }
+
+    private void RefreshActorTag()
+    {
+        int id = Player.ID;
+        _myActorTag = id > 0 ? $"p:{id}" : null;
     }
 
     private void OnScriptStarted()
@@ -145,7 +193,6 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
             _isRunning = true;
             _currentTier = 0;
             _lastProgressTimestamp = Stopwatch.GetTimestamp();
-            _lastPacketTimestamp = Stopwatch.GetTimestamp();
 
             _timerCts?.Cancel();
             _timerCts?.Dispose();
@@ -164,6 +211,7 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
 
             _isRunning = false;
             _currentTier = 0;
+            _myActorTag = null;
 
             _timerCts?.Cancel();
             _timerCts?.Dispose();
@@ -206,6 +254,8 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
             Volatile.Write(ref _lastProgressTimestamp, Stopwatch.GetTimestamp());
             return;
         }
+
+        RefreshActorTag();
 
         long lastProgress = Volatile.Read(ref _lastProgressTimestamp);
         if (lastProgress == 0)
@@ -291,6 +341,7 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
         string currentMap = Map.Name;
         string currentCell = Player.Cell;
 
+        bool autoRestart = Options.WatchdogAutoRestart;
         if (Options.WatchdogDiscordAlerts)
         {
             _ = Task.Run(async () =>
@@ -298,15 +349,16 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
                 try
                 {
                     await _discord.SendEmbedAsync(
-                        "⚠️ Script Stalled - Watchdog Auto-Restart",
-                        $"Script `{currentScript}` stalled for {elapsedSeconds:F0}s in `{currentMap}` (Cell: `{currentCell}`). Automatically restarting script.",
+                        autoRestart ? "⚠️ Script Stalled - Watchdog Auto-Restart" : "⚠️ Script Stalled",
+                        $"Script `{currentScript}` stalled for {elapsedSeconds:F0}s in `{currentMap}` (Cell: `{currentCell}`). "
+                            + (autoRestart ? "Automatically restarting script." : "Auto-restart is off, so the script was left running."),
                         0xFFA500);
                 }
                 catch { }
             });
         }
 
-        if (Options.WatchdogAutoRestart)
+        if (autoRestart)
         {
             // Reset progress timestamp immediately to grant a clean grace period to the restarted script
             Volatile.Write(ref _lastProgressTimestamp, Stopwatch.GetTimestamp());
