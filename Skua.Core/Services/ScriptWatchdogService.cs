@@ -35,6 +35,9 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
     // "p:<uid>": how the server names this player as the actor in combat results. Refreshed every check, since a
     // relog gives a new uid; null while no script is watched.
     private volatile string? _myActorTag;
+    // The jump or map reload a rescue just made. Its cell/map change is not progress: counted, it reset the timer
+    // and the tier, so Tiers 2 and 3 could never fire.
+    private volatile RescueEcho? _rescueEcho;
     private int _currentTier;
     private bool _isRunning;
     private bool _disposed;
@@ -99,8 +102,8 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
         StrongReferenceMessenger.Default.Register<ScriptWatchdogService, ItemSoldMessage, int>(this, (int)MessageChannels.GameEvents, (r, _) => r.Heartbeat());
         StrongReferenceMessenger.Default.Register<ScriptWatchdogService, ItemAddedToBankMessage, int>(this, (int)MessageChannels.GameEvents, (r, _) => r.Heartbeat());
         StrongReferenceMessenger.Default.Register<ScriptWatchdogService, BankLoadedMessage, int>(this, (int)MessageChannels.GameEvents, (r, _) => r.Heartbeat());
-        StrongReferenceMessenger.Default.Register<ScriptWatchdogService, CellChangedMessage, int>(this, (int)MessageChannels.GameEvents, (r, _) => r.Heartbeat());
-        StrongReferenceMessenger.Default.Register<ScriptWatchdogService, MapChangedMessage, int>(this, (int)MessageChannels.GameEvents, (r, _) => r.Heartbeat());
+        StrongReferenceMessenger.Default.Register<ScriptWatchdogService, CellChangedMessage, int>(this, (int)MessageChannels.GameEvents, (r, m) => r.OnMoved(m.Map, m.Cell));
+        StrongReferenceMessenger.Default.Register<ScriptWatchdogService, MapChangedMessage, int>(this, (int)MessageChannels.GameEvents, (r, m) => r.OnMoved(m.Map, null));
 
         // A long boss fight has no kills, drops or jumps for minutes; the player's own hits show it is alive
         StrongReferenceMessenger.Default.Register<ScriptWatchdogService, ExtensionPacketMessage, int>(this, (int)MessageChannels.GameEvents, (r, m) => r.OnExtensionPacket(m));
@@ -117,6 +120,25 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
         Volatile.Write(ref _lastProgressTimestamp, Stopwatch.GetTimestamp());
         Volatile.Write(ref _currentTier, 0);
     }
+
+    private void OnMoved(string? map, string? cell)
+    {
+        RescueEcho? echo = _rescueEcho;
+        if (echo is not null && Stopwatch.GetTimestamp() < echo.Until
+            && string.Equals(map, echo.Map, StringComparison.OrdinalIgnoreCase)
+            && (echo.Cell is null || cell is null || string.Equals(cell, echo.Cell, StringComparison.OrdinalIgnoreCase)))
+            return;
+
+        Heartbeat();
+    }
+
+    // Ignores the map's (and, with a cell, only that cell's) changes for a while. A move anywhere else still counts.
+    private void ExpectRescueEcho(string? cell, int seconds)
+    {
+        _rescueEcho = new RescueEcho(Map.Name, cell, Stopwatch.GetTimestamp() + seconds * Stopwatch.Frequency);
+    }
+
+    private sealed record RescueEcho(string Map, string? Cell, long Until);
 
     // Counts this player's own damage on a monster as progress. Other players' hits don't count, so one stuck
     // client in a group fight is still caught. Runs on the Flash callback thread, so it must never throw.
@@ -192,6 +214,7 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
 
             _isRunning = true;
             _currentTier = 0;
+            _rescueEcho = null;
             _lastProgressTimestamp = Stopwatch.GetTimestamp();
 
             _timerCts?.Cancel();
@@ -294,18 +317,20 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
 
         try
         {
+            string cell = Player.Cell;
+            ExpectRescueEcho(cell, 15);
             if (!Player.Alive)
             {
                 _logger.ScriptLog("[Watchdog] Character is dead; invoking game resurrect and clearing modals.");
                 try { Flash.CallGameFunction("world.resurrect"); } catch { }
                 try { Flash.Call("killLoginModals"); } catch { }
-                try { Map.Jump(Player.Cell, "Spawn"); } catch { }
+                try { Map.Jump(cell, "Spawn"); } catch { }
             }
             else
             {
                 try { Combat.CancelTarget(); } catch { }
                 try { Flash.Call("world.cancelTarget"); } catch { }
-                try { Map.Jump(Player.Cell, Player.Pad); } catch { }
+                try { Map.Jump(cell, Player.Pad); } catch { }
             }
         }
         catch (Exception ex)
@@ -322,6 +347,8 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
 
         try
         {
+            // A reload may put the player in any cell of the map, so the whole map is ignored for a while.
+            ExpectRescueEcho(null, 30);
             try { Combat.CancelTarget(); } catch { }
             try { Map.Reload(); } catch { }
         }
