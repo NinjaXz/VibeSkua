@@ -37,6 +37,8 @@ internal class CoreBots
 
             new DisplayOptionItemViewModel<bool>("Force Off MessageBoxes", "MessageBoxCheck"),
             new DisplayOptionItemViewModel<bool>("Should Rest", "RestCheck"),
+            new DisplayOptionItemViewModel<int>("Rest below HP %", "RestHealthPercent", 35),
+            new DisplayOptionItemViewModel<int>("Rest until HP %", "RestTargetHealthPercent", 100),
             new DisplayOptionItemViewModel<bool>("Disable AutoEnhance", "DisableAutoEnhance"),
             new DisplayOptionItemViewModel<bool>("Disable BestGear", "DisableBestGear"),
             new DisplayOptionItemViewModel<bool>("Anti Lag", "AntiLag", true),
