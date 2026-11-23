@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.Messaging;
+using Newtonsoft.Json.Linq;
 using Skua.Core.Interfaces;
 using Skua.Core.Interfaces.Services;
 using Skua.Core.Messaging;
@@ -31,7 +32,12 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
     private CancellationTokenSource? _timerCts;
     private Task? _monitorTask;
     private long _lastProgressTimestamp;
-    private long _lastPacketTimestamp;
+    // "p:<uid>": how the server names this player as the actor in combat results. Refreshed every check, since a
+    // relog gives a new uid; null while no script is watched.
+    private volatile string? _myActorTag;
+    // The cells a rescue's own jump, reload or respawn moves into. Those moves are not progress: counted, they reset
+    // the timer and the tier, so Tiers 2 and 3 could never fire.
+    private volatile RescueEcho? _rescueEcho;
     private int _currentTier;
     private bool _isRunning;
     private bool _disposed;
@@ -96,12 +102,12 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
         StrongReferenceMessenger.Default.Register<ScriptWatchdogService, ItemSoldMessage, int>(this, (int)MessageChannels.GameEvents, (r, _) => r.Heartbeat());
         StrongReferenceMessenger.Default.Register<ScriptWatchdogService, ItemAddedToBankMessage, int>(this, (int)MessageChannels.GameEvents, (r, _) => r.Heartbeat());
         StrongReferenceMessenger.Default.Register<ScriptWatchdogService, BankLoadedMessage, int>(this, (int)MessageChannels.GameEvents, (r, _) => r.Heartbeat());
-        StrongReferenceMessenger.Default.Register<ScriptWatchdogService, CellChangedMessage, int>(this, (int)MessageChannels.GameEvents, (r, _) => r.Heartbeat());
+        StrongReferenceMessenger.Default.Register<ScriptWatchdogService, CellChangedMessage, int>(this, (int)MessageChannels.GameEvents, (r, m) => r.OnCellChanged(m.Map, m.Cell));
+        // A real join; no rescue makes one (a reload only re-enters the current cell)
         StrongReferenceMessenger.Default.Register<ScriptWatchdogService, MapChangedMessage, int>(this, (int)MessageChannels.GameEvents, (r, _) => r.Heartbeat());
 
-        // Network activity indicators
-        StrongReferenceMessenger.Default.Register<ScriptWatchdogService, PacketMessage, int>(this, (int)MessageChannels.GameEvents, (r, _) => r.OnPacketReceived());
-        StrongReferenceMessenger.Default.Register<ScriptWatchdogService, ExtensionPacketMessage, int>(this, (int)MessageChannels.GameEvents, (r, _) => r.OnPacketReceived());
+        // A long boss fight has no kills, drops or jumps for minutes; the player's own hits show it is alive
+        StrongReferenceMessenger.Default.Register<ScriptWatchdogService, ExtensionPacketMessage, int>(this, (int)MessageChannels.GameEvents, (r, m) => r.OnExtensionPacket(m));
     }
 
     public void Heartbeat()
@@ -110,16 +116,94 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
         Volatile.Write(ref _currentTier, 0);
     }
 
-    private void OnPacketReceived()
-    {
-        Volatile.Write(ref _lastPacketTimestamp, Stopwatch.GetTimestamp());
-    }
-
     public void Reset()
     {
         Volatile.Write(ref _lastProgressTimestamp, Stopwatch.GetTimestamp());
-        Volatile.Write(ref _lastPacketTimestamp, Stopwatch.GetTimestamp());
         Volatile.Write(ref _currentTier, 0);
+    }
+
+    private void OnCellChanged(string? map, string? cell)
+    {
+        RescueEcho? echo = _rescueEcho;
+        if (echo is not null && Stopwatch.GetTimestamp() < echo.Until
+            && string.Equals(map, echo.Map, StringComparison.OrdinalIgnoreCase)
+            && echo.Cells.Contains(cell, StringComparer.OrdinalIgnoreCase))
+            return;
+
+        Heartbeat();
+    }
+
+    // Ignores moves into these cells of the current map for a while: the rescue's own move may be sent more than
+    // once (the jump's auto-correct re-jumps with another pad). A move to any other cell or map still counts.
+    private void ExpectRescueEcho(int seconds, params string[] cells)
+    {
+        _rescueEcho = new RescueEcho(Map.Name, cells, Stopwatch.GetTimestamp() + seconds * Stopwatch.Frequency);
+    }
+
+    private sealed record RescueEcho(string Map, string[] Cells, long Until);
+
+    // Moves the watchdog to a tier unless progress came in since the check read lastProgress (a hit can land between
+    // the check and the rescue). The tier is written first so a heartbeat in between is never lost.
+    private bool TryEnterTier(int tier, long lastProgress)
+    {
+        Volatile.Write(ref _currentTier, tier);
+        if (Volatile.Read(ref _lastProgressTimestamp) == lastProgress)
+            return true;
+
+        Interlocked.CompareExchange(ref _currentTier, 0, tier);
+        return false;
+    }
+
+    // Counts this player's own damage on a monster as progress. Other players' hits don't count, so one stuck
+    // client in a group fight is still caught. Runs on the Flash callback thread, so it must never throw.
+    private void OnExtensionPacket(ExtensionPacketMessage message)
+    {
+        string? me = _myActorTag;
+        if (me is null)
+            return;
+
+        try
+        {
+            if (message.Packet is not JObject packet
+                || packet["params"] is not JObject parameters
+                || (string?)parameters["type"] != "json"
+                || parameters["dataObj"] is not JObject data)
+                return;
+
+            bool hit = (string?)data["cmd"] switch
+            {
+                "ct" => data["sarsa"] is JArray results && results.Any(r => r is JObject result && IsOwnHitOnMonster(result, me)),
+                "sars" => IsOwnHitOnMonster(data, me),
+                _ => false
+            };
+            if (hit)
+                Heartbeat();
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine($"[Watchdog] Could not read combat packet: {ex.Message}");
+        }
+    }
+
+    // One action result: {cInf: "p:<uid>", iRes: 1, a: [{tInf: "m:<id>", hp: <damage>}, ...]}. Negative hp is a heal.
+    private static bool IsOwnHitOnMonster(JObject result, string me)
+    {
+        if ((string?)result["cInf"] != me || (int?)result["iRes"] != 1 || result["a"] is not JArray targets)
+            return false;
+
+        foreach (JToken target in targets)
+        {
+            if (target is JObject t && ((string?)t["tInf"])?.StartsWith("m:", StringComparison.Ordinal) == true && (double?)t["hp"] > 0)
+                return true;
+        }
+
+        return false;
+    }
+
+    private void RefreshActorTag()
+    {
+        int id = Player.ID;
+        _myActorTag = id > 0 ? $"p:{id}" : null;
     }
 
     private void OnScriptStarted()
@@ -144,8 +228,8 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
 
             _isRunning = true;
             _currentTier = 0;
+            _rescueEcho = null;
             _lastProgressTimestamp = Stopwatch.GetTimestamp();
-            _lastPacketTimestamp = Stopwatch.GetTimestamp();
 
             _timerCts?.Cancel();
             _timerCts?.Dispose();
@@ -164,6 +248,7 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
 
             _isRunning = false;
             _currentTier = 0;
+            _myActorTag = null;
 
             _timerCts?.Cancel();
             _timerCts?.Dispose();
@@ -207,6 +292,8 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
             return;
         }
 
+        RefreshActorTag();
+
         long lastProgress = Volatile.Read(ref _lastProgressTimestamp);
         if (lastProgress == 0)
         {
@@ -222,40 +309,46 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
         // Tier 1: Soft Rescue (at base timeout, e.g. 300s / 5m)
         if (elapsedSeconds >= baseTimeout && _currentTier < 1)
         {
-            ExecuteTier1Rescue(elapsedSeconds, baseTimeout);
+            ExecuteTier1Rescue(elapsedSeconds, baseTimeout, lastProgress);
         }
         // Tier 2: Room Refresh (1 minute after Tier 1, e.g. 360s / 6m)
         else if (elapsedSeconds >= tier2Threshold && _currentTier < 2)
         {
-            ExecuteTier2Rescue(elapsedSeconds);
+            ExecuteTier2Rescue(elapsedSeconds, lastProgress);
         }
         // Tier 3: Critical Restart (2 minutes after Tier 1, e.g. 420s / 7m)
         else if (elapsedSeconds >= tier3Threshold && _currentTier < 3)
         {
-            ExecuteTier3Recovery(elapsedSeconds);
+            ExecuteTier3Recovery(elapsedSeconds, lastProgress);
         }
     }
 
-    private void ExecuteTier1Rescue(double elapsedSeconds, int baseTimeout)
+    private void ExecuteTier1Rescue(double elapsedSeconds, int baseTimeout, long lastProgress)
     {
-        Volatile.Write(ref _currentTier, 1);
+        if (!TryEnterTier(1, lastProgress))
+            return;
         _logger.ScriptLog($"[Watchdog] Stalled for {elapsedSeconds:F0}s (threshold: {baseTimeout}s). Executing Tier 1 rescue (Revive / Target Reset)...");
         _diagnostics.RecordEvent("Watchdog", "Tier1_SoftRescue", elapsedSeconds, "seconds");
 
         try
         {
+            string cell = Player.Cell;
             if (!Player.Alive)
             {
                 _logger.ScriptLog("[Watchdog] Character is dead; invoking game resurrect and clearing modals.");
-                try { Flash.CallGameFunction("world.resurrect"); } catch { }
+                // The server answers a resurrect by moving the player to the map's spawn cell
+                string spawnCell = Flash.GetGameObject<string>("world.spawnPoint.strFrame") ?? "Enter";
+                ExpectRescueEcho(15, cell, spawnCell);
+                try { Flash.CallGameFunction("world.resPlayer"); } catch { }
                 try { Flash.Call("killLoginModals"); } catch { }
-                try { Map.Jump(Player.Cell, "Spawn"); } catch { }
+                try { Map.Jump(cell, "Spawn"); } catch { }
             }
             else
             {
+                ExpectRescueEcho(15, cell);
                 try { Combat.CancelTarget(); } catch { }
                 try { Flash.Call("world.cancelTarget"); } catch { }
-                try { Map.Jump(Player.Cell, Player.Pad); } catch { }
+                try { Map.Jump(cell, Player.Pad); } catch { }
             }
         }
         catch (Exception ex)
@@ -264,16 +357,24 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
         }
     }
 
-    private void ExecuteTier2Rescue(double elapsedSeconds)
+    private void ExecuteTier2Rescue(double elapsedSeconds, long lastProgress)
     {
-        Volatile.Write(ref _currentTier, 2);
+        if (!TryEnterTier(2, lastProgress))
+            return;
         _logger.ScriptLog($"[Watchdog] Still stalled after {elapsedSeconds:F0}s. Executing Tier 2 rescue (Reloading Map {Map.Name})...");
         _diagnostics.RecordEvent("Watchdog", "Tier2_RoomRefresh", elapsedSeconds, "seconds");
 
         try
         {
+            // The reloaded map re-enters the player's current cell (World.enterMap); loading can take a while.
+            ExpectRescueEcho(30, Player.Cell);
             try { Combat.CancelTarget(); } catch { }
-            try { Map.Reload(); } catch { }
+            try { Map.Reload(); }
+            catch
+            {
+                // No reload, so no move to ignore
+                _rescueEcho = null;
+            }
         }
         catch (Exception ex)
         {
@@ -281,9 +382,10 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
         }
     }
 
-    private void ExecuteTier3Recovery(double elapsedSeconds)
+    private void ExecuteTier3Recovery(double elapsedSeconds, long lastProgress)
     {
-        Volatile.Write(ref _currentTier, 3);
+        if (!TryEnterTier(3, lastProgress))
+            return;
         _logger.ScriptLog($"[Watchdog] Critical stall detected ({elapsedSeconds:F0}s). Executing Tier 3 recovery (Script Restart)...");
         _diagnostics.RecordEvent("Watchdog", "Tier3_CriticalRestart", elapsedSeconds, "seconds");
 
@@ -291,6 +393,7 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
         string currentMap = Map.Name;
         string currentCell = Player.Cell;
 
+        bool autoRestart = Options.WatchdogAutoRestart;
         if (Options.WatchdogDiscordAlerts)
         {
             _ = Task.Run(async () =>
@@ -298,15 +401,16 @@ public class ScriptWatchdogService : IScriptWatchdogService, IDisposable
                 try
                 {
                     await _discord.SendEmbedAsync(
-                        "⚠️ Script Stalled - Watchdog Auto-Restart",
-                        $"Script `{currentScript}` stalled for {elapsedSeconds:F0}s in `{currentMap}` (Cell: `{currentCell}`). Automatically restarting script.",
+                        autoRestart ? "⚠️ Script Stalled - Watchdog Auto-Restart" : "⚠️ Script Stalled",
+                        $"Script `{currentScript}` stalled for {elapsedSeconds:F0}s in `{currentMap}` (Cell: `{currentCell}`). "
+                            + (autoRestart ? "Automatically restarting script." : "Auto-restart is off, so the script was left running."),
                         0xFFA500);
                 }
                 catch { }
             });
         }
 
-        if (Options.WatchdogAutoRestart)
+        if (autoRestart)
         {
             // Reset progress timestamp immediately to grant a clean grace period to the restarted script
             Volatile.Write(ref _lastProgressTimestamp, Stopwatch.GetTimestamp());
