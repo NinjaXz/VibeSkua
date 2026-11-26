@@ -71,8 +71,7 @@ public sealed class AgentApiService : IAgentApiService
                 AgentApiRouter router = new(options, bot, manager, log, _mapInfo);
                 AgentApiServer server = new(options, router, log);
                 server.Start();
-                _server = server;
-                log.DebugLog($"Agent API listening on http://{options.Bind}:{options.Port}/");
+                _server = server;   // the server logs the listening line, with the token state
             }
             catch (Exception ex)
             {
