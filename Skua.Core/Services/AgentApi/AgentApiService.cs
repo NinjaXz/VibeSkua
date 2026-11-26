@@ -1,3 +1,4 @@
+﻿using System.Net;
 using Microsoft.Extensions.DependencyInjection;
 using Skua.Core.Interfaces;
 
@@ -52,29 +53,37 @@ public sealed class AgentApiService : IAgentApiService
             if (!options.Enabled)
                 return;
 
-            IScriptInterface? bot = _services.GetService<IScriptInterface>();
-            IScriptManager? manager = _services.GetService<IScriptManager>();
-            if (bot is null || manager is null)
-            {
-                Log().DebugLog("Agent API: the bot is not available, so the endpoint stayed off.");
-                return;
-            }
-
             ILogService log = Log();
             try
             {
+                // Resolving the bot can build it for the first time, and that can
+                // fail, so it belongs inside the guard.
+                IScriptInterface? bot = _services.GetService<IScriptInterface>();
+                IScriptManager? manager = _services.GetService<IScriptManager>();
+                if (bot is null || manager is null)
+                {
+                    log.DebugLog("Agent API: the bot is not available, so the endpoint stayed off.");
+                    return;
+                }
+
                 MapInfoOptions mapOptions = new();
                 _mapInfo = new MapInfoService(bot, new AqwMapSwfDownloader(mapOptions, log), new FfdecMapDecompiler(mapOptions, log), mapOptions, log);
                 AgentApiRouter router = new(options, bot, manager, log, _mapInfo);
                 AgentApiServer server = new(options, router, log);
                 server.Start();
                 _server = server;
+                log.DebugLog($"Agent API listening on http://{options.Bind}:{options.Port}/");
             }
             catch (Exception ex)
             {
-                // Bind failures and rejected settings land here. The client
-                // keeps running; only the endpoint is missing.
-                log.DebugLog($"Agent API could not start on {options.Bind}:{options.Port}: {ex.Message}");
+                // Bind failures, rejected settings and a bot that will not build
+                // all land here. The client keeps running; the endpoint stays off.
+                string hint = ex is HttpListenerException
+                    ? " Another client process, or an earlier run, may already hold this port; the one that holds it answers."
+                    : string.Empty;
+                string reason = $"Agent API could not start on {options.Bind}:{options.Port}: {ex.GetType().Name}: {ex.Message}.{hint}";
+                log.DebugLog(reason);
+                Console.Error.WriteLine(reason);
                 _mapInfo?.Dispose();
                 _mapInfo = null;
                 _server = null;

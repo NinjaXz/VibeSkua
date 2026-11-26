@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Skua.Core.Models;
 using Skua.Core.Models.Items;
 using Skua.Core.Models.Monsters;
@@ -104,7 +104,7 @@ public sealed partial class AgentApiRouter
         }
         catch (MapInfoException ex)
         {
-            throw new AgentApiException(ex.Code == "decompiler_unavailable" ? 503 : 502, ex.Code);
+            throw new AgentApiException(StatusFor(ex.Code), ex.Code);
         }
     }
 

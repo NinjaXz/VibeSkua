@@ -741,6 +741,20 @@ public sealed partial class AgentApiRouter
         "/pause", "/resume", "/stop",
     };
 
+    /// <summary>
+    /// Turns a map reader failure into a status the agent can act on.
+    ///
+    /// A character that is not standing in a map is a state, so it answers 409 like
+    /// every other state. A machine with no decompiler is missing a tool, so it
+    /// answers 503. Anything else means the map file could not be fetched or read.
+    /// </summary>
+    internal static int StatusFor(string code) => code switch
+    {
+        "map_not_loaded" => 409,
+        "ffdec_missing" or "java_missing" or "decompiler_unavailable" => 503,
+        _ => 502,
+    };
+
     internal static int QueryInt(AgentApiRequest request, string key, int fallback = 0, bool required = false)
     {
         if (!request.Query.TryGetValue(key, out string? raw) || string.IsNullOrWhiteSpace(raw))

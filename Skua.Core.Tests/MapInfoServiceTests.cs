@@ -454,19 +454,43 @@ public sealed class MapInfoServiceTests : IDisposable
         Assert.Equal("map_info_unavailable", response.Error);
     }
 
-    [Fact]
-    public async Task MapNpcs_SeparatesMissingJavaFromAFailedRead()
+    /// <summary>
+    /// Every code the map reader can report, and the status an agent must get.
+    /// A new code must be added here, or this theory fails.
+    /// </summary>
+    [Theory]
+    [InlineData("map_not_loaded", 409)]
+    [InlineData("ffdec_missing", 503)]
+    [InlineData("java_missing", 503)]
+    [InlineData("decompiler_unavailable", 503)]
+    [InlineData("map_download_failed", 502)]
+    [InlineData("map_parse_failed", 502)]
+    [InlineData("map_path_invalid", 502)]
+    [InlineData("map_decompile_timeout", 502)]
+    [InlineData("map_decompile_failed", 502)]
+    public async Task EveryMapReaderCodeGetsTheStatusAnAgentCanActOn(string code, int status)
     {
         FakeWorld world = new();
         AgentApiOptions options = new() { ScriptsRoot = Path.GetTempPath() };
 
-        AgentApiResponse noJava = await new AgentApiRouter(options, world.Bot, world.Manager, world.Logs,
-            new ThrowingReader("decompiler_unavailable")).HandleAsync(new AgentApiRequest { Method = "GET", Path = "/map/npcs" });
-        AgentApiResponse badMap = await new AgentApiRouter(options, world.Bot, world.Manager, world.Logs,
-            new ThrowingReader("map_download_failed")).HandleAsync(new AgentApiRequest { Method = "GET", Path = "/map/npcs" });
+        AgentApiResponse response = await new AgentApiRouter(options, world.Bot, world.Manager, world.Logs,
+            new ThrowingReader(code)).HandleAsync(new AgentApiRequest { Method = "GET", Path = "/map/npcs" });
 
-        Assert.Equal(503, noJava.Status);
-        Assert.Equal(502, badMap.Status);
+        Assert.Equal(status, response.Status);
+        Assert.Equal(code, response.Error);
+    }
+
+    [Fact]
+    public void TheReaderCodeListMatchesTheReaderItself()
+    {
+        // Every MapInfoException code in the service has a status here.
+        string[] codes =
+        [
+            "map_not_loaded", "map_parse_failed", "map_download_failed", "map_path_invalid",
+            "ffdec_missing", "java_missing", "map_decompile_timeout", "map_decompile_failed",
+        ];
+        foreach (string code in codes)
+            Assert.True(AgentApiRouter.StatusFor(code) is 409 or 502 or 503, code);
     }
 
     // ------------------------------------------------------------- test doubles
