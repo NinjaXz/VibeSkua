@@ -79,6 +79,13 @@ public interface IScriptQuest : INotifyPropertyChanged
     void UnregisterAllQuests();
 
     /// <summary>
+    /// Abandons the quest with specified <paramref name="id"/>.
+    /// </summary>
+    /// <param name="id">ID of the quest.</param>
+    /// <returns>True when the quest is no longer in progress.</returns>
+    bool Abandon(int id);
+
+    /// <summary>
     /// Accepts the quest with specified <paramref name="id"/>.
     /// </summary>
     /// <param name="id">ID of the quest.</param>
