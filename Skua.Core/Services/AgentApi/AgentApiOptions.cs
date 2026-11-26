@@ -17,9 +17,11 @@ public sealed class AgentApiOptions
     public bool Enabled { get; init; }
 
     /// <summary>Interface to bind. Loopback unless the operator opts in to LAN access.</summary>
-    public string Bind { get; init; } = "127.0.0.1";
+    // Bind and Port stay settable: an embedded child takes a free loopback port
+    // of its own instead of the shared one, so tabs do not collide.
+    public string Bind { get; set; } = "127.0.0.1";
 
-    public int Port { get; init; } = DefaultPort;
+    public int Port { get; set; } = DefaultPort;
 
     /// <summary>
     /// Shared secret required on every request. Unlike the remote-control

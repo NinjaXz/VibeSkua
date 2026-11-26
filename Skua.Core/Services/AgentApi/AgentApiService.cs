@@ -1,4 +1,6 @@
-﻿using System.Net;
+﻿using System.Globalization;
+using System.Net;
+using System.Net.Sockets;
 using Microsoft.Extensions.DependencyInjection;
 using Skua.Core.Interfaces;
 
@@ -19,6 +21,7 @@ public sealed class AgentApiService : IAgentApiService
     private readonly object _lock = new();
     private AgentApiServer? _server;
     private MapInfoService? _mapInfo;
+    private string? _workerFile;
     private bool _disposed;
 
     public AgentApiService(ISettingsService settingsService, IServiceProvider serviceProvider)
@@ -49,6 +52,15 @@ public sealed class AgentApiService : IAgentApiService
                 return;
             }
 
+            if (AgentApiClientController.IsEmbedChild)
+            {
+                // A tab child never uses the shared port: the host holds it, and
+                // children must not collide with each other. Each child publishes
+                // its own port in a file, as the remote control service does.
+                options.Bind = "127.0.0.1";
+                options.Port = FreeTcpPort();
+            }
+
             Port = options.Port;
             if (!options.Enabled)
                 return;
@@ -68,10 +80,12 @@ public sealed class AgentApiService : IAgentApiService
 
                 MapInfoOptions mapOptions = new();
                 _mapInfo = new MapInfoService(bot, new AqwMapSwfDownloader(mapOptions, log), new FfdecMapDecompiler(mapOptions, log), mapOptions, log);
-                AgentApiRouter router = new(options, bot, manager, log, _mapInfo);
+                AgentApiClientController client = new(_settings);
+                AgentApiRouter router = new(options, bot, manager, log, _mapInfo, client);
                 AgentApiServer server = new(options, router, log);
                 server.Start();
                 _server = server;   // the server logs the listening line, with the token state
+                PublishWorkerPort(options.Port, log);
             }
             catch (Exception ex)
             {
@@ -96,8 +110,14 @@ public sealed class AgentApiService : IAgentApiService
         {
             AgentApiServer? server = _server;
             MapInfoService? mapInfo = _mapInfo;
+            string? workerFile = _workerFile;
             _server = null;
             _mapInfo = null;
+            _workerFile = null;
+            if (workerFile is not null)
+            {
+                try { File.Delete(workerFile); } catch { /* a dead child's file is harmless */ }
+            }
             if (server is null && mapInfo is null)
                 return;
 
@@ -115,6 +135,37 @@ public sealed class AgentApiService : IAgentApiService
                 mapInfo?.Dispose();
             }
         }
+    }
+
+    /// <summary>
+    /// Writes the port file a tab host reads to find this client, and only for an
+    /// embedded child: the host is found by its settings port instead.
+    /// </summary>
+    private void PublishWorkerPort(int port, ILogService log)
+    {
+        if (!AgentApiClientController.IsEmbedChild)
+            return;
+
+        try
+        {
+            string path = AgentApiClientController.OwnWorkerFile;
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, port.ToString(CultureInfo.InvariantCulture));
+            _workerFile = path;
+        }
+        catch (Exception ex)
+        {
+            log.DebugLog($"Agent API: the port file could not be written: {ex.Message}");
+        }
+    }
+
+    private static int FreeTcpPort()
+    {
+        TcpListener probe = new(IPAddress.Loopback, 0);
+        probe.Start();
+        int port = ((IPEndPoint)probe.LocalEndpoint).Port;
+        probe.Stop();
+        return port;
     }
 
     /// <summary>

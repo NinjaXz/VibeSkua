@@ -19,6 +19,10 @@ public sealed partial class AgentApiRouter
     private object Health() => new
     {
         name = "vibeskoa-agent",
+        // Which process answered matters: a tab host holds no character, so its
+        // state is empty by design and the client process must be asked instead.
+        role = _client?.Role ?? "standalone",
+        pid = Environment.ProcessId,
         version = Safe(() => _bot.Version.ToString(), string.Empty),
         loggedIn = Safe(() => _bot.Player.LoggedIn, false),
         playing = Safe(() => _bot.Player.Playing, false),

@@ -1,3 +1,5 @@
+﻿using System.Globalization;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
@@ -16,6 +18,7 @@ namespace Skua.Core.Tests;
 /// The rule under test is that a wrong setting costs the endpoint, never the
 /// client: nothing here may throw.
 /// </summary>
+[Collection("AgentApiEnvironment")]
 public sealed class AgentApiServiceTests : IDisposable
 {
     private readonly FakeWorld _world = new();
@@ -152,6 +155,39 @@ public sealed class AgentApiServiceTests : IDisposable
         service.Start();
 
         Assert.True(service.IsRunning);
+    }
+
+    [Fact]
+    public void AnEmbeddedChildTakesItsOwnPortAndPublishesIt()
+    {
+        int shared = FreePort();
+        using TcpListener host = new(IPAddress.Loopback, shared);
+        host.Start();   // the tab host holds the settings port, so a child could not bind it
+
+        _settings.AgentApiEnabled = true;
+        _settings.AgentApiBind = "127.0.0.1";
+        _settings.AgentApiPort = shared;
+        Environment.SetEnvironmentVariable("VIBESKUA_EMBED", "1");
+        string workerFile = AgentApiClientController.OwnWorkerFile;
+        try
+        {
+            AgentApiService service = Service();
+            service.Start();
+
+            Assert.True(service.IsRunning);
+            Assert.NotEqual(shared, service.Port);
+            Assert.Equal(
+                service.Port.ToString(CultureInfo.InvariantCulture),
+                File.ReadAllText(workerFile).Trim());
+
+            service.Stop();
+            Assert.False(File.Exists(workerFile));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("VIBESKUA_EMBED", null);
+            try { File.Delete(workerFile); } catch { }
+        }
     }
 
     [Fact]

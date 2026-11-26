@@ -31,6 +31,7 @@ public sealed partial class AgentApiRouter
     private readonly IScriptManager _scriptManager;
     private readonly ILogService _logService;
     private readonly IMapInfoReader? _mapInfo;
+    private readonly IClientController? _client;
     private readonly SemaphoreSlim _actionGate = new(1, 1);
     private readonly SemaphoreSlim _scriptGate = new(1, 1);
     private readonly string _scriptsRoot;
@@ -40,13 +41,15 @@ public sealed partial class AgentApiRouter
         IScriptInterface bot,
         IScriptManager scriptManager,
         ILogService logService,
-        IMapInfoReader? mapInfo = null)
+        IMapInfoReader? mapInfo = null,
+        IClientController? client = null)
     {
         _options = options;
         _bot = bot;
         _scriptManager = scriptManager;
         _logService = logService;
         _mapInfo = mapInfo;
+        _client = client;
         _scriptsRoot = Path.GetFullPath(options.ScriptsRoot);
     }
 
@@ -161,6 +164,8 @@ public sealed partial class AgentApiRouter
                 return BuildScriptStatus();
             case "/logs":
                 return BuildLogs(request);
+            case "/client":
+                return BuildClientStatus();
             default:
                 // A route the other verb owns is a method error: the agent's
                 // next step differs between "wrong verb" and "no such endpoint".
@@ -220,6 +225,8 @@ public sealed partial class AgentApiRouter
                 return await LoginAsync(request, ct).ConfigureAwait(false);
             case "/logout":
                 return await LogoutAsync(ct).ConfigureAwait(false);
+            case "/client/start":
+                return StartClient(request);
             case "/select-server":
                 return await SelectServerAsync(request, ct).ConfigureAwait(false);
             case "/quests/load":
@@ -245,6 +252,7 @@ public sealed partial class AgentApiRouter
 
     private async Task<object?> ReloginAsync(AgentApiRequest request, CancellationToken ct)
     {
+        RequireGameSession();
         ReloginRequest body = AgentApiJson.Read<ReloginRequest>(request.Body, request.BodyLength, _options.MaxBodyBytes);
         string? server = string.IsNullOrWhiteSpace(body.Server) ? null : RequireText(body.Server, "server", 64);
 
@@ -259,6 +267,7 @@ public sealed partial class AgentApiRouter
 
     private async Task<object?> LoginAsync(AgentApiRequest request, CancellationToken ct)
     {
+        RequireGameSession();
         LoginRequest body = AgentApiJson.Read<LoginRequest>(request.Body, request.BodyLength, _options.MaxBodyBytes);
         string username = RequireText(body.Username, "username", 64);
         string password = RequireSecret(body.Password, "password", 256);
@@ -308,6 +317,7 @@ public sealed partial class AgentApiRouter
 
     private async Task<object?> LogoutAsync(CancellationToken ct)
     {
+        RequireGameSession();
         return await RunActionAsync(() =>
         {
             _bot.Servers.Logout();
@@ -322,6 +332,7 @@ public sealed partial class AgentApiRouter
 
     private async Task<object?> SelectServerAsync(AgentApiRequest request, CancellationToken ct)
     {
+        RequireGameSession();
         SelectServerRequest body = AgentApiJson.Read<SelectServerRequest>(request.Body, request.BodyLength, _options.MaxBodyBytes);
         string server = RequireText(body.Server, "server", 64);
 
@@ -728,6 +739,7 @@ public sealed partial class AgentApiRouter
     {
         "/", "/health", "/state", "/map", "/map/npcs", "/players", "/inventory", "/monsters",
         "/servers", "/shop", "/quests", "/quest", "/quests/cached", "/scripts", "/script", "/logs",
+        "/client",
     };
 
     /// <summary>Endpoints answered by POST, including the short script aliases.</summary>
@@ -738,7 +750,7 @@ public sealed partial class AgentApiRouter
         "/quests/load", "/quests/accept", "/quests/complete", "/quests/abandon",
         "/shop/load", "/shop/buy", "/shop/close",
         "/scripts/write", "/scripts/run", "/scripts/pause", "/scripts/resume", "/scripts/stop",
-        "/pause", "/resume", "/stop",
+        "/client/start", "/pause", "/resume", "/stop",
     };
 
     /// <summary>

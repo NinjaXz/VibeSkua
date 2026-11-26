@@ -68,6 +68,35 @@ public sealed class AgentApiException : Exception
 /// downloads and decompiles that file. It is behind an interface so the router
 /// can be tested without a game client, a Flash runtime or Java.
 /// </summary>
+/// <summary>A client process the tab host can see: its process id and the port
+/// its own endpoint answers on.</summary>
+public sealed record ClientWorker(int Pid, int Port)
+{
+    public override string ToString() => $"{Pid}:{Port}";
+}
+
+/// <summary>
+/// What the running process knows about the game client, and what it may do
+/// about it. The tabbed client runs the game in a child process, so the process
+/// that answers HTTP is often not the one holding the character. This seam lets
+/// the router say so instead of failing inside the game.
+/// </summary>
+public interface IClientController
+{
+    /// <summary>"child" when this process holds a game, "host" when it only hosts tabs.</summary>
+    string Role { get; }
+
+    /// <summary>True when a game session can exist in this process.</summary>
+    bool CanHostGame { get; }
+
+    /// <summary>Client processes this host can see, by their port files.</summary>
+    IReadOnlyList<ClientWorker> Workers { get; }
+
+    /// <summary>Start a client process for a saved account. Null means launched,
+    /// otherwise the string is the reason in words.</summary>
+    string? Start(string username, string? server);
+}
+
 public interface IMapInfoReader
 {
     Task<MapInfo> GetCurrentMapAsync(bool refresh, CancellationToken ct);
