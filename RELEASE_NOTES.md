@@ -2,7 +2,7 @@
 
 ## What's New in 2.1.6
 
-### 🚀 Quick Account Launch (New Feature)
+### Quick Account Launch (New Feature)
 Launch one account, several, or a whole account group straight from the client's tab bar.
 - **Searchable Multi-Account Picker**: Find accounts or account groups by name and launch them in one go, with batch progress and live status for each account.
 - **Tabs or New Windows**: Launch accounts into tabs, or into separate VibeSkua windows.
@@ -10,30 +10,30 @@ Launch one account, several, or a whole account group straight from the client's
 - **Duplicate Protection**: An account that is already logged in or launching (in any VibeSkua window, including manually logged-in tabs) is not launched a second time.
 - **Reliable Queueing**: Closing a tab or window finishes its queued launch, failed new-window launches can be retried, and a stuck "Launching" status clears when the window closes.
 
-### ⌨️ Hotkey Editor
+### Hotkey Editor
 - Every registered action can now be bound, with **Browse All Actions** showing the full list.
 - Assigned hotkeys show a description of what they do.
 - Adding a hotkey is a single **Add** button, and unassigned or empty default hotkeys are kept and repaired.
 
-### 🔭 OMNISCOPE Plugin (New)
+### OMNISCOPE Plugin (New)
 A live game intelligence plugin bundled with the client.
 - **Live Telemetry**: Entities with search, filtering and an inspector, XP progress, active quests, inventory (equipped and favourited items), and drop, kill, quest and shop events, with a configurable polling rate.
 - **Game Data Workspace**: Searchable catalogs of quests, shops, map items, drops and entities, including read-only shop purchase requirements.
 - **Game and Map SWFs**: Downloads the live AQW client and map SWFs, decompiles them with FFDec and indexes the source. Data can be exported.
 
-### 📶 Server Latency in the Manager
+### Server Latency in the Manager
 - Server names in the Manager's server list are coloured by measured latency (good, approaching the limit, high), with a tooltip explaining the colour.
 - Latency thresholds can be changed in Manager Options, which now scrolls and has proper editors for each option type.
 
-### 🛡️ Watchdog Improvements
+### Watchdog Improvements
 - The relogin watchdog waits for a fully established session before carrying on.
 - The script watchdog counts your own hits as progress, its rescues no longer reset their own stall timer, and it re-checks for progress before stepping in, so fewer false rescues.
 
-### 🪟 Avalonia 12 & Window Fixes
+### Avalonia 12 & Window Fixes
 - The UI is upgraded to Avalonia 12 (window decorations, tab drag and drop, Army Queue drag and drop, clipboard).
 - Embedded game resizing is fixed, the login screen fills the window when resizing, and clients in tabs no longer show a resize gutter.
 
-### 🧰 Other Fixes
+### Other Fixes
 - FFDec now ships with its own portable Java runtime, so no separate Java install is needed, and it launches correctly from paths with spaces.
 - The Cosmetics and OMNISCOPE plugin windows report launch errors instead of failing.
 
