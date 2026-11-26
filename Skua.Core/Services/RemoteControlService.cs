@@ -692,8 +692,7 @@ public class RemoteControlService : IRemoteControlService
                                     lowerPath != "/api/army/queue/stop" && lowerPath != "/api/fleet/queue/stop" &&
                                     lowerPath != "/api/army/queue/pause" && lowerPath != "/api/fleet/queue/pause" &&
                                     lowerPath != "/api/army/queue/step/script" && lowerPath != "/api/fleet/queue/step/script" &&
-                                    lowerPath != "/api/accounts" && lowerPath != "/api/accounts/saved" &&
-                                    lowerPath != "/api/accounts/launch")
+                                    lowerPath != "/api/accounts" && lowerPath != "/api/accounts/saved")
                                 {
                                     bool forwarded = await ForwardRequestToChildAsync(stream, hPort, method, path, query, body, headers, token).ConfigureAwait(false);
                                     if (forwarded) return;
@@ -752,8 +751,14 @@ public class RemoteControlService : IRemoteControlService
                         try
                         {
                             using var doc = JsonDocument.Parse(body);
-                            if (doc.RootElement.TryGetProperty("pid", out var pidProp))
-                                targetPid = pidProp.GetInt32();
+                            var root = doc.RootElement;
+                            if (root.TryGetProperty("pid", out var pidProp) || root.TryGetProperty("tab_pid", out pidProp) || root.TryGetProperty("target_pid", out pidProp))
+                            {
+                                if (pidProp.ValueKind == JsonValueKind.Number)
+                                    targetPid = pidProp.GetInt32();
+                                else if (pidProp.ValueKind == JsonValueKind.String && int.TryParse(pidProp.GetString(), out int pPid))
+                                    targetPid = pPid;
+                            }
                         }
                         catch { }
                     }
@@ -778,8 +783,14 @@ public class RemoteControlService : IRemoteControlService
                         try
                         {
                             using var doc = JsonDocument.Parse(body);
-                            if (doc.RootElement.TryGetProperty("pid", out var pidProp))
-                                targetPid = pidProp.GetInt32();
+                            var root = doc.RootElement;
+                            if (root.TryGetProperty("pid", out var pidProp) || root.TryGetProperty("tab_pid", out pidProp) || root.TryGetProperty("target_pid", out pidProp))
+                            {
+                                if (pidProp.ValueKind == JsonValueKind.Number)
+                                    targetPid = pidProp.GetInt32();
+                                else if (pidProp.ValueKind == JsonValueKind.String && int.TryParse(pidProp.GetString(), out int pPid))
+                                    targetPid = pPid;
+                            }
                         }
                         catch { }
                     }
@@ -804,8 +815,14 @@ public class RemoteControlService : IRemoteControlService
                         try
                         {
                             using var doc = JsonDocument.Parse(body);
-                            if (doc.RootElement.TryGetProperty("pid", out var pidProp))
-                                targetPid = pidProp.GetInt32();
+                            var root = doc.RootElement;
+                            if (root.TryGetProperty("pid", out var pidProp) || root.TryGetProperty("tab_pid", out pidProp) || root.TryGetProperty("target_pid", out pidProp))
+                            {
+                                if (pidProp.ValueKind == JsonValueKind.Number)
+                                    targetPid = pidProp.GetInt32();
+                                else if (pidProp.ValueKind == JsonValueKind.String && int.TryParse(pidProp.GetString(), out int pPid))
+                                    targetPid = pPid;
+                            }
                         }
                         catch { }
                     }
@@ -851,40 +868,8 @@ public class RemoteControlService : IRemoteControlService
                 if (lowerPath == "/api/accounts/launch")
                 {
                     if (method != "POST") { await SendMethodNotAllowedAsync(stream, "POST").ConfigureAwait(false); return; }
-                    string username = string.Empty;
-                    string group = string.Empty;
-                    string server = string.Empty;
-
-                    if (!string.IsNullOrWhiteSpace(body))
-                    {
-                        try
-                        {
-                            using var doc = JsonDocument.Parse(body);
-                            if (doc.RootElement.TryGetProperty("username", out var u)) username = u.GetString() ?? string.Empty;
-                            else if (doc.RootElement.TryGetProperty("account", out var a)) username = a.GetString() ?? string.Empty;
-                            else if (doc.RootElement.TryGetProperty("user", out var usr)) username = usr.GetString() ?? string.Empty;
-
-                            if (doc.RootElement.TryGetProperty("group", out var g)) group = g.GetString() ?? string.Empty;
-                            if (doc.RootElement.TryGetProperty("server", out var s)) server = s.GetString() ?? string.Empty;
-                        }
-                        catch { }
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(group))
-                    {
-                        LaunchGroupAction?.Invoke(group);
-                        await SendJsonResponseAsync(stream, 200, RemoteActionResult.Ok($"Launching account group '{group}'")).ConfigureAwait(false);
-                        return;
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(username))
-                    {
-                        LaunchAccountAction?.Invoke(username, null, string.IsNullOrEmpty(server) ? null : server);
-                        await SendJsonResponseAsync(stream, 200, RemoteActionResult.Ok($"Launching account '{username}'")).ConfigureAwait(false);
-                        return;
-                    }
-
-                    await SendJsonResponseAsync(stream, 400, RemoteActionResult.Fail("Must specify 'username' or 'group' to launch")).ConfigureAwait(false);
+                    var launchRes = HandleLaunchAccount(body);
+                    await SendJsonResponseAsync(stream, launchRes.success ? 200 : 400, launchRes).ConfigureAwait(false);
                     return;
                 }
 
@@ -1018,9 +1003,19 @@ public class RemoteControlService : IRemoteControlService
                         try
                         {
                             using var doc = JsonDocument.Parse(body);
-                            if (doc.RootElement.TryGetProperty("step", out var sProp)) step = sProp.GetInt32();
-                            if (doc.RootElement.TryGetProperty("path", out var pProp)) scriptPath = pProp.GetString() ?? string.Empty;
-                            else if (doc.RootElement.TryGetProperty("script", out var scProp)) scriptPath = scProp.GetString() ?? string.Empty;
+                            var root = doc.RootElement;
+                            if (root.TryGetProperty("step", out var sProp) || root.TryGetProperty("step_index", out sProp) || root.TryGetProperty("stepIndex", out sProp))
+                            {
+                                if (sProp.ValueKind == JsonValueKind.Number)
+                                    step = sProp.GetInt32();
+                                else if (sProp.ValueKind == JsonValueKind.String && int.TryParse(sProp.GetString(), out int pStep))
+                                    step = pStep;
+                            }
+                            if (root.TryGetProperty("path", out var pProp) || root.TryGetProperty("script", out pProp) || root.TryGetProperty("script_path", out pProp) || root.TryGetProperty("scriptPath", out pProp))
+                            {
+                                if (pProp.ValueKind == JsonValueKind.String)
+                                    scriptPath = pProp.GetString() ?? string.Empty;
+                            }
                         }
                         catch { }
                     }
@@ -1097,17 +1092,7 @@ public class RemoteControlService : IRemoteControlService
                 if (lowerPath == "/api/fleet/load-script" || lowerPath == "/api/army/load-script")
                 {
                     if (method != "POST") { await SendMethodNotAllowedAsync(stream, "POST").ConfigureAwait(false); return; }
-                    string scriptPath = string.Empty;
-                    if (!string.IsNullOrWhiteSpace(body))
-                    {
-                        try
-                        {
-                            using var doc = JsonDocument.Parse(body);
-                            if (doc.RootElement.TryGetProperty("path", out var pProp)) scriptPath = pProp.GetString() ?? string.Empty;
-                            else if (doc.RootElement.TryGetProperty("script", out var sProp)) scriptPath = sProp.GetString() ?? string.Empty;
-                        }
-                        catch { }
-                    }
+                    string scriptPath = ExtractScriptPathFromBody(body);
                     if (!string.IsNullOrWhiteSpace(scriptPath))
                     {
                         LoadScriptAllAction?.Invoke(scriptPath);
@@ -1124,7 +1109,22 @@ public class RemoteControlService : IRemoteControlService
                 if (lowerPath == "/api/fleet/scheduler/start" || lowerPath == "/api/army/scheduler/start")
                 {
                     if (method != "POST") { await SendMethodNotAllowedAsync(stream, "POST").ConfigureAwait(false); return; }
-                    BroadcastArmySchedulerAction?.Invoke(body);
+                    if (BroadcastArmySchedulerAction != null)
+                    {
+                        BroadcastArmySchedulerAction.Invoke(body);
+                    }
+                    else
+                    {
+                        try
+                        {
+                            if (!string.IsNullOrWhiteSpace(body) && body.Trim().StartsWith("["))
+                            {
+                                string tempFile = Path.Combine(Path.GetTempPath(), "skua_global_playlist.json");
+                                File.WriteAllText(tempFile, body);
+                            }
+                        }
+                        catch { }
+                    }
                     await SendJsonResponseAsync(stream, 200, RemoteActionResult.Ok("Army Scheduler started across fleet")).ConfigureAwait(false);
                     return;
                 }
@@ -1281,7 +1281,7 @@ public class RemoteControlService : IRemoteControlService
 
                 case "/api/scripts/load":
                     if (method != "POST") { await SendMethodNotAllowedAsync(stream, "POST"); break; }
-                    var loadRes = HandleLoadScript(body);
+                    var loadRes = await HandleLoadScriptAsync(body).ConfigureAwait(false);
                     await SendJsonResponseAsync(stream, loadRes.success ? 200 : 400, loadRes).ConfigureAwait(false);
                     break;
 
@@ -1414,12 +1414,14 @@ public class RemoteControlService : IRemoteControlService
                     break;
 
                 case "/api/inventory/bank":
+                case "/api/bank/deposit":
                     if (method != "POST") { await SendMethodNotAllowedAsync(stream, "POST"); break; }
                     var toBankRes = HandleToBank(body);
                     await SendJsonResponseAsync(stream, toBankRes.success ? 200 : 400, toBankRes).ConfigureAwait(false);
                     break;
 
                 case "/api/inventory/unbank":
+                case "/api/bank/withdraw":
                     if (method != "POST") { await SendMethodNotAllowedAsync(stream, "POST"); break; }
                     var unbankRes = HandleToInventory(body);
                     await SendJsonResponseAsync(stream, unbankRes.success ? 200 : 400, unbankRes).ConfigureAwait(false);
@@ -1558,7 +1560,7 @@ public class RemoteControlService : IRemoteControlService
 
                 case "/api/fleet/load-script":
                     if (method != "POST") { await SendMethodNotAllowedAsync(stream, "POST"); break; }
-                    var flLoad = HandleLoadScript(body);
+                    var flLoad = await HandleLoadScriptAsync(body).ConfigureAwait(false);
                     await SendJsonResponseAsync(stream, flLoad.success ? 200 : 400, flLoad).ConfigureAwait(false);
                     break;
 
@@ -2653,79 +2655,117 @@ public class RemoteControlService : IRemoteControlService
         return false;
     }
 
+    private static string ExtractScriptPathFromBody(string body)
+    {
+        if (string.IsNullOrWhiteSpace(body))
+            return string.Empty;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            var root = doc.RootElement;
+            if (root.TryGetProperty("script", out var sProp) && sProp.ValueKind == JsonValueKind.String)
+                return sProp.GetString()?.Trim() ?? string.Empty;
+            if (root.TryGetProperty("path", out var pProp) && pProp.ValueKind == JsonValueKind.String)
+                return pProp.GetString()?.Trim() ?? string.Empty;
+            if (root.TryGetProperty("scriptPath", out var spProp) && spProp.ValueKind == JsonValueKind.String)
+                return spProp.GetString()?.Trim() ?? string.Empty;
+            if (root.TryGetProperty("script_path", out var spProp2) && spProp2.ValueKind == JsonValueKind.String)
+                return spProp2.GetString()?.Trim() ?? string.Empty;
+            if (root.TryGetProperty("file", out var fProp) && fProp.ValueKind == JsonValueKind.String)
+                return fProp.GetString()?.Trim() ?? string.Empty;
+            if (root.TryGetProperty("fileName", out var fnProp) && fnProp.ValueKind == JsonValueKind.String)
+                return fnProp.GetString()?.Trim() ?? string.Empty;
+            if (root.TryGetProperty("name", out var nProp) && nProp.ValueKind == JsonValueKind.String)
+                return nProp.GetString()?.Trim() ?? string.Empty;
+        }
+        catch { }
+
+        return string.Empty;
+    }
+
+    private async Task<string?> ResolveScriptPathAsync(string scriptPath)
+    {
+        if (string.IsNullOrWhiteSpace(scriptPath))
+            return null;
+
+        string normalized = scriptPath.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
+        string fullPath = Path.IsPathRooted(normalized)
+            ? normalized
+            : Path.Combine(ClientFileSources.SkuaScriptsDIR, normalized);
+
+        if (File.Exists(fullPath))
+            return fullPath;
+
+        string legacyPath = Path.Combine(ClientFileSources.LegacySkuaDIR, "Scripts", normalized);
+        if (File.Exists(legacyPath))
+            return legacyPath;
+
+        // Check if file exists recursively in SkuaScriptsDIR by file name
+        try
+        {
+            string fileName = Path.GetFileName(normalized);
+            if (!string.IsNullOrEmpty(fileName) && Directory.Exists(ClientFileSources.SkuaScriptsDIR))
+            {
+                var found = Directory.EnumerateFiles(ClientFileSources.SkuaScriptsDIR, fileName, SearchOption.AllDirectories).FirstOrDefault();
+                if (!string.IsNullOrEmpty(found) && File.Exists(found))
+                    return found;
+            }
+        }
+        catch { }
+
+        // Attempt download from IGetScriptsService
+        bool downloaded = false;
+        try
+        {
+            var getScripts = _serviceProvider.GetService<IGetScriptsService>();
+            if (getScripts != null)
+            {
+                var info = getScripts.Scripts?.FirstOrDefault(s =>
+                    string.Equals(s.FilePath?.Replace('\\', '/'), scriptPath.Replace('\\', '/'), StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(s.FileName, Path.GetFileName(scriptPath), StringComparison.OrdinalIgnoreCase));
+                if (info != null)
+                {
+                    await getScripts.DownloadScriptAsync(info).ConfigureAwait(false);
+                    downloaded = File.Exists(fullPath);
+                }
+            }
+        }
+        catch { }
+
+        // Fallback: direct GitHub download
+        if (!downloaded && !File.Exists(fullPath))
+        {
+            try
+            {
+                string urlRel = scriptPath.Replace('\\', '/').TrimStart('/');
+                string rawUrl = $"https://raw.githubusercontent.com/auqw/Scripts/refs/heads/Skua/{urlRel}";
+                using var http = new HttpClient();
+                http.Timeout = TimeSpan.FromSeconds(15);
+                byte[] content = await http.GetByteArrayAsync(rawUrl).ConfigureAwait(false);
+                string? dir = Path.GetDirectoryName(fullPath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                    Directory.CreateDirectory(dir);
+                await File.WriteAllBytesAsync(fullPath, content).ConfigureAwait(false);
+            }
+            catch { }
+        }
+
+        return File.Exists(fullPath) ? fullPath : null;
+    }
+
     private async Task<RemoteActionResult> HandleStartScriptAsync(string body)
     {
         var manager = _serviceProvider.GetService<IScriptManager>();
         if (manager == null)
             return RemoteActionResult.Fail("ScriptManager unavailable");
 
-        string scriptPath = string.Empty;
-        if (!string.IsNullOrWhiteSpace(body))
-        {
-            try
-            {
-                using var doc = JsonDocument.Parse(body);
-                if (doc.RootElement.TryGetProperty("script", out var prop))
-                    scriptPath = prop.GetString() ?? string.Empty;
-            }
-            catch { }
-        }
-
+        string scriptPath = ExtractScriptPathFromBody(body);
         if (!string.IsNullOrWhiteSpace(scriptPath))
         {
-            string fullPath = Path.IsPathRooted(scriptPath)
-                ? scriptPath
-                : Path.Combine(ClientFileSources.SkuaScriptsDIR, scriptPath.Replace('/', Path.DirectorySeparatorChar));
-
-            if (!File.Exists(fullPath))
-            {
-                string legacyPath = Path.Combine(ClientFileSources.LegacySkuaDIR, "Scripts", scriptPath.Replace('/', Path.DirectorySeparatorChar));
-                if (File.Exists(legacyPath))
-                {
-                    fullPath = legacyPath;
-                }
-            }
-
-            if (!File.Exists(fullPath))
-            {
-                // Attempt to download script automatically if not cached locally
-                bool downloaded = false;
-                try
-                {
-                    var getScripts = _serviceProvider.GetService<IGetScriptsService>();
-                    if (getScripts != null)
-                    {
-                        var info = getScripts.Scripts?.FirstOrDefault(s =>
-                            string.Equals(s.FilePath?.Replace('\\', '/'), scriptPath.Replace('\\', '/'), StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(s.FileName, Path.GetFileName(scriptPath), StringComparison.OrdinalIgnoreCase));
-                        if (info != null)
-                        {
-                            await getScripts.DownloadScriptAsync(info).ConfigureAwait(false);
-                            downloaded = File.Exists(fullPath);
-                        }
-                    }
-                }
-                catch { }
-
-                if (!downloaded && !File.Exists(fullPath))
-                {
-                    try
-                    {
-                        string rawUrl = $"https://raw.githubusercontent.com/auqw/Scripts/refs/heads/Skua/{scriptPath.Replace('\\', '/')}";
-                        using var http = new HttpClient();
-                        http.Timeout = TimeSpan.FromSeconds(15);
-                        byte[] content = await http.GetByteArrayAsync(rawUrl).ConfigureAwait(false);
-                        string? dir = Path.GetDirectoryName(fullPath);
-                        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-                            Directory.CreateDirectory(dir);
-                        await File.WriteAllBytesAsync(fullPath, content).ConfigureAwait(false);
-                    }
-                    catch { }
-                }
-
-                if (!File.Exists(fullPath))
-                    return RemoteActionResult.Fail($"Script file not found: {scriptPath}");
-            }
+            string? fullPath = await ResolveScriptPathAsync(scriptPath).ConfigureAwait(false);
+            if (string.IsNullOrEmpty(fullPath) || !File.Exists(fullPath))
+                return RemoteActionResult.Fail($"Script file not found: {scriptPath}");
 
             if (manager.ScriptRunning)
             {
@@ -2811,36 +2851,22 @@ public class RemoteControlService : IRemoteControlService
         return RemoteActionResult.Ok(message, new { paused });
     }
 
-    private RemoteActionResult HandleLoadScript(string body)
+    private async Task<RemoteActionResult> HandleLoadScriptAsync(string body)
     {
         var manager = _serviceProvider.GetService<IScriptManager>();
         if (manager == null)
             return RemoteActionResult.Fail("ScriptManager unavailable");
 
-        string scriptPath = string.Empty;
-        if (!string.IsNullOrWhiteSpace(body))
-        {
-            try
-            {
-                using var doc = JsonDocument.Parse(body);
-                if (doc.RootElement.TryGetProperty("script", out var prop))
-                    scriptPath = prop.GetString() ?? string.Empty;
-            }
-            catch { }
-        }
-
+        string scriptPath = ExtractScriptPathFromBody(body);
         if (string.IsNullOrWhiteSpace(scriptPath))
             return RemoteActionResult.Fail("Script path missing");
 
-        string fullPath = Path.IsPathRooted(scriptPath)
-            ? scriptPath
-            : Path.Combine(ClientFileSources.SkuaScriptsDIR, scriptPath.Replace('/', Path.DirectorySeparatorChar));
-
-        if (!File.Exists(fullPath))
+        string? fullPath = await ResolveScriptPathAsync(scriptPath).ConfigureAwait(false);
+        if (string.IsNullOrEmpty(fullPath) || !File.Exists(fullPath))
             return RemoteActionResult.Fail($"Script file not found: {scriptPath}");
 
         manager.SetLoadedScript(fullPath);
-        return RemoteActionResult.Ok($"Loaded script: {Path.GetFileName(fullPath)}");
+        return RemoteActionResult.Ok($"Loaded script: {Path.GetFileName(fullPath)}", new { path = fullPath, script = Path.GetFileName(fullPath) });
     }
 
     private RemoteActionResult HandleLaunchAccount(string body)
@@ -3382,11 +3408,22 @@ public class RemoteControlService : IRemoteControlService
             try
             {
                 using var doc = JsonDocument.Parse(body);
-                if (doc.RootElement.TryGetProperty("id", out var idProp))
-                    questId = idProp.GetInt32();
-                if (doc.RootElement.TryGetProperty("item_id", out var itemProp))
-                    itemId = itemProp.GetInt32();
-                if (doc.RootElement.TryGetProperty("special", out var specProp))
+                var root = doc.RootElement;
+                if (root.TryGetProperty("id", out var idProp) || root.TryGetProperty("quest_id", out idProp) || root.TryGetProperty("questId", out idProp))
+                {
+                    if (idProp.ValueKind == JsonValueKind.Number)
+                        questId = idProp.GetInt32();
+                    else if (idProp.ValueKind == JsonValueKind.String && int.TryParse(idProp.GetString(), out int pId))
+                        questId = pId;
+                }
+                if (root.TryGetProperty("item_id", out var itemProp) || root.TryGetProperty("itemId", out itemProp) || root.TryGetProperty("turnin_id", out itemProp) || root.TryGetProperty("item", out itemProp))
+                {
+                    if (itemProp.ValueKind == JsonValueKind.Number)
+                        itemId = itemProp.GetInt32();
+                    else if (itemProp.ValueKind == JsonValueKind.String && int.TryParse(itemProp.GetString(), out int pItemId))
+                        itemId = pItemId;
+                }
+                if (root.TryGetProperty("special", out var specProp))
                     special = specProp.GetBoolean();
             }
             catch (Exception ex)
@@ -3420,19 +3457,37 @@ public class RemoteControlService : IRemoteControlService
             return RemoteActionResult.Fail("Drops interface unavailable");
 
         string item = string.Empty;
+        int itemId = 0;
         if (!string.IsNullOrWhiteSpace(body))
         {
             try
             {
                 using var doc = JsonDocument.Parse(body);
-                if (doc.RootElement.TryGetProperty("item", out var prop))
-                    item = prop.GetString() ?? string.Empty;
+                var root = doc.RootElement;
+                if (root.TryGetProperty("item", out var prop) || root.TryGetProperty("item_name", out prop) || root.TryGetProperty("name", out prop) || root.TryGetProperty("itemName", out prop))
+                {
+                    if (prop.ValueKind == JsonValueKind.String)
+                        item = prop.GetString() ?? string.Empty;
+                }
+                if (root.TryGetProperty("id", out var idProp) || root.TryGetProperty("item_id", out idProp) || root.TryGetProperty("itemId", out idProp))
+                {
+                    if (idProp.ValueKind == JsonValueKind.Number)
+                        itemId = idProp.GetInt32();
+                    else if (idProp.ValueKind == JsonValueKind.String && int.TryParse(idProp.GetString(), out int parsedId))
+                        itemId = parsedId;
+                }
             }
             catch { }
         }
 
+        if (string.IsNullOrWhiteSpace(item) && itemId > 0)
+        {
+            bot.Drops.Pickup(itemId);
+            return RemoteActionResult.Ok($"Picking up #{itemId}", new { id = itemId });
+        }
+
         if (string.IsNullOrWhiteSpace(item))
-            return RemoteActionResult.Fail("Item name required");
+            return RemoteActionResult.Fail("Item name or ID required");
 
         bot.Drops.Pickup(item);
         return RemoteActionResult.Ok($"Picking up {item}", new { item });
@@ -3485,6 +3540,7 @@ public class RemoteControlService : IRemoteControlService
     {
         var bot = _serviceProvider.GetService<IScriptInterface>();
         var items = new List<object>();
+        var seenCharIds = new HashSet<int>();
         try
         {
             var raw = bot?.Inventory?.Items;
@@ -3499,19 +3555,95 @@ public class RemoteControlService : IRemoteControlService
                         string name = !string.IsNullOrWhiteSpace(it.Name) ? it.Name : $"Item #{it.ID}";
                         string cat = it.Category != ItemCategory.Unknown
                             ? it.Category.ToString()
-                            : (!string.IsNullOrWhiteSpace(it.CategoryString) ? it.CategoryString : "Item");
+                            : (!string.IsNullOrWhiteSpace(it.CategoryString)
+                                ? it.CategoryString
+                                : (!string.IsNullOrWhiteSpace(it.ItemGroup)
+                                    ? (it.ItemGroup switch { "co" => "Armor", "ba" => "Cape", "he" => "Helm", "pe" => "Pet", "Weapon" => "Weapon", _ => "Item" })
+                                    : (it.House ? "House" : "Item")));
+
+                        if (it.CharItemID > 0)
+                            seenCharIds.Add(it.CharItemID);
 
                         items.Add(new
                         {
                             id = it.ID,
+                            item_id = it.ID,
+                            itemId = it.ID,
                             char_id = it.CharItemID,
+                            char_item_id = it.CharItemID,
+                            charItemId = it.CharItemID,
                             name = name,
+                            sName = name,
                             quantity = it.Quantity > 0 ? it.Quantity : 1,
+                            iQty = it.Quantity > 0 ? it.Quantity : 1,
                             max_quantity = it.MaxStack > 0 ? it.MaxStack : 1,
+                            max_stack = it.MaxStack > 0 ? it.MaxStack : 1,
+                            iStk = it.MaxStack > 0 ? it.MaxStack : 1,
                             ac = it.Coins,
+                            is_ac = it.Coins,
+                            coins = it.Coins,
+                            bCoins = it.Coins,
                             equipped = it.Equipped,
+                            is_equipped = it.Equipped,
+                            bEquip = it.Equipped,
                             category = cat,
-                            upgrade = it.Upgrade
+                            type = cat,
+                            sType = cat,
+                            upgrade = it.Upgrade,
+                            is_upgrade = it.Upgrade,
+                            member = it.Upgrade,
+                            bUpg = it.Upgrade,
+                            item_group = it.ItemGroup ?? ""
+                        });
+                    }
+                    catch { }
+                }
+            }
+
+            // Also check House inventory if available
+            var houseRaw = bot?.House?.Items;
+            if (houseRaw != null)
+            {
+                foreach (var it in houseRaw)
+                {
+                    if (it == null || (it.CharItemID > 0 && seenCharIds.Contains(it.CharItemID))) continue;
+                    try
+                    {
+                        string name = !string.IsNullOrWhiteSpace(it.Name) ? it.Name : $"House Item #{it.ID}";
+                        string cat = it.Category != ItemCategory.Unknown
+                            ? it.Category.ToString()
+                            : (!string.IsNullOrWhiteSpace(it.CategoryString) ? it.CategoryString : "House");
+
+                        items.Add(new
+                        {
+                            id = it.ID,
+                            item_id = it.ID,
+                            itemId = it.ID,
+                            char_id = it.CharItemID,
+                            char_item_id = it.CharItemID,
+                            charItemId = it.CharItemID,
+                            name = name,
+                            sName = name,
+                            quantity = it.Quantity > 0 ? it.Quantity : 1,
+                            iQty = it.Quantity > 0 ? it.Quantity : 1,
+                            max_quantity = it.MaxStack > 0 ? it.MaxStack : 1,
+                            max_stack = it.MaxStack > 0 ? it.MaxStack : 1,
+                            iStk = it.MaxStack > 0 ? it.MaxStack : 1,
+                            ac = it.Coins,
+                            is_ac = it.Coins,
+                            coins = it.Coins,
+                            bCoins = it.Coins,
+                            equipped = it.Equipped,
+                            is_equipped = it.Equipped,
+                            bEquip = it.Equipped,
+                            category = cat,
+                            type = cat,
+                            sType = cat,
+                            upgrade = it.Upgrade,
+                            is_upgrade = it.Upgrade,
+                            member = it.Upgrade,
+                            bUpg = it.Upgrade,
+                            item_group = it.ItemGroup ?? "house"
                         });
                     }
                     catch { }
@@ -3539,7 +3671,8 @@ public class RemoteControlService : IRemoteControlService
         {
             try
             {
-                bot.Bank.Load(true);
+                // Trigger non-blocking bank load so request doesn't time out
+                bot.Bank.Load(false);
             }
             catch { }
         }
@@ -3558,18 +3691,42 @@ public class RemoteControlService : IRemoteControlService
                         string name = !string.IsNullOrWhiteSpace(it.Name) ? it.Name : $"Item #{it.ID}";
                         string cat = it.Category != ItemCategory.Unknown
                             ? it.Category.ToString()
-                            : (!string.IsNullOrWhiteSpace(it.CategoryString) ? it.CategoryString : "Item");
+                            : (!string.IsNullOrWhiteSpace(it.CategoryString)
+                                ? it.CategoryString
+                                : (!string.IsNullOrWhiteSpace(it.ItemGroup)
+                                    ? (it.ItemGroup switch { "co" => "Armor", "ba" => "Cape", "he" => "Helm", "pe" => "Pet", "Weapon" => "Weapon", _ => "Item" })
+                                    : (it.House ? "House" : "Item")));
 
                         items.Add(new
                         {
                             id = it.ID,
+                            item_id = it.ID,
+                            itemId = it.ID,
                             char_id = it.CharItemID,
+                            char_item_id = it.CharItemID,
+                            charItemId = it.CharItemID,
                             name = name,
+                            sName = name,
                             quantity = it.Quantity > 0 ? it.Quantity : 1,
+                            iQty = it.Quantity > 0 ? it.Quantity : 1,
                             max_quantity = it.MaxStack > 0 ? it.MaxStack : 1,
+                            max_stack = it.MaxStack > 0 ? it.MaxStack : 1,
+                            iStk = it.MaxStack > 0 ? it.MaxStack : 1,
                             ac = it.Coins,
+                            is_ac = it.Coins,
+                            coins = it.Coins,
+                            bCoins = it.Coins,
+                            equipped = it.Equipped,
+                            is_equipped = it.Equipped,
+                            bEquip = it.Equipped,
                             category = cat,
-                            upgrade = it.Upgrade
+                            type = cat,
+                            sType = cat,
+                            upgrade = it.Upgrade,
+                            is_upgrade = it.Upgrade,
+                            member = it.Upgrade,
+                            bUpg = it.Upgrade,
+                            item_group = it.ItemGroup ?? ""
                         });
                     }
                     catch { }
@@ -3612,7 +3769,7 @@ public class RemoteControlService : IRemoteControlService
 
         try
         {
-            bot.Bank.Load(true);
+            bot.Bank.Load(false);
             return RemoteActionResult.Ok("Bank reload triggered", new { count = bot.Bank.Items?.Count ?? 0 });
         }
         catch (Exception ex)
@@ -3634,12 +3791,28 @@ public class RemoteControlService : IRemoteControlService
             try
             {
                 using var doc = JsonDocument.Parse(body);
-                if (doc.RootElement.TryGetProperty("item", out var pName))
-                    itemName = pName.GetString() ?? string.Empty;
-                if (doc.RootElement.TryGetProperty("id", out var pId))
-                    itemId = pId.GetInt32();
+                var root = doc.RootElement;
+                if (root.TryGetProperty("id", out var pId) || root.TryGetProperty("item_id", out pId) || root.TryGetProperty("itemId", out pId))
+                {
+                    if (pId.ValueKind == JsonValueKind.Number)
+                        itemId = pId.GetInt32();
+                    else if (pId.ValueKind == JsonValueKind.String && int.TryParse(pId.GetString(), out int parsedId))
+                        itemId = parsedId;
+                }
+
+                if (root.TryGetProperty("item", out var pName) || root.TryGetProperty("item_name", out pName) || root.TryGetProperty("name", out pName) || root.TryGetProperty("itemName", out pName))
+                {
+                    if (pName.ValueKind == JsonValueKind.String)
+                        itemName = pName.GetString() ?? string.Empty;
+                }
             }
             catch { }
+        }
+
+        if (itemId > 0 && string.IsNullOrWhiteSpace(itemName))
+        {
+            if (bot.Inventory.TryGetItem(itemId, out var foundItem) && foundItem != null)
+                itemName = foundItem.Name;
         }
 
         try
@@ -3647,16 +3820,18 @@ public class RemoteControlService : IRemoteControlService
             if (itemId > 0)
             {
                 bot.Inventory.EquipItem(itemId);
-                return RemoteActionResult.Ok($"Equipped item #{itemId}");
+                string label = !string.IsNullOrWhiteSpace(itemName) ? $"'{itemName}'" : $"item #{itemId}";
+                return RemoteActionResult.Ok($"Equipped {label}");
             }
             if (!string.IsNullOrWhiteSpace(itemName))
             {
                 if (bot.Inventory.TryGetItem(itemName, out var invItem) && invItem != null)
                 {
                     bot.Inventory.EquipItem(invItem.ID);
-                    return RemoteActionResult.Ok($"Equipped {itemName}");
+                    return RemoteActionResult.Ok($"Equipped '{itemName}'");
                 }
-                return RemoteActionResult.Fail($"Item not found in inventory: {itemName}");
+                bot.Inventory.EquipItem(itemName);
+                return RemoteActionResult.Ok($"Equipped '{itemName}'");
             }
         }
         catch (Exception ex)
@@ -3674,19 +3849,37 @@ public class RemoteControlService : IRemoteControlService
             return RemoteActionResult.Fail("Inventory interface unavailable");
 
         string item = string.Empty;
+        int itemId = 0;
         if (!string.IsNullOrWhiteSpace(body))
         {
             try
             {
                 using var doc = JsonDocument.Parse(body);
-                if (doc.RootElement.TryGetProperty("item", out var prop))
-                    item = prop.GetString() ?? string.Empty;
+                var root = doc.RootElement;
+                if (root.TryGetProperty("item", out var prop) || root.TryGetProperty("item_name", out prop) || root.TryGetProperty("name", out prop) || root.TryGetProperty("itemName", out prop))
+                {
+                    if (prop.ValueKind == JsonValueKind.String)
+                        item = prop.GetString() ?? string.Empty;
+                }
+                if (root.TryGetProperty("id", out var idProp) || root.TryGetProperty("item_id", out idProp) || root.TryGetProperty("itemId", out idProp))
+                {
+                    if (idProp.ValueKind == JsonValueKind.Number)
+                        itemId = idProp.GetInt32();
+                    else if (idProp.ValueKind == JsonValueKind.String && int.TryParse(idProp.GetString(), out int parsedId))
+                        itemId = parsedId;
+                }
             }
             catch { }
         }
 
+        if (string.IsNullOrWhiteSpace(item) && itemId > 0)
+        {
+            if (bot.Inventory.TryGetItem(itemId, out var invItem) && invItem != null)
+                item = invItem.Name;
+        }
+
         if (string.IsNullOrWhiteSpace(item))
-            return RemoteActionResult.Fail("Item name required");
+            return RemoteActionResult.Fail("Item name or ID required");
 
         bool res = bot.Inventory.ToBank(item);
         return new RemoteActionResult { success = res, message = res ? $"Moved {item} to bank" : $"Failed to move {item} to bank", data = new { item } };
@@ -3699,19 +3892,37 @@ public class RemoteControlService : IRemoteControlService
             return RemoteActionResult.Fail("Bank interface unavailable");
 
         string item = string.Empty;
+        int itemId = 0;
         if (!string.IsNullOrWhiteSpace(body))
         {
             try
             {
                 using var doc = JsonDocument.Parse(body);
-                if (doc.RootElement.TryGetProperty("item", out var prop))
-                    item = prop.GetString() ?? string.Empty;
+                var root = doc.RootElement;
+                if (root.TryGetProperty("item", out var prop) || root.TryGetProperty("item_name", out prop) || root.TryGetProperty("name", out prop) || root.TryGetProperty("itemName", out prop))
+                {
+                    if (prop.ValueKind == JsonValueKind.String)
+                        item = prop.GetString() ?? string.Empty;
+                }
+                if (root.TryGetProperty("id", out var idProp) || root.TryGetProperty("item_id", out idProp) || root.TryGetProperty("itemId", out idProp))
+                {
+                    if (idProp.ValueKind == JsonValueKind.Number)
+                        itemId = idProp.GetInt32();
+                    else if (idProp.ValueKind == JsonValueKind.String && int.TryParse(idProp.GetString(), out int parsedId))
+                        itemId = parsedId;
+                }
             }
             catch { }
         }
 
+        if (string.IsNullOrWhiteSpace(item) && itemId > 0)
+        {
+            if (bot.Bank.TryGetItem(itemId, out var bankItem) && bankItem != null)
+                item = bankItem.Name;
+        }
+
         if (string.IsNullOrWhiteSpace(item))
-            return RemoteActionResult.Fail("Item name required");
+            return RemoteActionResult.Fail("Item name or ID required");
 
         bool res = bot.Bank.ToInventory(item);
         return new RemoteActionResult { success = res, message = res ? $"Moved {item} to inventory" : $"Failed to move {item} to inventory", data = new { item } };

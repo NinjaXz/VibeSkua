@@ -57,9 +57,10 @@ public class ButlerV5Plugin : ISkuaPlugin
             false),
         new Option<ButlerClassType>("classType", "Class type",
             "Which CoreBots class this butler equips when it starts following:\n" +
-            "Farm / Solo / Dodge / Boss as selected in CoreBots options, or None to\n" +
-            "keep current gear. Saved per account - after login, each account shows\n" +
-            "and keeps its own choice. Default: None.",
+            "Farm / Solo / Dodge / Boss as selected in CoreBots options, with that\n" +
+            "slot's skill set mode, or None to keep current gear. A mode the class\n" +
+            "doesn't have falls back to one it does. Saved per account - after login,\n" +
+            "each account shows and keeps its own choice. Default: None.",
             ButlerClassType.None),
         new Option<ParkSpot>("parkLocation", "Park location",
             "Where a butler goes when it's released or its master goes offline. Default: House.\n" +
@@ -209,6 +210,7 @@ public class ButlerV5Plugin : ISkuaPlugin
         _scriptManager = provider.GetService(typeof(IScriptManager)) as IScriptManager;
         _dispatcher = provider.GetService(typeof(IDispatcherService)) as IDispatcherService;
         _dialogs = provider.GetService(typeof(IDialogService)) as IDialogService;
+        IAdvancedSkillContainer? skillSets = provider.GetService(typeof(IAdvancedSkillContainer)) as IAdvancedSkillContainer;
 
         DebugLog.EnabledProvider = () => GetOption("debugLogs", true);
         DebugLog.AutoSaveProvider = () => GetOption("autoSaveLog", false);
@@ -248,6 +250,7 @@ public class ButlerV5Plugin : ISkuaPlugin
             AntiLagSummoned = () => GetOption("antiLagSummoned", true),
             AntiLagFollowing = () => GetOption("antiLagFollowing", false),
             ScriptSuspendNotice = ShowSuspendNotice,
+            SkillSets = () => skillSets?.LoadedSkills,
         }, Log);
 
         // React to sync-file changes instead of polling: the order watcher wakes

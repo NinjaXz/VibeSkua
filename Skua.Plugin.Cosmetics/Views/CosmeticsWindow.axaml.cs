@@ -60,35 +60,43 @@ public partial class CosmeticsWindow : Window
     private async void CosmeticsWindow_Loaded(object? sender, RoutedEventArgs e)
     {
         Loaded -= CosmeticsWindow_Loaded;
-        if (_service == null) return;
+        if (_service == null)
+            return;
 
-        _service.CaptureOriginalStateIfEmpty();
-        RefreshSetsList();
-        RefreshCcTabFromAvatar();
-
-        if (_service.IsCatalogLoaded)
+        try
         {
-            CatalogStatusText.Text = $"{_service.AllItems.Count:N0} items (Local Machine)";
-            FilterCatalog();
-        }
-        else
-        {
-            CatalogStatusText.Text = "Streaming local catalog...";
-            var progress = new Progress<string>(msg =>
-            {
-                Dispatcher.UIThread.Post(() => CatalogStatusText.Text = msg);
-            });
+            _service.CaptureOriginalStateIfEmpty();
+            RefreshSetsList();
+            RefreshCcTabFromAvatar();
 
-            await _service.EnsureCatalogLoadedAsync(progress);
-
-            Dispatcher.UIThread.Post(() =>
+            if (_service.IsCatalogLoaded)
             {
                 CatalogStatusText.Text = $"{_service.AllItems.Count:N0} items (Local Machine)";
                 FilterCatalog();
-            });
+                return;
+            }
+
+            CatalogStatusText.Text = "Streaming local catalog...";
+            IProgress<string> progress = new Progress<string>(message =>
+                Dispatcher.UIThread.Post(() => CatalogStatusText.Text = message));
+
+            await _service.EnsureCatalogLoadedAsync(progress);
+
+            if (!IsVisible)
+                return;
+
+            CatalogStatusText.Text = $"{_service.AllItems.Count:N0} items (Local Machine)";
+            FilterCatalog();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Trace.WriteLine($"Cosmetics window initialization failed: {ex}");
+            _bot?.Log($"[Cosmetics] Window initialization failed: {ex}");
+
+            if (IsVisible)
+                CatalogStatusText.Text = $"Initialization failed: {ex.Message}";
         }
     }
-
     private void CosmeticsWindow_Closing(object? sender, WindowClosingEventArgs e)
     {
         if (_service != null)
@@ -295,11 +303,15 @@ public partial class CosmeticsWindow : Window
 
     private void WeaponSubcategoryCombo_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (WeaponSubcategoryCombo.SelectedItem is ComboBoxItem item)
-        {
-            _activeWeaponSubcategory = item.Content?.ToString() ?? "All Weapons";
+        if (sender is not ComboBox combo || combo.SelectedItem is not ComboBoxItem item)
+            return;
+
+        _activeWeaponSubcategory = item.Content?.ToString() ?? "All Weapons";
+
+        // Avalonia can raise this event while InitializeComponent is still populating controls.
+        // The Loaded handler performs the initial catalog filter once the window is ready.
+        if (IsVisible)
             FilterCatalog();
-        }
     }
 
     private void SortCombo_SelectionChanged(object? sender, SelectionChangedEventArgs e)

@@ -250,6 +250,13 @@ public class ClientSettings
     [JsonPropertyName("AuraOverlayTargetPos")]
     public string AuraOverlayTargetPos { get; set; } = string.Empty;
 
+    [JsonPropertyName("ServerLatencyThresholdMs")]
+    public int ServerLatencyThresholdMs { get; set; } = 200;
+
+    [JsonPropertyName("ServerLatencyNearThresholdPercent")]
+    public int ServerLatencyNearThresholdPercent { get; set; } = 75;
+
+
     [JsonPropertyName("AnimationFrameRate")]
     public int AnimationFrameRate { get; set; } = 60;
 
@@ -467,6 +474,12 @@ public class ManagerSettings
 
     [JsonPropertyName("AutoStartScript")]
     public bool AutoStartScript { get; set; } = false;
+
+    [JsonPropertyName("SchedulerAutoStart")]
+    public bool SchedulerAutoStart { get; set; } = true;
+
+    [JsonPropertyName("SchedulerUse24HourTime")]
+    public bool SchedulerUse24HourTime { get; set; } = false;
 
     [JsonExtensionData]
     public Dictionary<string, object>? ExtensionData { get; set; }

@@ -211,7 +211,7 @@ public partial class App : Application
                     Width = 800,
                     Height = 600,
                     Position = new global::Avalonia.PixelPoint(-32000, -32000),
-                    SystemDecorations = global::Avalonia.Controls.SystemDecorations.None,
+                    WindowDecorations = global::Avalonia.Controls.WindowDecorations.None,
                     ShowInTaskbar = false
                 };
                 desktop.MainWindow = mainChild;
@@ -431,7 +431,7 @@ public partial class App : Application
                 && (settings.Get<bool>("AutoUpdateBotScripts")
                     || dialogService.ShowMessageBox("Would you like to update your scripts?", "Script Update", true) == true))
             {
-                await Skua.Core.Services.ScriptStartupUpdater.DownloadMissingAndOutdatedAsync(getScripts, dialogService);
+                await Skua.Core.Services.ScriptStartupUpdater.DownloadMissingAndOutdatedAsync(getScripts, dialogService, reportSuccess: true);
             }
         }
         catch { }

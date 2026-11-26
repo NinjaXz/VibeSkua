@@ -56,6 +56,12 @@
         <DataTemplate DataType="managerVms:ArmyQueueViewModel">
             <uc:ArmyQueueUserControl />
         </DataTemplate>
+        <DataTemplate DataType="managerVms:SchedulerViewModel">
+            <uc:SchedulerUserControl />
+        </DataTemplate>
+        <DataTemplate DataType="managerVms:JobEditorDialogViewModel">
+            <uc:JobEditorDialog />
+        </DataTemplate>
         <DataTemplate DataType="managerVms:LauncherViewModel">
             <uc:LauncherUserControl />
         </DataTemplate>

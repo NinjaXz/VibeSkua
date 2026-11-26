@@ -93,7 +93,7 @@
       <!-- Renames on Enter or when the field loses focus, not on every keystroke -->
       <TextBox Grid.Row="1"
                Text="{Binding SelectedLoadoutName, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-               Watermark="Select a loadout">
+               PlaceholderText="Select a loadout">
         <TextBox.InnerLeftContent>
           <materialIcons:MaterialIcon Kind="BadgeAccountOutline" Width="16" Height="16" Margin="10,0,0,0" Foreground="{DynamicResource SkuaMutedTextBrush}" />
         </TextBox.InnerLeftContent>

@@ -22,13 +22,13 @@
                 Margin="0,0,0,6">
             <Grid ColumnDefinitions="*,*,*,Auto,Auto" ColumnSpacing="6">
                 <TextBox Grid.Column="0"
-                         Watermark="Username"
+                         PlaceholderText="Username"
                          Text="{Binding UsernameInput}" />
                 <Grid Grid.Column="1">
                     <TextBox x:Name="PswBox"
                              TextChanged="PasswordBox_PasswordChanged"
                              PasswordChar="*"
-                             Watermark="Password"
+                             PlaceholderText="Password"
                              Padding="8,6,32,6" />
                     <Button x:Name="TogglePswVisibilityButton"
                             HorizontalAlignment="Right"
@@ -46,7 +46,7 @@
                     </Button>
                 </Grid>
                 <TextBox Grid.Column="2"
-                         Watermark="Display Name (optional)"
+                         PlaceholderText="Display Name (optional)"
                          Text="{Binding DisplayNameInput}" />
                 <Button Grid.Column="3"
                         Classes="icon icon-28"

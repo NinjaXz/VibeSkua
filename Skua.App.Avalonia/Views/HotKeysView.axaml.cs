@@ -29,16 +29,9 @@ public partial class HotKeysView : UserControl
         }
     }
 
-    private void ToggleDropdown_Click(object? sender, RoutedEventArgs e)
+    private void ActionAutoComplete_GotFocus(object? sender, RoutedEventArgs e)
     {
-        var autoBox = this.FindControl<AutoCompleteBox>("ActionAutoComplete");
-        if (autoBox != null)
-        {
-            autoBox.IsDropDownOpen = !autoBox.IsDropDownOpen;
-            if (autoBox.IsDropDownOpen)
-            {
-                autoBox.Focus();
-            }
-        }
+        if (sender is AutoCompleteBox autoBox)
+            autoBox.IsDropDownOpen = true;
     }
 }

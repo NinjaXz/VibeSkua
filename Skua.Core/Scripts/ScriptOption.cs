@@ -187,6 +187,18 @@ public partial class ScriptOption : ObservableRecipient, IScriptOption, IOptionD
     [ObservableProperty]
     private bool _headlessMode;
 
+    [ObservableProperty]
+    private bool _enableScriptWatchdog = true;
+
+    [ObservableProperty]
+    private int _scriptWatchdogTimeout = 300;
+
+    [ObservableProperty]
+    private bool _watchdogAutoRestart = true;
+
+    [ObservableProperty]
+    private bool _watchdogDiscordAlerts = true;
+
     partial void OnHeadlessModeChanged(bool value)
     {
         try

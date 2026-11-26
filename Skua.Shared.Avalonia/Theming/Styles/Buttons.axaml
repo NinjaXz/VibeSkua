@@ -182,7 +182,7 @@
     </Style>
 
     <!-- Secondary (default) button -->
-    <Style Selector="Button.skua-button">
+    <Style Selector="Button.skua-button, ToggleButton.skua-button">
         <Setter Property="Height" Value="32" />
         <Setter Property="Padding" Value="12,0" />
         <Setter Property="CornerRadius" Value="12" />
@@ -199,7 +199,7 @@
 
     <!-- At rest the presenter takes the button's own Background/BorderBrush/Foreground (TemplateBinding),
          so a local Background on a skua-button is honoured. Only hover/pressed/disabled override it. -->
-    <Style Selector="Button.skua-button /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.skua-button /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.skua-button /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Transitions">
             <Transitions>
                 <BrushTransition Property="Background" Duration="0:0:0.08" Easing="CubicEaseOut" />
@@ -208,14 +208,24 @@
             </Transitions>
         </Setter>
     </Style>
-    <Style Selector="Button.skua-button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.skua-button:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.skua-button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{CompiledBinding $parent[Button].(buttons:HoverGlow.Fill)}" />
         <Setter Property="BorderBrush" Value="{CompiledBinding $parent[Button].(buttons:HoverGlow.Edge)}" />
         <Setter Property="Foreground" Value="{DynamicResource SkuaTextBrush}" />
     </Style>
-    <Style Selector="Button.skua-button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.skua-button:pressed /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.skua-button:pressed /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource SkuaPressedBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource SkuaBorderStrongBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource SkuaTextBrush}" />
+    </Style>
+    <!-- A skua-button toggle (e.g. a dropdown opener) is a secondary button at rest; on = accent tint + accent
+         border like the boxed toggles, instead of Fluent's solid accent fill. -->
+    <Style Selector="ToggleButton.skua-button">
+        <Setter Property="buttons:HoverGlow.Enabled" Value="True" />
+    </Style>
+    <Style Selector="ToggleButton.skua-button:checked /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SkuaAccentTintBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SkuaAccentBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource SkuaTextBrush}" />
     </Style>
 
@@ -476,7 +486,7 @@
 
     <!-- Disabled: keep each button's own colours (Fluent would swap in its grey) and fade once, via the
          generic Button:disabled presenter opacity above. -->
-    <Style Selector="Button.skua-button:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.skua-button:disabled /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.skua-button:disabled /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource SkuaSurfaceAltBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource SkuaBorderBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource SkuaTextBrush}" />

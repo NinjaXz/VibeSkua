@@ -8,9 +8,8 @@
         Title="Cosmetics &amp; Outfits"
         Width="1020" Height="730"
         MinWidth="880" MinHeight="580"
-        SystemDecorations="BorderOnly"
+        WindowDecorations="BorderOnly"
         ExtendClientAreaToDecorationsHint="True"
-        ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaTitleBarHeightHint="32"
         WindowStartupLocation="CenterScreen">
 
@@ -270,7 +269,7 @@
                         <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto,Auto" Margin="0,0,0,8">
                             <TextBox Grid.Column="0"
                                      x:Name="SearchBox"
-                                     Watermark="Search cosmetics by name or ID..."
+                                     PlaceholderText="Search cosmetics by name or ID..."
                                      Height="32"
                                      VerticalContentAlignment="Center"
                                      TextChanged="SearchBox_TextChanged"
@@ -797,7 +796,7 @@
                                             <TextBlock Text="Base Color" FontWeight="Bold" FontSize="12" />
                                             <TextBlock Text="Primary Armor / Clothes" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" />
                                         </StackPanel>
-                                        <TextBox Grid.Row="0" Grid.Column="1" x:Name="CcBaseHex" Watermark="#RRGGBB" Height="32" VerticalContentAlignment="Center" Margin="10,0" TextChanged="CcHex_TextChanged" />
+                                        <TextBox Grid.Row="0" Grid.Column="1" x:Name="CcBaseHex" PlaceholderText="#RRGGBB" Height="32" VerticalContentAlignment="Center" Margin="10,0" TextChanged="CcHex_TextChanged" />
                                         <Border Grid.Row="0" Grid.Column="2" x:Name="CcBaseSwatch" CornerRadius="4" Height="32" BorderBrush="{DynamicResource SkuaBorderBrush}" BorderThickness="1" />
 
                                         <!-- Trim Color -->
@@ -805,7 +804,7 @@
                                             <TextBlock Text="Trim Color" FontWeight="Bold" FontSize="12" />
                                             <TextBlock Text="Secondary Highlights" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" />
                                         </StackPanel>
-                                        <TextBox Grid.Row="1" Grid.Column="1" x:Name="CcTrimHex" Watermark="#RRGGBB" Height="32" VerticalContentAlignment="Center" Margin="10,0" TextChanged="CcHex_TextChanged" />
+                                        <TextBox Grid.Row="1" Grid.Column="1" x:Name="CcTrimHex" PlaceholderText="#RRGGBB" Height="32" VerticalContentAlignment="Center" Margin="10,0" TextChanged="CcHex_TextChanged" />
                                         <Border Grid.Row="1" Grid.Column="2" x:Name="CcTrimSwatch" CornerRadius="4" Height="32" BorderBrush="{DynamicResource SkuaBorderBrush}" BorderThickness="1" />
 
                                         <!-- Accessory Color -->
@@ -813,7 +812,7 @@
                                             <TextBlock Text="Accessory Color" FontWeight="Bold" FontSize="12" />
                                             <TextBlock Text="Gems, Accents, Glows" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" />
                                         </StackPanel>
-                                        <TextBox Grid.Row="2" Grid.Column="1" x:Name="CcAccHex" Watermark="#RRGGBB" Height="32" VerticalContentAlignment="Center" Margin="10,0" TextChanged="CcHex_TextChanged" />
+                                        <TextBox Grid.Row="2" Grid.Column="1" x:Name="CcAccHex" PlaceholderText="#RRGGBB" Height="32" VerticalContentAlignment="Center" Margin="10,0" TextChanged="CcHex_TextChanged" />
                                         <Border Grid.Row="2" Grid.Column="2" x:Name="CcAccSwatch" CornerRadius="4" Height="32" BorderBrush="{DynamicResource SkuaBorderBrush}" BorderThickness="1" />
 
                                         <!-- Eye Color -->
@@ -821,7 +820,7 @@
                                             <TextBlock Text="Eye Color" FontWeight="Bold" FontSize="12" />
                                             <TextBlock Text="Pupils &amp; Eyes" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" />
                                         </StackPanel>
-                                        <TextBox Grid.Row="3" Grid.Column="1" x:Name="CcEyeHex" Watermark="#RRGGBB" Height="32" VerticalContentAlignment="Center" Margin="10,0" TextChanged="CcHex_TextChanged" />
+                                        <TextBox Grid.Row="3" Grid.Column="1" x:Name="CcEyeHex" PlaceholderText="#RRGGBB" Height="32" VerticalContentAlignment="Center" Margin="10,0" TextChanged="CcHex_TextChanged" />
                                         <Border Grid.Row="3" Grid.Column="2" x:Name="CcEyeSwatch" CornerRadius="4" Height="32" BorderBrush="{DynamicResource SkuaBorderBrush}" BorderThickness="1" />
 
                                         <!-- Skin Color -->
@@ -829,7 +828,7 @@
                                             <TextBlock Text="Skin Color" FontWeight="Bold" FontSize="12" />
                                             <TextBlock Text="Body &amp; Face Tone" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" />
                                         </StackPanel>
-                                        <TextBox Grid.Row="4" Grid.Column="1" x:Name="CcSkinHex" Watermark="#RRGGBB" Height="32" VerticalContentAlignment="Center" Margin="10,0" TextChanged="CcHex_TextChanged" />
+                                        <TextBox Grid.Row="4" Grid.Column="1" x:Name="CcSkinHex" PlaceholderText="#RRGGBB" Height="32" VerticalContentAlignment="Center" Margin="10,0" TextChanged="CcHex_TextChanged" />
                                         <Border Grid.Row="4" Grid.Column="2" x:Name="CcSkinSwatch" CornerRadius="4" Height="32" BorderBrush="{DynamicResource SkuaBorderBrush}" BorderThickness="1" />
 
                                         <!-- Hair Color -->
@@ -837,7 +836,7 @@
                                             <TextBlock Text="Hair Color" FontWeight="Bold" FontSize="12" />
                                             <TextBlock Text="Hair &amp; Eyebrows" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" />
                                         </StackPanel>
-                                        <TextBox Grid.Row="5" Grid.Column="1" x:Name="CcHairHex" Watermark="#RRGGBB" Height="32" VerticalContentAlignment="Center" Margin="10,0" TextChanged="CcHex_TextChanged" />
+                                        <TextBox Grid.Row="5" Grid.Column="1" x:Name="CcHairHex" PlaceholderText="#RRGGBB" Height="32" VerticalContentAlignment="Center" Margin="10,0" TextChanged="CcHex_TextChanged" />
                                         <Border Grid.Row="5" Grid.Column="2" x:Name="CcHairSwatch" CornerRadius="4" Height="32" BorderBrush="{DynamicResource SkuaBorderBrush}" BorderThickness="1" />
                                     </Grid>
 
@@ -1037,7 +1036,7 @@
                                 <StackPanel Spacing="4">
                                     <TextBlock Text="SWF File Path (sFile)" FontWeight="SemiBold" FontSize="12" />
                                     <TextBox x:Name="ManualFileText"
-                                             Watermark="e.g. classes/M/Warrior.swf or items/helms/MyHelm.swf"
+                                             PlaceholderText="e.g. classes/M/Warrior.swf or items/helms/MyHelm.swf"
                                              Height="32"
                                              VerticalContentAlignment="Center" />
                                 </StackPanel>
@@ -1045,7 +1044,7 @@
                                 <StackPanel Spacing="4">
                                     <TextBlock Text="Linkage Identifier (sLink)" FontWeight="SemiBold" FontSize="12" />
                                     <TextBox x:Name="ManualLinkText"
-                                             Watermark="e.g. mWarrior or HelmLink"
+                                             PlaceholderText="e.g. mWarrior or HelmLink"
                                              Height="32"
                                              VerticalContentAlignment="Center" />
                                 </StackPanel>
@@ -1067,7 +1066,7 @@
                                 <StackPanel Spacing="4">
                                     <TextBlock Text="Meta Data (sMeta, Optional)" FontWeight="SemiBold" FontSize="12" />
                                     <TextBox x:Name="ManualMetaText"
-                                             Watermark="Optional metadata or buff identifiers"
+                                             PlaceholderText="Optional metadata or buff identifiers"
                                              Height="32"
                                              VerticalContentAlignment="Center" />
                                 </StackPanel>

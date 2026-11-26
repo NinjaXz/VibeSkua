@@ -60,8 +60,30 @@ if (-not $env:FLEX_HOME) {
     $mxmlcDirectory = Split-Path -Parent (Resolve-Path -LiteralPath $MxmlcPath).Path
     $env:FLEX_HOME = Split-Path -Parent $mxmlcDirectory
 }
-if (-not $env:PLAYERGLOBAL_HOME) {
+if ([string]::IsNullOrWhiteSpace($env:PLAYERGLOBAL_HOME)) {
     $env:PLAYERGLOBAL_HOME = Join-Path $env:FLEX_HOME 'frameworks\libs\player'
+}
+
+$playerGlobalSource = Join-Path $scriptRoot 'playerglobal\28.0\playerglobal.swc'
+if (-not (Test-Path -LiteralPath $playerGlobalSource -PathType Leaf)) {
+    throw "PlayerGlobal 28 is missing from the repository: $playerGlobalSource"
+}
+
+$playerGlobalDirectory = Join-Path $env:PLAYERGLOBAL_HOME '28.0'
+$playerGlobalTarget = Join-Path $playerGlobalDirectory 'playerglobal.swc'
+New-Item -ItemType Directory -Path $playerGlobalDirectory -Force | Out-Null
+
+$sourceHash = (Get-FileHash -LiteralPath $playerGlobalSource -Algorithm SHA256).Hash
+$targetHash = if (Test-Path -LiteralPath $playerGlobalTarget -PathType Leaf) {
+    (Get-FileHash -LiteralPath $playerGlobalTarget -Algorithm SHA256).Hash
+}
+else {
+    $null
+}
+
+if ($targetHash -ne $sourceHash) {
+    Copy-Item -LiteralPath $playerGlobalSource -Destination $playerGlobalTarget -Force
+    Write-Host 'Installed repository PlayerGlobal 28 into the Flex SDK.' -ForegroundColor DarkCyan
 }
 
 $resolvedOutputDirectory = Split-Path -Parent $outputPath
@@ -76,9 +98,26 @@ New-Item -ItemType Directory -Path $resolvedOutputDirectory -Force | Out-Null
     -optimize
 
 if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $outputPath)) {
-    throw "AS3 compilation failed: $outputPath"
+    throw "AS3 compilation failed with exit code ${LASTEXITCODE}: $outputPath"
 }
 
 $output = Get-Item -LiteralPath $outputPath
-Write-Host "AS3 game content built: $($output.FullName) ($($output.Length) bytes)" -ForegroundColor Green
-exit 0
+if ($output.Length -le 8) {
+    throw "AS3 compiler produced an invalid or incomplete SWF: $outputPath"
+}
+
+$stream = [System.IO.File]::OpenRead($outputPath)
+try {
+    $headerBytes = New-Object byte[] 3
+    [void]$stream.Read($headerBytes, 0, $headerBytes.Length)
+}
+finally {
+    $stream.Dispose()
+}
+
+$signature = [System.Text.Encoding]::ASCII.GetString($headerBytes)
+if ($signature -notin @('FWS', 'CWS', 'ZWS')) {
+    throw "AS3 compiler output does not have a valid SWF signature: $signature"
+}
+
+Write-Host "AS3 game content built: $($output.FullName) ($($output.Length) bytes, $signature)" -ForegroundColor Green

@@ -1,0 +1,340 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Skua.Manager.Avalonia.ViewModels"
+             xmlns:models="clr-namespace:Skua.Core.Models;assembly=Skua.Core.Models"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             x:Class="Skua.Manager.Avalonia.UserControls.JobEditorDialog"
+             x:DataType="vm:JobEditorDialogViewModel"
+             mc:Ignorable="d">
+
+    <Grid RowDefinitions="*,Auto" Margin="14" RowSpacing="12">
+
+        <!-- Tabbed Configuration Form -->
+        <TabControl Grid.Row="0">
+
+            <!-- TAB 1: General -->
+            <TabItem Header="General">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="14" Margin="6,10,6,6" Width="440" HorizontalAlignment="Left">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Task Name *" FontWeight="SemiBold" FontSize="11" />
+                            <TextBox Text="{Binding Name}" PlaceholderText="e.g. Daily Ultras &amp; Dailies" Width="440" HorizontalAlignment="Left" />
+                        </StackPanel>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Description / Notes (Optional)" FontWeight="SemiBold" FontSize="11" />
+                            <TextBox Text="{Binding Description}" PlaceholderText="Notes or context about this schedule" AcceptsReturn="True" Height="70" Width="440" HorizontalAlignment="Left" />
+                        </StackPanel>
+
+                        <Border Background="{DynamicResource SkuaBorderBrush}" Height="1" Margin="0,2" />
+
+                        <CheckBox IsChecked="{Binding IsEnabled}" Content="Enable this scheduled task immediately" FontWeight="Medium" FontSize="12" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- TAB 2: Schedule & Trigger -->
+            <TabItem Header="Schedule">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="14" Margin="6,10,6,6" Width="440" HorizontalAlignment="Left">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Trigger Type" FontWeight="SemiBold" FontSize="11" />
+                            <ComboBox SelectedIndex="{Binding SelectedTriggerType, Mode=TwoWay}" Width="440" HorizontalAlignment="Left" PlaceholderText="Select trigger type...">
+                                <ComboBoxItem Content="Once (Specific Date &amp; Time)" />
+                                <ComboBoxItem Content="Daily (Recurring Every Day)" />
+                                <ComboBoxItem Content="Weekly (Specific Days of Week)" />
+                                <ComboBoxItem Content="Interval (Every X Minutes)" />
+                                <ComboBoxItem Content="AQW Daily Reset Sync (Midnight EST / 00:00 Server Time)" />
+                                <ComboBoxItem Content="AQW Weekly Reset Sync (Friday Midnight EST / Ultra Bosses)" />
+                            </ComboBox>
+                        </StackPanel>
+
+                        <!-- Once Date Picker -->
+                        <StackPanel Spacing="4" IsVisible="{Binding IsOnceTrigger}">
+                            <TextBlock Text="Target Date" FontWeight="SemiBold" FontSize="11" />
+                            <DatePicker SelectedDate="{Binding SpecificDate}" Width="300" HorizontalAlignment="Left" />
+                        </StackPanel>
+
+                        <!-- Execution Time (12h / 24h) -->
+                        <StackPanel Spacing="6" IsVisible="{Binding IsClockTimeTrigger}">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0" Text="Execution Time" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center" />
+
+                                <!-- 12-Hour / 24-Hour Format Choice -->
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                    <RadioButton Content="12-Hour (AM/PM)" IsChecked="{Binding !Use24HourFormat}" FontSize="11" Margin="0" />
+                                    <RadioButton Content="24-Hour" IsChecked="{Binding Use24HourFormat}" FontSize="11" Margin="0" />
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- 24-Hour Time Inputs -->
+                            <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding Use24HourFormat}">
+                                <NumericUpDown Value="{Binding TimeHours}" Minimum="0" Maximum="23" FormatString="00" Width="85" />
+                                <TextBlock Text=":" VerticalAlignment="Center" FontWeight="Bold" FontSize="15" Margin="2,0" />
+                                <NumericUpDown Value="{Binding TimeMinutes}" Minimum="0" Maximum="59" FormatString="00" Width="85" />
+                                <TextBlock Text="(HH : mm)" VerticalAlignment="Center" FontSize="11" Opacity="0.6" Margin="6,0,0,0" />
+                            </StackPanel>
+
+                            <!-- 12-Hour Time Inputs -->
+                            <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding !Use24HourFormat}">
+                                <NumericUpDown Value="{Binding TimeHours12}" Minimum="1" Maximum="12" FormatString="00" Width="85" />
+                                <TextBlock Text=":" VerticalAlignment="Center" FontWeight="Bold" FontSize="15" Margin="2,0" />
+                                <NumericUpDown Value="{Binding TimeMinutes}" Minimum="0" Maximum="59" FormatString="00" Width="85" />
+                                <ComboBox SelectedIndex="{Binding SelectedAmPmIndex, Mode=TwoWay}" Width="75" Margin="4,0,0,0">
+                                    <ComboBoxItem Content="AM" />
+                                    <ComboBoxItem Content="PM" />
+                                </ComboBox>
+                            </StackPanel>
+
+                            <!-- Live Time Preview -->
+                            <TextBlock Text="{Binding TimePreviewText}" FontSize="11" Foreground="{DynamicResource SkuaAccentBrush}" FontWeight="SemiBold" Margin="0,2,0,0" />
+                        </StackPanel>
+
+                        <!-- Weekly Days Selection -->
+                        <StackPanel Spacing="6" IsVisible="{Binding IsWeeklyTrigger}">
+                            <TextBlock Text="Run on Days" FontWeight="SemiBold" FontSize="11" />
+                            <ItemsControl ItemsSource="{Binding DaysOfWeekOptions}" Width="440" HorizontalAlignment="Left">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="#10FFFFFF" CornerRadius="4" Padding="8,4" Margin="0,0,6,6">
+                                            <CheckBox IsChecked="{Binding IsSelected}" Content="{Binding DisplayName}" FontSize="11" Margin="0" />
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <!-- Interval Minutes -->
+                        <StackPanel Spacing="4" IsVisible="{Binding IsIntervalTrigger}">
+                            <TextBlock Text="Repeat Interval (Minutes)" FontWeight="SemiBold" FontSize="11" />
+                            <NumericUpDown Value="{Binding IntervalMinutes}" Minimum="1" Maximum="1440" Width="140" HorizontalAlignment="Left" />
+                            <TextBlock Text="Runs automatically every X minutes." FontSize="10" Opacity="0.7" />
+                        </StackPanel>
+
+                        <!-- Server Reset Offset (Daily / Weekly) -->
+                        <StackPanel Spacing="4" IsVisible="{Binding IsServerResetTrigger}">
+                            <TextBlock Text="Reset Offset (Minutes relative to Midnight EST)" FontWeight="SemiBold" FontSize="11" />
+                            <NumericUpDown Value="{Binding ServerResetOffsetMinutes}" Minimum="-60" Maximum="180" Width="140" HorizontalAlignment="Left" />
+                            <TextBlock Text="Tip: +5 runs at 00:05:00 EST (5 minutes after AQW daily reset at midnight)." FontSize="11" Foreground="{DynamicResource SkuaAccentBrush}" IsVisible="{Binding IsDailyResetTrigger}" />
+                            <TextBlock Text="Tip: +5 runs at Friday 00:05:00 EST (5 minutes after AQW weekly reset &amp; ultra boss insignias refresh)." FontSize="11" Foreground="{DynamicResource SkuaAccentBrush}" IsVisible="{Binding IsWeeklyResetTrigger}" />
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- TAB 3: Target -->
+            <TabItem Header="Target">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="14" Margin="6,10,6,6" Width="440" HorizontalAlignment="Left">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Target Execution Mode" FontWeight="SemiBold" FontSize="11" />
+                            <ComboBox SelectedIndex="{Binding SelectedTargetType, Mode=TwoWay}" Width="440" HorizontalAlignment="Left" PlaceholderText="Select target mode...">
+                                <ComboBoxItem Content="Single Account" />
+                                <ComboBoxItem Content="Account Group" />
+                                <ComboBoxItem Content="Army Queue Preset" />
+                                <ComboBoxItem Content="Multiple Accounts (Select Several)" />
+                            </ComboBox>
+                        </StackPanel>
+
+                        <!-- Single Account Selector -->
+                        <StackPanel Spacing="4" IsVisible="{Binding IsSingleAccountTarget}">
+                            <TextBlock Text="Account" FontWeight="SemiBold" FontSize="11" />
+                            <ComboBox ItemsSource="{Binding AvailableAccounts}" SelectedItem="{Binding SelectedAccount}" Width="440" HorizontalAlignment="Left" PlaceholderText="Select an account..." />
+                        </StackPanel>
+
+                        <!-- Group Selector -->
+                        <StackPanel Spacing="4" IsVisible="{Binding IsGroupTarget}">
+                            <TextBlock Text="Account Group" FontWeight="SemiBold" FontSize="11" />
+                            <ComboBox ItemsSource="{Binding AvailableGroups}" SelectedItem="{Binding SelectedGroup}" Width="440" HorizontalAlignment="Left" PlaceholderText="Select a group..." />
+                        </StackPanel>
+
+                        <!-- Army Preset Selector -->
+                        <StackPanel Spacing="4" IsVisible="{Binding IsArmyPresetTarget}">
+                            <TextBlock Text="Army Queue Preset" FontWeight="SemiBold" FontSize="11" />
+                            <ComboBox ItemsSource="{Binding AvailableArmyPresets}" SelectedItem="{Binding SelectedArmyPreset}" Width="440" HorizontalAlignment="Left" PlaceholderText="Select an army preset..." />
+                        </StackPanel>
+
+                        <!-- Multiple Accounts Selector -->
+                        <StackPanel Spacing="6" IsVisible="{Binding IsMultipleAccountsTarget}">
+                            <Grid ColumnDefinitions="*,Auto,Auto" Width="440" HorizontalAlignment="Left">
+                                <TextBlock Grid.Column="0" Text="Select Target Accounts" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center" />
+                                <Button Grid.Column="1" Classes="skua-button" Height="22" Padding="8,0" Content="Select All" Margin="0,0,6,0" FontSize="10" Command="{Binding SelectAllAccountsCommand}" />
+                                <Button Grid.Column="2" Classes="skua-button" Height="22" Padding="8,0" Content="Deselect All" FontSize="10" Command="{Binding DeselectAllAccountsCommand}" />
+                            </Grid>
+
+                            <Border Background="{DynamicResource SkuaBackgroundBrush}" CornerRadius="6" Padding="6" MaxHeight="160" Width="440" HorizontalAlignment="Left">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <ItemsControl ItemsSource="{Binding SelectableAccounts}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <CheckBox IsChecked="{Binding IsSelected}" Content="{Binding DisplayName}" FontSize="11" Margin="2,2" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Server Selector -->
+                        <StackPanel Spacing="4" IsVisible="{Binding !IsArmyPresetTarget}">
+                            <TextBlock Text="Preferred Game Server" FontWeight="SemiBold" FontSize="11" />
+                            <ComboBox ItemsSource="{Binding AvailableServers}" SelectedItem="{Binding Server}" Width="440" HorizontalAlignment="Left" PlaceholderText="Select a server..." />
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- TAB 4: Scripts -->
+            <TabItem Header="Scripts" IsVisible="{Binding !IsArmyPresetTarget}">
+                <Grid RowDefinitions="Auto,*" RowSpacing="10" Margin="6,10,6,6">
+                    <!-- Mode Selector -->
+                    <StackPanel Grid.Row="0" Spacing="6">
+                        <TextBlock Text="Script Source" FontWeight="SemiBold" FontSize="11" />
+                        <StackPanel Orientation="Horizontal" Spacing="16">
+                            <RadioButton Content="Custom Script List" IsChecked="{Binding IsCustomStepsMode}" FontSize="12" />
+                            <RadioButton Content="Saved Playlist File (.json)" IsChecked="{Binding IsPlaylistFileMode}" FontSize="12" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Playlist File Mode -->
+                    <StackPanel Grid.Row="1" Spacing="6" IsVisible="{Binding IsPlaylistFileMode}">
+                        <TextBlock Text="Playlist File (.json)" FontWeight="SemiBold" FontSize="11" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                            <TextBox Grid.Column="0" Text="{Binding PlaylistPath}" PlaceholderText="Select playlist file saved from Script Scheduler..." />
+                            <Button Grid.Column="1" Classes="skua-button" Content="Browse..." Command="{Binding BrowsePlaylistCommand}" />
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Custom Steps Mode -->
+                    <Grid Grid.Row="1" RowDefinitions="Auto,*,Auto" RowSpacing="8" IsVisible="{Binding IsCustomStepsMode}">
+                        <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="Scripts to Run in Sequence:" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                                <Button Classes="skua-button" Height="28" Padding="10,0" Command="{Binding OpenScriptSearchCommand}" ToolTip.Tip="Queue scripts directly from Search Scripts window">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <materialIcons:MaterialIcon Kind="Magnify" Width="14" Height="14" />
+                                        <TextBlock Text="Search Scripts..." VerticalAlignment="Center" FontSize="11" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Classes="skua-button skua-primary" Height="28" Padding="10,0" Command="{Binding AddScriptStepCommand}" ToolTip.Tip="Browse local .cs script file">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <materialIcons:MaterialIcon Kind="Plus" Width="14" Height="14" />
+                                        <TextBlock Text="Add Script File" VerticalAlignment="Center" FontSize="11" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Step List -->
+                        <Border Grid.Row="1" Background="{DynamicResource SkuaBackgroundBrush}" CornerRadius="6" Padding="4">
+                            <ListBox ItemsSource="{Binding Steps}" SelectedItem="{Binding SelectedStep}" MaxHeight="220">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="2,4">
+                                            <materialIcons:MaterialIcon Grid.Column="0" Kind="FileCodeOutline" Width="18" Height="18" Foreground="{DynamicResource SkuaAccentBrush}" VerticalAlignment="Center" />
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                                <TextBox Text="{Binding Name}" FontWeight="SemiBold" FontSize="11" Padding="4,2" MinHeight="24"
+                                                         ToolTip.Tip="Click to customize the display name for this step (does not rename the script file)" />
+                                                <TextBlock Text="{Binding ScriptPath}" FontSize="9" Opacity="0.55" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding ScriptPath}" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                                <Button Classes="skua-button" Height="26" Padding="6,0" ToolTip.Tip="Configure options for this script"
+                                                        Command="{Binding $parent[UserControl].((vm:JobEditorDialogViewModel)DataContext).EditScriptOptionsCommand}"
+                                                        CommandParameter="{Binding}">
+                                                    <materialIcons:MaterialIcon Kind="TuneVariant" Width="13" Height="13" Foreground="{DynamicResource SkuaAccentBrush}" />
+                                                </Button>
+                                                <Button Classes="skua-button" Width="26" Height="26" Padding="0" ToolTip.Tip="Move Up"
+                                                        Command="{Binding $parent[UserControl].((vm:JobEditorDialogViewModel)DataContext).MoveStepUpCommand}"
+                                                        CommandParameter="{Binding}">
+                                                    <materialIcons:MaterialIcon Kind="ChevronUp" Width="13" Height="13" />
+                                                </Button>
+                                                <Button Classes="skua-button" Width="26" Height="26" Padding="0" ToolTip.Tip="Move Down"
+                                                        Command="{Binding $parent[UserControl].((vm:JobEditorDialogViewModel)DataContext).MoveStepDownCommand}"
+                                                        CommandParameter="{Binding}">
+                                                    <materialIcons:MaterialIcon Kind="ChevronDown" Width="13" Height="13" />
+                                                </Button>
+                                                <Button Classes="skua-button" Width="26" Height="26" Padding="0" ToolTip.Tip="Remove"
+                                                        Command="{Binding $parent[UserControl].((vm:JobEditorDialogViewModel)DataContext).RemoveScriptStepCommand}"
+                                                        CommandParameter="{Binding}">
+                                                    <materialIcons:MaterialIcon Kind="Close" Width="13" Height="13" Foreground="#F44336" />
+                                                </Button>
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Border>
+
+                        <CheckBox Grid.Row="2" IsChecked="{Binding RestartClientBetweenScripts}"
+                                  Content="Restart client between scripts (clears Flash memory leaks)" FontSize="11" />
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <!-- TAB 5: Policy & Post-Run -->
+            <TabItem Header="Policy &amp; Post-Run">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="14" Margin="6,10,6,6" Width="440" HorizontalAlignment="Left">
+                        <!-- Conflict Policy -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Concurrency Conflict Policy" FontWeight="SemiBold" FontSize="11" />
+                            <ComboBox SelectedIndex="{Binding SelectedConflictPolicy, Mode=TwoWay}" Width="440" HorizontalAlignment="Left" PlaceholderText="Select conflict policy...">
+                                <ComboBoxItem Content="Wait until account is free before launching" />
+                                <ComboBoxItem Content="Skip trigger if account is currently busy" />
+                                <ComboBoxItem Content="Force-terminate active session and launch immediately" />
+                            </ComboBox>
+                        </StackPanel>
+
+                        <Border Background="{DynamicResource SkuaBorderBrush}" Height="1" />
+
+                        <!-- Post-Run Actions -->
+                        <TextBlock Text="Post-Execution Actions" FontWeight="SemiBold" FontSize="12" />
+                        <CheckBox IsChecked="{Binding ExitClientOnFinish}" Content="Automatically close game client when task finishes" FontSize="11" />
+
+                        <!-- Discord Webhook Card -->
+                        <Border Background="#10FFFFFF" CornerRadius="6" Padding="12,10" Width="440" HorizontalAlignment="Left">
+                            <StackPanel Spacing="6">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <materialIcons:MaterialIcon Kind="BellOutline" Width="16" Height="16" Foreground="#5865F2" VerticalAlignment="Center" />
+                                    <TextBlock Text="Discord Notifications" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <TextBlock Text="Uses your Discord Webhook configured in VibeSkua Client (Options -> Application -> Discord Webhook URL)."
+                                           FontSize="10" Opacity="0.75" TextWrapping="Wrap" />
+                                <WrapPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <CheckBox IsChecked="{Binding NotifyOnStart}" Content="On Start" FontSize="11" Margin="0,0,14,0" />
+                                    <CheckBox IsChecked="{Binding NotifyOnFinish}" Content="On Complete" FontSize="11" Margin="0,0,14,0" />
+                                    <CheckBox IsChecked="{Binding NotifyOnError}" Content="On Error" FontSize="11" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- PC Power Action -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="System Power Action upon Task Completion" FontWeight="SemiBold" FontSize="11" />
+                            <ComboBox SelectedIndex="{Binding SelectedPowerAction, Mode=TwoWay}" Width="440" HorizontalAlignment="Left" PlaceholderText="Select power action...">
+                                <ComboBoxItem Content="None (Keep PC running)" />
+                                <ComboBoxItem Content="Sleep PC" />
+                                <ComboBoxItem Content="Shutdown PC (with 30s cancellation window)" />
+                            </ComboBox>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+        </TabControl>
+
+        <!-- Bottom Action Buttons -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button Classes="skua-button" Content="Cancel" MinWidth="80" Command="{Binding CancelCommand}" />
+            <Button Classes="skua-button skua-primary" Content="Save Schedule" MinWidth="105" Command="{Binding SaveCommand}" />
+        </StackPanel>
+
+    </Grid>
+</UserControl>

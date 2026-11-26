@@ -170,6 +170,7 @@
                                                         DragDrop.AllowDrop="True"
                                                         PointerPressed="OnSquadTabPointerPressed"
                                                         PointerMoved="OnSquadTabPointerMoved"
+                                                        PointerReleased="OnSquadTabPointerReleased"
                                                         DragDrop.DragOver="OnSquadTabDragOver"
                                                         DragDrop.Drop="OnSquadTabDrop">
                                                     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
@@ -235,7 +236,7 @@
                                          FontSize="12"
                                          FontWeight="SemiBold"
                                          CornerRadius="6"
-                                         Watermark="Squad Name" />
+                                         PlaceholderText="Squad Name" />
 
                                 <!-- Default Squad Script Box -->
                                 <Border Grid.Column="1"
@@ -477,7 +478,7 @@
                         <!-- Save Preset input -->
                         <TextBox Grid.Column="4"
                                  Text="{Binding QueueName}"
-                                 Watermark="Preset Name"
+                                 PlaceholderText="Preset Name"
                                  FontSize="11"
                                  Height="28" />
 
@@ -517,7 +518,7 @@
                     <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
                         <TextBox Grid.Column="0"
                                  Text="{Binding AccountPickerSearchText, UpdateSourceTrigger=PropertyChanged}"
-                                 Watermark="Search accounts..."
+                                 PlaceholderText="Search accounts..."
                                  FontSize="11"
                                  Height="28" />
                         <Button Grid.Column="1" Classes="skua-button" Padding="6,2" Command="{Binding SelectAllPickerCommand}">

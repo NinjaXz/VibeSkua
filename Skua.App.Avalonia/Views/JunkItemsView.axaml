@@ -41,7 +41,7 @@
     <!-- Search and refresh -->
     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="8">
       <TextBox Grid.Column="0"
-               Watermark="Search by ID or name"
+               PlaceholderText="Search by ID or name"
                Text="{Binding SearchText, Mode=TwoWay}">
         <TextBox.InnerLeftContent>
           <materialIcons:MaterialIcon Kind="Magnify" Width="16" Height="16" Margin="10,0,0,0" Foreground="{DynamicResource SkuaMutedTextBrush}" />
@@ -83,7 +83,7 @@
     <!-- Quantity goals for the selected item rows -->
     <Grid Grid.Row="3" ColumnDefinitions="Auto,90,Auto,Auto,*" ColumnSpacing="7">
       <TextBlock Grid.Column="0" Text="🎯 Goal quantity" FontSize="11" VerticalAlignment="Center" />
-      <TextBox Grid.Column="1" Text="{Binding GoalQuantityInput, Mode=TwoWay}" Watermark="Target" />
+      <TextBox Grid.Column="1" Text="{Binding GoalQuantityInput, Mode=TwoWay}" PlaceholderText="Target" />
       <Button Grid.Column="2" Classes="skua-button small" Content="Set goal" Command="{Binding SetGoalForSelectedCommand}" />
       <Button Grid.Column="3" Classes="skua-button small" Content="Clear goal" Command="{Binding ClearGoalForSelectedCommand}" />
       <TextBlock Grid.Column="4" Text="Counts inventory + bank" FontSize="10" Foreground="{DynamicResource SkuaMutedTextBrush}" VerticalAlignment="Center" />

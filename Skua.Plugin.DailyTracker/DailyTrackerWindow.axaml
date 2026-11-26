@@ -8,9 +8,8 @@
         Title="Daily &amp; Weekly Tracker"
         Width="520" Height="720"
         MinWidth="440" MinHeight="500"
-        SystemDecorations="BorderOnly"
+        WindowDecorations="BorderOnly"
         ExtendClientAreaToDecorationsHint="True"
-        ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaTitleBarHeightHint="32"
         WindowStartupLocation="Manual">
 

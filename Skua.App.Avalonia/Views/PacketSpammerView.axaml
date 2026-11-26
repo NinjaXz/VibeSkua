@@ -105,7 +105,7 @@
 
     <!-- Composer -->
     <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-      <TextBox Grid.Column="0" Watermark="%xt%zm%...  packet to add or send" Text="{Binding PacketText}"
+      <TextBox Grid.Column="0" PlaceholderText="%xt%zm%...  packet to add or send" Text="{Binding PacketText}"
                FontFamily="JetBrains Mono,Consolas,Courier New,monospace" FontSize="12" />
       <Button Grid.Column="1" Classes="skua-button w84" Command="{Binding AddPacketCommand}" ToolTip.Tip="Add to the end of the queue">
         <StackPanel Orientation="Horizontal" Spacing="6">

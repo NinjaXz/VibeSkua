@@ -81,6 +81,5 @@ public class WinFormsFlashHost : NativeControlHost
 #else
 public class WinFormsFlashHost : NativeControlHost
 {
-    
 }
 #endif

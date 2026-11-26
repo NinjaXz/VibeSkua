@@ -55,23 +55,23 @@ public partial class OptionItemControl : UserControl
     public static Control CreateDefaultContent(DisplayOptionItemViewModelBase vm, bool compactText = false)
     {
         if (vm is CBOBoolChoiceOptionItemViewModel boolChoiceVm)
-            return BuildCBOBoolChoiceItem(boolChoiceVm);
+            return BuildCBOBoolChoiceItem(boolChoiceVm, compactText);
 
         if (vm is CBOChoiceOptionItemViewModel choiceVm)
-            return BuildCBOChoiceItem(choiceVm);
+            return BuildCBOChoiceItem(choiceVm, compactText);
 
         return vm.Tag switch
         {
-            "1" => BuildBooleanItem(vm),
+            "1" => BuildBooleanItem(vm, compactText),
             "2" => BuildTextItem(vm, compactText),
-            "3" => BuildNumberItem(vm),
-            "4" => BuildActionItem(vm),
+            "3" => BuildNumberItem(vm, compactText),
+            "4" => BuildActionItem(vm, compactText),
             _ => BuildFallbackItem(vm, compactText)
         };
     }
 
     // Title line (with a "restart" chip when the option needs one) and the description, when it says more than the title
-    private static Control BuildLabel(DisplayOptionItemViewModelBase vm)
+    private static Control BuildLabel(DisplayOptionItemViewModelBase vm, bool compactText = false)
     {
         StackPanel label = new() { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
 
@@ -85,24 +85,29 @@ public partial class OptionItemControl : UserControl
         }
         label.Children.Add(titleLine);
 
-        if (!string.IsNullOrWhiteSpace(vm.Description) && vm.Description != vm.Content)
+        if (!compactText && !string.IsNullOrWhiteSpace(vm.Description) && vm.Description != vm.Content)
             label.Children.Add(new TextBlock { Text = vm.Description, Classes = { "option-description" } });
+
+        if (!string.IsNullOrWhiteSpace(vm.Description))
+            ToolTip.SetTip(label, vm.Description);
 
         return label;
     }
 
-    private static Grid BuildRow(DisplayOptionItemViewModelBase vm, Control control)
+    private static Grid BuildRow(DisplayOptionItemViewModelBase vm, Control control, bool compactText = false)
     {
         Grid grid = new() { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 12 };
-        Control label = BuildLabel(vm);
+        Control label = BuildLabel(vm, compactText);
         grid.Children.Add(label);
         control.VerticalAlignment = VerticalAlignment.Center;
         grid.Children.Add(control);
         Grid.SetColumn(control, 1);
+        if (!string.IsNullOrWhiteSpace(vm.Description))
+            ToolTip.SetTip(grid, vm.Description);
         return grid;
     }
 
-    private static Control BuildCBOBoolChoiceItem(CBOBoolChoiceOptionItemViewModel vm)
+    private static Control BuildCBOBoolChoiceItem(CBOBoolChoiceOptionItemViewModel vm, bool compactText = false)
     {
         ToggleButton firstButton = new()
         {
@@ -137,10 +142,10 @@ public partial class OptionItemControl : UserControl
         StackPanel choices = new() { Orientation = Orientation.Horizontal, Spacing = 4 };
         choices.Children.Add(firstButton);
         choices.Children.Add(secondButton);
-        return BuildRow(vm, choices);
+        return BuildRow(vm, choices, compactText);
     }
 
-    private static Control BuildCBOChoiceItem(CBOChoiceOptionItemViewModel vm)
+    private static Control BuildCBOChoiceItem(CBOChoiceOptionItemViewModel vm, bool compactText = false)
     {
         ComboBox comboBox = new()
         {
@@ -154,7 +159,7 @@ public partial class OptionItemControl : UserControl
             Mode = BindingMode.TwoWay
         };
 
-        return BuildRow(vm, comboBox);
+        return BuildRow(vm, comboBox, compactText);
     }
 
     public static ToggleButton CreateBoundToggleButton(DisplayOptionItemViewModelBase vm, object? content = null)
@@ -224,7 +229,7 @@ public partial class OptionItemControl : UserControl
         return button;
     }
 
-    private static Control BuildBooleanItem(DisplayOptionItemViewModelBase vm)
+    private static Control BuildBooleanItem(DisplayOptionItemViewModelBase vm, bool compactText = false)
     {
         ToggleSwitch toggle = new()
         {
@@ -236,7 +241,7 @@ public partial class OptionItemControl : UserControl
         if (vm is CommandOptionItemViewModel commandVm)
             toggle.IsCheckedChanged += (_, _) => commandVm.Command.Execute(toggle.IsChecked == true);
 
-        return BuildRow(vm, toggle);
+        return BuildRow(vm, toggle, compactText);
     }
 
     // Text options: the field gets the row's full width under the title, or sits inline when compact
@@ -246,21 +251,21 @@ public partial class OptionItemControl : UserControl
         if (compact)
         {
             field.Width = 160;
-            return BuildRow(vm, field);
+            return BuildRow(vm, field, compact);
         }
         field.HorizontalAlignment = HorizontalAlignment.Stretch;
 
         StackPanel panel = new() { Spacing = 6, Margin = new Thickness(0, 3) };
-        panel.Children.Add(BuildLabel(vm));
+        panel.Children.Add(BuildLabel(vm, compact));
         panel.Children.Add(field);
         return panel;
     }
 
-    private static Control BuildNumberItem(DisplayOptionItemViewModelBase vm)
+    private static Control BuildNumberItem(DisplayOptionItemViewModelBase vm, bool compactText = false)
     {
         Border field = BuildSetField(vm, numeric: true);
         field.Width = NumberFieldWidth;
-        return BuildRow(vm, field);
+        return BuildRow(vm, field, compactText);
     }
 
     // A field with Set attached. Typing only edits the field; Set (or Enter) applies it. Set is accent-coloured while
@@ -338,12 +343,12 @@ public partial class OptionItemControl : UserControl
         return new Border { Classes = { "option-field" }, Child = grid };
     }
 
-    private static Control BuildActionItem(DisplayOptionItemViewModelBase vm)
+    private static Control BuildActionItem(DisplayOptionItemViewModelBase vm, bool compactText = false)
     {
         Button button = CreateBoundButton(vm, vm.ActionText ?? "Run");
         button.Classes.Add("small");
         button.Classes.Add("w84");
-        return BuildRow(vm, button);
+        return BuildRow(vm, button, compactText);
     }
 
     private static Control BuildFallbackItem(DisplayOptionItemViewModelBase vm, bool compactText)

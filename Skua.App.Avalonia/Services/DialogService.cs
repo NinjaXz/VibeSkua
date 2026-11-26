@@ -103,6 +103,7 @@ public class DialogService : IDialogService
         return index < 0 ? DialogResult.Cancelled : new DialogResult(clicked, index);
     }
 
+
     public IInputDialogViewModel CreateInputDialog(string title, string dialogHint)
     {
         return new InputDialogViewModel(title, dialogHint);
@@ -824,9 +825,8 @@ public class DialogService : IDialogService
             Width = 420,
             SizeToContent = SizeToContent.Height,
             WindowStartupLocation = WindowStartupLocation.Manual,
-            SystemDecorations = SystemDecorations.BorderOnly,
+            WindowDecorations = WindowDecorations.BorderOnly,
             ExtendClientAreaToDecorationsHint = true,
-            ExtendClientAreaChromeHints = global::Avalonia.Platform.ExtendClientAreaChromeHints.NoChrome,
             ExtendClientAreaTitleBarHeightHint = 32,
             CanResize = false,
             ShowActivated = true,
@@ -962,6 +962,9 @@ public class DialogService : IDialogService
     private static void FocusDefaultDialogAction(Window dialog, Control? initialFocus)
     {
         dialog.Activate();
+        // In the tab host, keep the tabs' game windows below the dialog so it is never hidden behind the game.
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime { MainWindow: Views.TabbedHostWindow host })
+            host.KeepGameWindowsBelowHostWindows();
         dialog.Focus();
         if (initialFocus?.Focus() == true)
         {

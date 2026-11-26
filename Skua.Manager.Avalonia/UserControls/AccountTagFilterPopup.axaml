@@ -19,7 +19,7 @@
                            Margin="0,0,0,3" />
 
                 <TextBox Grid.Row="1"
-                         Watermark="Search tags..."
+                         PlaceholderText="Search tags..."
                          Text="{Binding TagSearchText, ElementName=Root, Mode=TwoWay}"
                          Margin="0,0,0,3" />
 

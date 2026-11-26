@@ -29,7 +29,7 @@
         </StackPanel>
       </Button>
       <TextBox Grid.Column="1"
-               Watermark="Search"
+               PlaceholderText="Search"
                Text="{Binding SearchText, Mode=TwoWay}">
         <TextBox.InnerLeftContent>
           <materialIcons:MaterialIcon Kind="Magnify" Width="16" Height="16" Margin="10,0,0,0" Foreground="{DynamicResource SkuaMutedTextBrush}" />

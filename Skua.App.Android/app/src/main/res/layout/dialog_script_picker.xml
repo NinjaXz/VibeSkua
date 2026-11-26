@@ -35,21 +35,42 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- Search Input -->
-    <EditText
-        android:id="@+id/editScriptPickerSearch"
+    <!-- Search and Sort Row -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="44dp"
-        android:background="@drawable/edittext_bg"
-        android:hint="Search scripts by name or category..."
-        android:textColor="@color/white"
-        android:textColorHint="@color/text_muted"
-        android:textSize="13sp"
-        android:paddingLeft="12dp"
-        android:paddingRight="12dp"
-        android:inputType="text"
-        android:imeOptions="actionDone"
-        android:layout_marginBottom="10dp" />
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="10dp">
+
+        <EditText
+            android:id="@+id/editScriptPickerSearch"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:background="@drawable/edittext_bg"
+            android:hint="Search scripts by name or category..."
+            android:textColor="@color/white"
+            android:textColorHint="@color/text_muted"
+            android:textSize="13sp"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:inputType="text"
+            android:imeOptions="actionDone" />
+
+        <Button
+            android:id="@+id/btnScriptPickerSort"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_box"
+            android:text="SORT: A-Z"
+            android:textColor="@color/text_muted"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:layout_marginStart="8dp" />
+    </LinearLayout>
 
     <!-- Category Chips Bar -->
     <HorizontalScrollView
@@ -65,77 +86,21 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal">
 
-            <Button
-                android:id="@+id/btnChipAll"
-                android:layout_width="wrap_content"
-                android:layout_height="30dp"
-                android:background="@drawable/bg_account_pill"
-                android:text="ALL"
-                android:textColor="@color/white"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:paddingLeft="10dp"
-                android:paddingRight="10dp"
-                android:layout_marginEnd="6dp" />
-
-            <Button
-                android:id="@+id/btnChipArmy"
-                android:layout_width="wrap_content"
-                android:layout_height="30dp"
-                android:background="@drawable/bg_box"
-                android:text="ARMY"
-                android:textColor="@color/text_muted"
-                android:textSize="11sp"
-                android:paddingLeft="10dp"
-                android:paddingRight="10dp"
-                android:layout_marginEnd="6dp" />
-
-            <Button
-                android:id="@+id/btnChipBots"
-                android:layout_width="wrap_content"
-                android:layout_height="30dp"
-                android:background="@drawable/bg_box"
-                android:text="BOTS"
-                android:textColor="@color/text_muted"
-                android:textSize="11sp"
-                android:paddingLeft="10dp"
-                android:paddingRight="10dp"
-                android:layout_marginEnd="6dp" />
-
-            <Button
-                android:id="@+id/btnChipStory"
-                android:layout_width="wrap_content"
-                android:layout_height="30dp"
-                android:background="@drawable/bg_box"
-                android:text="STORY"
-                android:textColor="@color/text_muted"
-                android:textSize="11sp"
-                android:paddingLeft="10dp"
-                android:paddingRight="10dp"
-                android:layout_marginEnd="6dp" />
-
-            <Button
-                android:id="@+id/btnChipFarm"
-                android:layout_width="wrap_content"
-                android:layout_height="30dp"
-                android:background="@drawable/bg_box"
-                android:text="FARM"
-                android:textColor="@color/text_muted"
-                android:textSize="11sp"
-                android:paddingLeft="10dp"
-                android:paddingRight="10dp"
-                android:layout_marginEnd="6dp" />
-
-            <Button
-                android:id="@+id/btnChipRep"
-                android:layout_width="wrap_content"
-                android:layout_height="30dp"
-                android:background="@drawable/bg_box"
-                android:text="REP"
-                android:textColor="@color/text_muted"
-                android:textSize="11sp"
-                android:paddingLeft="10dp"
-                android:paddingRight="10dp" />
+            <Button android:id="@+id/btnChipAll" android:layout_width="wrap_content" android:layout_height="32dp" android:background="@drawable/bg_account_pill" android:text="ALL" android:textColor="@color/white" android:textSize="11sp" android:textStyle="bold" android:paddingLeft="12dp" android:paddingRight="12dp" android:layout_marginEnd="6dp" />
+            <Button android:id="@+id/btnChipArmy" android:layout_width="wrap_content" android:layout_height="32dp" android:background="@drawable/bg_box" android:text="ARMY" android:textColor="@color/text_muted" android:textSize="11sp" android:paddingLeft="12dp" android:paddingRight="12dp" android:layout_marginEnd="6dp" />
+            <Button android:id="@+id/btnChipClasses" android:layout_width="wrap_content" android:layout_height="32dp" android:background="@drawable/bg_box" android:text="CLASSES" android:textColor="@color/text_muted" android:textSize="11sp" android:paddingLeft="12dp" android:paddingRight="12dp" android:layout_marginEnd="6dp" />
+            <Button android:id="@+id/btnChipDailies" android:layout_width="wrap_content" android:layout_height="32dp" android:background="@drawable/bg_box" android:text="DAILIES" android:textColor="@color/text_muted" android:textSize="11sp" android:paddingLeft="12dp" android:paddingRight="12dp" android:layout_marginEnd="6dp" />
+            <Button android:id="@+id/btnChipEvil" android:layout_width="wrap_content" android:layout_height="32dp" android:background="@drawable/bg_box" android:text="EVIL" android:textColor="@color/text_muted" android:textSize="11sp" android:paddingLeft="12dp" android:paddingRight="12dp" android:layout_marginEnd="6dp" />
+            <Button android:id="@+id/btnChipFarm" android:layout_width="wrap_content" android:layout_height="32dp" android:background="@drawable/bg_box" android:text="FARM" android:textColor="@color/text_muted" android:textSize="11sp" android:paddingLeft="12dp" android:paddingRight="12dp" android:layout_marginEnd="6dp" />
+            <Button android:id="@+id/btnChipGood" android:layout_width="wrap_content" android:layout_height="32dp" android:background="@drawable/bg_box" android:text="GOOD" android:textColor="@color/text_muted" android:textSize="11sp" android:paddingLeft="12dp" android:paddingRight="12dp" android:layout_marginEnd="6dp" />
+            <Button android:id="@+id/btnChipLegion" android:layout_width="wrap_content" android:layout_height="32dp" android:background="@drawable/bg_box" android:text="LEGION" android:textColor="@color/text_muted" android:textSize="11sp" android:paddingLeft="12dp" android:paddingRight="12dp" android:layout_marginEnd="6dp" />
+            <Button android:id="@+id/btnChipLocal" android:layout_width="wrap_content" android:layout_height="32dp" android:background="@drawable/bg_box" android:text="LOCAL" android:textColor="@color/text_muted" android:textSize="11sp" android:paddingLeft="12dp" android:paddingRight="12dp" android:layout_marginEnd="6dp" />
+            <Button android:id="@+id/btnChipNation" android:layout_width="wrap_content" android:layout_height="32dp" android:background="@drawable/bg_box" android:text="NATION" android:textColor="@color/text_muted" android:textSize="11sp" android:paddingLeft="12dp" android:paddingRight="12dp" android:layout_marginEnd="6dp" />
+            <Button android:id="@+id/btnChipOther" android:layout_width="wrap_content" android:layout_height="32dp" android:background="@drawable/bg_box" android:text="OTHER" android:textColor="@color/text_muted" android:textSize="11sp" android:paddingLeft="12dp" android:paddingRight="12dp" android:layout_marginEnd="6dp" />
+            <Button android:id="@+id/btnChipRep" android:layout_width="wrap_content" android:layout_height="32dp" android:background="@drawable/bg_box" android:text="REP" android:textColor="@color/text_muted" android:textSize="11sp" android:paddingLeft="12dp" android:paddingRight="12dp" android:layout_marginEnd="6dp" />
+            <Button android:id="@+id/btnChipSeasonal" android:layout_width="wrap_content" android:layout_height="32dp" android:background="@drawable/bg_box" android:text="SEASONAL" android:textColor="@color/text_muted" android:textSize="11sp" android:paddingLeft="12dp" android:paddingRight="12dp" android:layout_marginEnd="6dp" />
+            <Button android:id="@+id/btnChipStory" android:layout_width="wrap_content" android:layout_height="32dp" android:background="@drawable/bg_box" android:text="STORY" android:textColor="@color/text_muted" android:textSize="11sp" android:paddingLeft="12dp" android:paddingRight="12dp" android:layout_marginEnd="6dp" />
+            <Button android:id="@+id/btnChipUltras" android:layout_width="wrap_content" android:layout_height="32dp" android:background="@drawable/bg_box" android:text="ULTRAS" android:textColor="@color/text_muted" android:textSize="11sp" android:paddingLeft="12dp" android:paddingRight="12dp" />
         </LinearLayout>
     </HorizontalScrollView>
 
@@ -155,8 +120,27 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerScriptPicker"
         android:layout_width="match_parent"
-        android:layout_height="360dp"
+        android:layout_height="340dp"
         android:scrollbars="vertical"
         android:overScrollMode="never" />
+
+    <!-- Bottom Action Bar (Done / Close) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="12dp"
+        android:gravity="end">
+
+        <Button
+            android:id="@+id/btnScriptPickerDone"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:background="@drawable/btn_primary"
+            android:text="DONE"
+            android:textColor="@color/white"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
 </LinearLayout>

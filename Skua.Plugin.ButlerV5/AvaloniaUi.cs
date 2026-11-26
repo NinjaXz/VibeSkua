@@ -2,7 +2,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Media;
-using Avalonia.Platform;
 using Avalonia.Styling;
 using Skua.Shared.Avalonia.Controls.Shell;
 
@@ -30,9 +29,8 @@ internal static class AvaloniaUi
         window.Background = Background;
         window.Classes.Add("skua");
         // Use VibeSkua's own title bar instead of the OS one, like the client's other windows.
-        window.SystemDecorations = SystemDecorations.BorderOnly;
+        window.WindowDecorations = WindowDecorations.BorderOnly;
         window.ExtendClientAreaToDecorationsHint = true;
-        window.ExtendClientAreaChromeHints = ExtendClientAreaChromeHints.NoChrome;
         window.ExtendClientAreaTitleBarHeightHint = 32;
     }
 

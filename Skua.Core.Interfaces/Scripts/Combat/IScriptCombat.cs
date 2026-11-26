@@ -53,6 +53,33 @@ public interface IScriptCombat
     bool Attack(string name);
 
     /// <summary>
+    /// Selects (targets) the monster with the specified <paramref name="id"/> without attacking it.
+    /// </summary>
+    /// <param name="id">The map id (or monster id) of the monster to select.</param>
+    /// <returns><see langword="true"/> if a matching monster in the current cell was selected.</returns>
+    /// <remarks>Unlike <see cref="Attack(int)"/>, this does not walk to the monster or start auto attack.</remarks>
+    bool SelectMonster(int id);
+
+    /// <summary>
+    /// Selects (targets) the specified instance of a <paramref name="monster"/> without attacking it.
+    /// </summary>
+    /// <param name="monster">Monster to select.</param>
+    /// <returns><see langword="true"/> if the monster was selected.</returns>
+    /// <remarks>Unlike <see cref="Attack(Monster)"/>, this does not walk to the monster or start auto attack.</remarks>
+    bool SelectMonster(Monster monster)
+    {
+        return SelectMonster(monster.MapID);
+    }
+
+    /// <summary>
+    /// Selects (targets) the monster with the specified <paramref name="name"/> without attacking it.
+    /// </summary>
+    /// <param name="name">Name of the monster to select, or "*" for any monster in the current cell.</param>
+    /// <returns><see langword="true"/> if a matching monster in the current cell was selected.</returns>
+    /// <remarks>Unlike <see cref="Attack(string)"/>, this does not walk to the monster or start auto attack.</remarks>
+    bool SelectMonster(string name);
+
+    /// <summary>
     /// Attacks the player with specified <paramref name="name"/>. If not in PVP mode, this will only target the player, and not attack them.
     /// </summary>
     /// <param name="name">Name of the player to attack.</param>

@@ -2,8 +2,20 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Skua.Shared.Avalonia.Controls.Settings.ServerStatusInline"
              x:Name="Root">
+  <!-- The server name's colour shows its latency against the user's threshold (set in code-behind). -->
+  <UserControl.Styles>
+    <Style Selector="TextBlock#NameText.good">
+      <Setter Property="Foreground" Value="{DynamicResource SkuaSuccessBrush}" />
+    </Style>
+    <Style Selector="TextBlock#NameText.near">
+      <Setter Property="Foreground" Value="{DynamicResource SkuaWarningBrush}" />
+    </Style>
+    <Style Selector="TextBlock#NameText.high, TextBlock#NameText.unavailable">
+      <Setter Property="Foreground" Value="{DynamicResource SkuaDangerBrush}" />
+    </Style>
+  </UserControl.Styles>
   <StackPanel Orientation="Horizontal" Spacing="4">
-    <TextBlock Text="{Binding Server.Name, ElementName=Root}" FontWeight="SemiBold" />
+    <TextBlock x:Name="NameText" Text="{Binding Server.Name, ElementName=Root}" FontWeight="SemiBold" />
     <TextBlock Text="{Binding Server, ElementName=Root, Converter={StaticResource ServerMembershipTextConverter}}"
                FontSize="11"
                Foreground="{DynamicResource SkuaMutedTextBrush}" />

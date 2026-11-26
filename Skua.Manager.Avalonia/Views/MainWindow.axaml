@@ -12,9 +12,8 @@
         Height="500"
         WindowStartupLocation="CenterScreen"
         Icon="avares://Skua.Shared.Avalonia/Assets/SkuaIcon.ico"
-        SystemDecorations="BorderOnly"
+        WindowDecorations="BorderOnly"
         ExtendClientAreaToDecorationsHint="True"
-        ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaTitleBarHeightHint="32">
 
     <!-- This root class enables shared shell selectors from Theme.axaml (Window.skua ...). -->

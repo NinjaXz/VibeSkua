@@ -101,7 +101,7 @@
                CornerRadius="6"
                VerticalContentAlignment="Center"
                Text="{Binding ManualMapIDs, UpdateSourceTrigger=PropertyChanged}"
-               Watermark="Manual MapIDs (optional, e.g. 1, 2)"
+               PlaceholderText="Manual MapIDs (optional, e.g. 1, 2)"
                ToolTip.Tip="Enter MapIDs separated by commas for priority targeting (e.g. 12345, 67890). First available monster in the list will be attacked." />
     </StackPanel>
   </Border>

@@ -16,7 +16,7 @@
         <ListBoxItem Content="Quests" />
       </ListBox>
       <TextBox Grid.Column="1"
-               Watermark="IDs, e.g. 2566 or 101, 102"
+               PlaceholderText="IDs, e.g. 2566 or 101, 102"
                Text="{Binding InputIDs, Mode=TwoWay}">
         <TextBox.InnerLeftContent>
           <materialIcons:MaterialIcon Kind="Pound" Width="15" Height="15" Margin="10,0,0,0" Foreground="{DynamicResource SkuaMutedTextBrush}" />
@@ -37,7 +37,7 @@
         <TextBlock Text="{Binding FilteredQuestIDs.Count}" />
       </Border>
       <TextBox Grid.Column="3"
-               Watermark="Search by name"
+               PlaceholderText="Search by name"
                Text="{Binding SearchText, Mode=TwoWay}">
         <TextBox.InnerLeftContent>
           <materialIcons:MaterialIcon Kind="Magnify" Width="15" Height="15" Margin="10,0,0,0" Foreground="{DynamicResource SkuaMutedTextBrush}" />
@@ -93,7 +93,7 @@
         </StackPanel>
         <CheckBox Grid.Column="3" Content="Probe newer IDs" IsChecked="{Binding ProbePastCeiling, Mode=TwoWay}" IsVisible="{Binding !IsLoading}" VerticalAlignment="Center"
                   ToolTip.Tip="Probe beyond the known quest ceiling one ID at a time. The rejected ID can disconnect the game, but will be remembered so normal updates stop before it." />
-        <TextBox Grid.Column="4" Height="26" Watermark="Range, e.g. 2566, 2599" Text="{Binding QuestRange, Mode=TwoWay}" />
+        <TextBox Grid.Column="4" Height="26" PlaceholderText="Range, e.g. 2566, 2599" Text="{Binding QuestRange, Mode=TwoWay}" />
         <Button Grid.Column="5" Classes="skua-button small w112" Content="Update range" Command="{Binding UpdateQuestsRangeCommand}" />
       </Grid>
     </Border>

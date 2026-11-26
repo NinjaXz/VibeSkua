@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vms="clr-namespace:Skua.Manager.Avalonia.ViewModels"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:local="clr-namespace:Skua.Manager.Avalonia.UserControls"
              x:Class="Skua.Manager.Avalonia.UserControls.ManagerOptionsUserControl"
              d:DataContext="{d:DesignInstance vms:ManagerOptionsViewModel}"
              d:DesignWidth="800"
@@ -80,12 +81,16 @@
                 BorderThickness="1"
                 CornerRadius="8"
                 Padding="16">
-            <StackPanel Spacing="10">
-                <TextBlock Text="APPLICATION BEHAVIOR"
+            <Grid RowDefinitions="Auto,*" RowSpacing="10">
+                <TextBlock Grid.Row="0"
+                           Text="APPLICATION BEHAVIOR"
                            FontSize="10"
                            FontWeight="Bold"
                            Foreground="{DynamicResource SkuaMutedTextBrush}" />
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                <ScrollViewer Grid.Row="1"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto"
+                              AllowAutoHide="False">
                     <ItemsControl ItemsSource="{Binding ManagerOptions}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
@@ -95,23 +100,21 @@
                                         CornerRadius="6"
                                         Margin="0,0,0,6"
                                         Padding="12,10">
-                                    <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
                                         <StackPanel Grid.Column="0" Spacing="2">
                                             <TextBlock Text="{Binding Content}" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource SkuaTextBrush}" />
                                             <TextBlock Text="{Binding Description}" FontSize="11" Foreground="{DynamicResource SkuaMutedTextBrush}" TextWrapping="Wrap" />
                                         </StackPanel>
-                                        <ToggleSwitch Grid.Column="1"
-                                                      IsChecked="{Binding Value, Mode=TwoWay}"
-                                                      OnContent=""
-                                                      OffContent=""
-                                                      VerticalAlignment="Center" />
+                                        <local:ManagerOptionEditorControl Grid.Column="1"
+                                                                          VerticalAlignment="Center"
+                                                                          HorizontalAlignment="Right" />
                                     </Grid>
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
-            </StackPanel>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>

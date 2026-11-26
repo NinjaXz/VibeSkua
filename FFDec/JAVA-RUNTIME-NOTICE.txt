@@ -1,0 +1,20 @@
+OMNISCOPE PORTABLE JAVA RUNTIME
+
+VibeSkua packages the Eclipse Temurin JRE 21 for the FFDec decompiler.
+The runtime is downloaded during packaging from the official Adoptium API,
+and the archive SHA-256 checksum is verified against the API asset metadata.
+
+The Java runtime's LICENSE, legal, and third-party notice files are included
+unchanged in the distributed VibeSkua package. Do not remove or modify the
+runtime's accompanying legal notices.
+
+Eclipse Temurin downloads:
+https://adoptium.net/temurin/releases/
+
+Adoptium API documentation:
+https://adoptium.net/installation/ci-scripts
+
+Eclipse Temurin licensing:
+https://adoptium.net/about/
+
+FFDec is invoked only when the user explicitly starts AQW client decompilation.

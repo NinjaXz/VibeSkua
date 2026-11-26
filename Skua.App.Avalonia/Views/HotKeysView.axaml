@@ -39,14 +39,15 @@
     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="8">
       <Grid Grid.Column="0">
         <AutoCompleteBox x:Name="ActionAutoComplete"
-                         Padding="34,0,32,0"
+                         Padding="34,0,8,0"
                          ItemsSource="{Binding AvailableCustomActions}"
                          SelectedItem="{Binding SelectedCustomAction, Mode=TwoWay}"
                          Text="{Binding SearchText, Mode=TwoWay}"
                          MinimumPrefixLength="0"
                          MaxDropDownHeight="320"
-                         Watermark="Add an action..."
-                         ValueMemberBinding="{Binding Title}">
+                         PlaceholderText="Add an action..."
+                         ValueMemberBinding="{Binding Title}"
+                         GotFocus="ActionAutoComplete_GotFocus">
           <AutoCompleteBox.ItemTemplate>
             <DataTemplate>
               <StackPanel Spacing="1" Margin="0,4">
@@ -56,19 +57,12 @@
             </DataTemplate>
           </AutoCompleteBox.ItemTemplate>
         </AutoCompleteBox>
-        <materialIcons:MaterialIcon Kind="PlusCircleOutline"
+        <materialIcons:MaterialIcon Kind="Magnify"
                                     Width="16" Height="16"
                                     Margin="10,0,0,0"
                                     HorizontalAlignment="Left"
                                     Foreground="{DynamicResource SkuaMutedTextBrush}"
                                     IsHitTestVisible="False" />
-        <Button Classes="icon"
-                HorizontalAlignment="Right"
-                Margin="0,0,3,0"
-                Click="ToggleDropdown_Click"
-                ToolTip.Tip="Browse all actions">
-          <materialIcons:MaterialIcon Kind="ChevronDown" Width="16" Height="16" Foreground="{DynamicResource SkuaMutedTextBrush}" />
-        </Button>
       </Grid>
 
       <Button Grid.Column="1"
@@ -90,7 +84,7 @@
       </Border>
       <TextBox Grid.Column="3"
                Text="{Binding FilterHotKeysText, Mode=TwoWay}"
-               Watermark="Filter">
+               PlaceholderText="Filter">
         <TextBox.InnerLeftContent>
           <materialIcons:MaterialIcon Kind="Magnify" Width="15" Height="15" Margin="10,0,0,0" Foreground="{DynamicResource SkuaMutedTextBrush}" />
         </TextBox.InnerLeftContent>

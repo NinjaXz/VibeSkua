@@ -6,7 +6,7 @@
              x:Class="Skua.App.Avalonia.Views.ApplicationOptionsView"
              x:DataType="vms:ApplicationOptionsViewModel">
   <Grid Margin="12" RowDefinitions="Auto,Auto,*" RowSpacing="10">
-    <TextBox Grid.Row="0" Watermark="Search application options" Text="{Binding SearchText, Mode=TwoWay}">
+    <TextBox Grid.Row="0" PlaceholderText="Search application options" Text="{Binding SearchText, Mode=TwoWay}">
       <TextBox.InnerLeftContent>
         <materialIcons:MaterialIcon Kind="Magnify" Width="15" Height="15" Margin="10,0,0,0" Foreground="{DynamicResource SkuaMutedTextBrush}" />
       </TextBox.InnerLeftContent>

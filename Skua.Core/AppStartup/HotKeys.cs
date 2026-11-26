@@ -131,6 +131,7 @@ public class HotKeys
     {
         if (binding == "ToggleScript") return "Start Script";
         if (binding == "ArmyLoadScriptAll") return "Load Script to All";
+        if (binding == "OpenQuickLaunch") return "Open Quick Account Launch";
         string decamelized = Regex.Replace(binding, "([a-z])([A-Z])", "$1 $2");
         if (decamelized.StartsWith("Toggle ")) return decamelized.Substring(7);
         if (decamelized.StartsWith("Toggle")) return decamelized.Substring(6);
@@ -141,6 +142,7 @@ public class HotKeys
     {
         return binding switch
         {
+            "OpenQuickLaunch" => "Opens Quick Account Launch to launch saved accounts or groups.",
             // IScriptOption
             "ToggleRejectAllDrops" => "When enabled, will reject all items that drop.",
             "ToggleAggroAllMonsters" => "Provokes all monsters in the MAP, causing them to attack you simultaneously.",

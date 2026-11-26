@@ -1,4 +1,6 @@
 using System.IO;
+using Skua.Core.Models;
+using Skua.Core.Models.Skills;
 
 namespace ButlerV5;
 
@@ -56,9 +58,12 @@ public static class AccountConfig
         }
     }
 
+    /// <summary>CoreBots' "use the class already worn" class choice.</summary>
+    public const string CboCurrentClass = "[Current]";
+
     /// <summary>
     /// The class name CoreBots has configured for this account, read from
-    /// %APPDATA%\Skua\options\CBO_Storage({username}).txt ("FarmClassSelect: X").
+    /// CBO_Storage({username}).txt ("FarmClassSelect: X"). May be <see cref="CboCurrentClass"/>.
     /// </summary>
     public static string? GetCboClassName(string username, ButlerClassType type) => type switch
     {
@@ -79,20 +84,67 @@ public static class AccountConfig
         _ => null,
     };
 
+    /// <summary>
+    /// A skill set mode <paramref name="className"/> actually has: <paramref name="wanted"/> if it
+    /// exists, else the mode named after the class type (Farm, Solo, Dodge), else Base, else the
+    /// class's first mode. Skua's engine would run that first mode anyway when the asked-for one is
+    /// missing; resolving it here lets the butler prefer a fitting mode and log the one it uses.
+    /// A class with no skill sets at all keeps <paramref name="wanted"/> (the engine goes generic).
+    /// </summary>
+    public static ClassUseMode ResolveSkillMode(string className, ClassUseMode wanted, ButlerClassType type,
+        IEnumerable<AdvancedSkill>? skillSets)
+    {
+        if (skillSets == null)
+            return wanted;
+
+        // Same class-name match as ScriptSkill.LoadAdvanced, in file order.
+        List<ClassUseMode> modes = skillSets
+            .Where(s => string.Equals(s.ClassName, className, StringComparison.CurrentCultureIgnoreCase))
+            .Select(s => s.ClassUseMode)
+            .ToList();
+        if (modes.Count == 0 || modes.Contains(wanted))
+            return wanted;
+
+        ClassUseMode? typeMode = type switch
+        {
+            ButlerClassType.Farm => ClassUseMode.Farm,
+            ButlerClassType.Solo => ClassUseMode.Solo,
+            ButlerClassType.Dodge => ClassUseMode.Dodge,
+            _ => null,
+        };
+        if (typeMode is ClassUseMode m && modes.Contains(m))
+            return m;
+        return modes.Contains(ClassUseMode.Base) ? ClassUseMode.Base : modes[0];
+    }
+
+    /// <summary>
+    /// The account's CBO file the way VibeSkua's CoreBots options window loads it: from
+    /// %APPDATA%\VibeSkua\options, else the legacy %APPDATA%\Skua\options copy.
+    /// </summary>
+    private static string? FindCboFile(string username)
+    {
+        string expected = $"CBO_Storage({username}).txt";
+        foreach (string optionsDir in new[]
+                 {
+                     ClientFileSources.SkuaOptionsDIR,
+                     Path.Combine(ClientFileSources.LegacySkuaDIR, "options"),
+                 })
+        {
+            if (!Directory.Exists(optionsDir))
+                continue;
+            string? file = Directory.EnumerateFiles(optionsDir, "CBO_Storage(*).txt")
+                .FirstOrDefault(f => Path.GetFileName(f).Equals(expected, StringComparison.OrdinalIgnoreCase));
+            if (file != null)
+                return file;
+        }
+        return null;
+    }
+
     private static string? GetCboValue(string username, string key)
     {
         try
         {
-            string optionsDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "Skua",
-                "options");
-            string expected = $"CBO_Storage({username}).txt";
-
-            string? file = Directory.Exists(optionsDir)
-                ? Directory.EnumerateFiles(optionsDir, "CBO_Storage(*).txt")
-                    .FirstOrDefault(f => Path.GetFileName(f).Equals(expected, StringComparison.OrdinalIgnoreCase))
-                : null;
+            string? file = FindCboFile(username);
             if (file == null)
                 return null;
 

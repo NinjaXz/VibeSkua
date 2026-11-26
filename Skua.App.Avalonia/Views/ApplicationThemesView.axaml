@@ -84,7 +84,7 @@
               <TextBox Grid.Column="0"
                        Height="34"
                        VerticalContentAlignment="Center"
-                       Watermark="Theme Name"
+                       PlaceholderText="Theme Name"
                        Text="{Binding ThemeSettings.ThemeName, Mode=TwoWay}" />
               <Button Grid.Column="1"
                       Classes="skua-button skua-primary"
@@ -141,7 +141,7 @@
               <TextBlock Text="Choose artwork for the top title bar. Your existing color theme controls the rest of the window." FontSize="11" Foreground="{DynamicResource SkuaMutedTextBrush}" TextWrapping="Wrap" />
             </StackPanel>
             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-              <TextBox Grid.Column="0" IsReadOnly="True" Text="{Binding BackgroundTheme.TitleBarArtworkPath}" Watermark="No title bar artwork selected" VerticalContentAlignment="Center" />
+              <TextBox Grid.Column="0" IsReadOnly="True" Text="{Binding BackgroundTheme.TitleBarArtworkPath}" PlaceholderText="No title bar artwork selected" VerticalContentAlignment="Center" />
               <Button Grid.Column="1" Classes="skua-button" Command="{Binding BackgroundTheme.BrowseTitleBarArtworkCommand}">Choose Image</Button>
               <Button Grid.Column="2" Classes="skua-button" Command="{Binding BackgroundTheme.ClearTitleBarArtworkCommand}">Clear</Button>
             </Grid>

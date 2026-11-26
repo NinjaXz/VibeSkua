@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Skua.Core.Interfaces;
 using Skua.Core.Interfaces.Services;
 using Skua.Core.Services;
+using Skua.Manager.Avalonia.Services;
 using Skua.Manager.Avalonia.ViewModels;
 using Skua.Shared.Avalonia.ViewModels;
 using Skua.Shared.Avalonia.ViewModels.ScriptRepo;
@@ -19,6 +20,8 @@ public static class Services
         
         services.AddSingleton<AccountManagerViewModel>();
         services.AddSingleton<ArmyQueueViewModel>();
+        services.AddSingleton<ISchedulerService, SchedulerService>();
+        services.AddSingleton<SchedulerViewModel>();
         services.AddSingleton<IRemoteControlService, RemoteControlService>();
         services.AddSingleton<LauncherViewModel>();
         services.AddSingleton<AppUpdaterViewModel>();

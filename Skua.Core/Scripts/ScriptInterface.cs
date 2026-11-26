@@ -25,6 +25,10 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
     private readonly ISettingsService _settingsService;
     private bool _playerDead;
 
+    // Only treat socket loss as an unexpected disconnect after authentication has succeeded.
+    // This prevents the watchdog from taking over while a user is still logging in manually.
+    private volatile bool _watchdogSessionEstablished;
+
     public bool ShouldExit => Manager.ShouldExit;
     public Version Version { get; }
 
@@ -37,6 +41,7 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
     public IScriptSelfAuras Self { get; }
     public IScriptTargetAuras Target { get; }
     public IAuraMonitorService AuraMonitor { get; }
+    public IScriptWatchdogService Watchdog { get; }
     public IUltraBossHelper UltraBossHelper { get; }
     public IScriptCombat Combat { get; }
     public IScriptKill Kill { get; }
@@ -102,6 +107,7 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
         IDialogService dialogService,
         ISettingsService settingsService,
         IAuraMonitorService auraMonitorService,
+        IScriptWatchdogService watchdogService,
         IUltraBossHelper ultraBossHelper,
         IScriptAccounts accounts)
     {
@@ -140,6 +146,7 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
         Handlers = handlers;
         Flash = flash;
         AuraMonitor = auraMonitorService;
+        Watchdog = watchdogService;
         UltraBossHelper = ultraBossHelper;
         Accounts = accounts;
         _settingsService = settingsService;
@@ -320,6 +327,7 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
 
                 if (currentInGame)
                 {
+                    _watchdogSessionEstablished = true;
                     wasPlaying = true;
                     Servers.LastIP = Player.ServerIP ?? Servers.LastIP;
                     if (Servers.IsIntentionalLogout && !Servers.IsLogoutInProgress)
@@ -343,7 +351,10 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
                 {
                     catching = false;
                     if (wasPlaying || Manager.ScriptRunning)
+                    {
                         Messenger.Send<PlayerDisconnectedMessage, int>(new(), (int)MessageChannels.GameEvents);
+                        _watchdogSessionEstablished = false;
+                    }
 
                     if ((wasPlaying || Manager.ScriptRunning) && !_waitForLogin && !Servers.IsIntentionalLogout && Options.AutoRelogin && WatchdogEnabled)
                     {
@@ -422,16 +433,17 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
         string connDetail = Flash.IsNull("mcConnDetail.stage") ? "null" : Flash.GetGameObject("mcConnDetail.txtDetail.text", "null")!;
         if (connDetail == "null")
             return (Environment.TickCount, connDetail);
-        if (connDetail.Contains("has been lost") && !_waitForLogin)
+        if (connDetail.Contains("has been lost") && !_waitForLogin && _watchdogSessionEstablished)
         {
+            _watchdogSessionEstablished = false;
             Messenger.Send<PlayerDisconnectedMessage, int>(new(), (int)MessageChannels.GameEvents);
-            if (!Servers.IsIntentionalLogout)
+            if (!Servers.IsIntentionalLogout && Options.AutoRelogin && WatchdogEnabled)
             {
                 Log("Connection lost detected. Triggering auto re-login.");
                 BeginLogout();
             }
         }
-        else if (Environment.TickCount - lastConnChange >= Options.LoadTimeout && connDetail == lastConnDetail && !_waitForLogin)
+        else if (Environment.TickCount - lastConnChange >= Options.LoadTimeout && connDetail == lastConnDetail && !_waitForLogin && _watchdogSessionEstablished)
         {
             if (connDetail.Contains("loading map"))
             {
@@ -507,12 +519,17 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
                 break;
 
             case "connectionLost":
+                if (!_watchdogSessionEstablished)
+                {
+                    Log("Flash socket connection lost during login; leaving the current login attempt alone.");
+                    break;
+                }
+
+                _watchdogSessionEstablished = false;
                 Messenger.Send<PlayerDisconnectedMessage, int>(new(), (int)MessageChannels.GameEvents);
                 Log("Flash socket connection lost event received.");
                 if (!_waitForLogin && !Servers.IsIntentionalLogout && Options.AutoRelogin && WatchdogEnabled)
-                {
                     BeginLogout();
-                }
                 break;
 
             case "userIntentionalAction":
@@ -537,8 +554,9 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
                             break;
 
                         case "selectServer":
-                            Log("Server chosen by user on server list. Watchdog armed.");
+                            Log("Server selected by user. Waiting for login to complete before arming the disconnect watchdog.");
                             Servers.IsIntentionalLogout = false;
+                            _watchdogSessionEstablished = false;
                             break;
                     }
                 }
@@ -736,6 +754,7 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
 
                         case "loginResponse":
                             _playerDead = false;
+                            _watchdogSessionEstablished = true;
                             if (Flash.IsWorldLoaded)
                                 Stats.GetSpace();
                             Options.CustomName = string.Empty;
@@ -853,6 +872,7 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
         }
         _reloginTask = null;
         _waitForLogin = false;
+        _watchdogSessionEstablished = false;
     }
 
     private async Task OnLogout(bool logoutNotified)
@@ -871,6 +891,7 @@ public class ScriptInterface : IScriptInterface, IScriptInterfaceManager, IDispo
         CancellationTokenSource reloginCts = new();
         _reloginCTS = reloginCts;
         _waitForLogin = true;
+        _watchdogSessionEstablished = false;
         try
         {
             if (!logoutNotified)

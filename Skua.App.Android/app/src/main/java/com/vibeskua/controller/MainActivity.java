@@ -168,6 +168,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvRosterCountBadge;
     private RecyclerView recyclerScripts;
     private ScriptsAdapter scriptsAdapter;
+    private ScriptPickerAdapter activeScriptPickerAdapter;
     private Button btnCatAll, btnCatArmy, btnCatClasses, btnCatDailies, btnCatEvil, btnCatFarm;
     private Button btnCatGood, btnCatLegion, btnCatLocal, btnCatNation, btnCatOther, btnCatRep;
     private Button btnCatSeasonal, btnCatStory, btnCatUltras;
@@ -704,6 +705,8 @@ public class MainActivity extends AppCompatActivity {
                     JSONObject body = new JSONObject();
                     body.put("username", target);
                     body.put("target", target);
+                    body.put("player", target);
+                    body.put("name", target);
                     sendPost("/api/map/goto", body.toString(), "Goto " + target);
                 } catch (Exception ignored) { }
             }
@@ -716,6 +719,8 @@ public class MainActivity extends AppCompatActivity {
                     JSONObject body = new JSONObject();
                     body.put("map", map);
                     body.put("name", map);
+                    body.put("cell", "Enter");
+                    body.put("pad", "Spawn");
                     sendPost("/api/map/join", body.toString(), "Joining " + map);
                 } catch (Exception ignored) { }
             }
@@ -758,14 +763,14 @@ public class MainActivity extends AppCompatActivity {
         });
 
         btnInvCatAll.setOnClickListener(v -> selectInvCategory("All", btnInvCatAll));
-        btnInvCatWeapons.setOnClickListener(v -> selectInvCategory("Weapon", btnInvCatWeapons));
-        btnInvCatClasses.setOnClickListener(v -> selectInvCategory("Class", btnInvCatClasses));
-        btnInvCatArmors.setOnClickListener(v -> selectInvCategory("Armor", btnInvCatArmors));
-        btnInvCatHelms.setOnClickListener(v -> selectInvCategory("Helm", btnInvCatHelms));
-        btnInvCatCapes.setOnClickListener(v -> selectInvCategory("Cape", btnInvCatCapes));
-        btnInvCatPets.setOnClickListener(v -> selectInvCategory("Pet", btnInvCatPets));
-        btnInvCatMisc.setOnClickListener(v -> selectInvCategory("Item", btnInvCatMisc));
-        btnInvCatAc.setOnClickListener(v -> selectInvCategory("AC", btnInvCatAc));
+        btnInvCatWeapons.setOnClickListener(v -> selectInvCategory("Weapons", btnInvCatWeapons));
+        btnInvCatClasses.setOnClickListener(v -> selectInvCategory("Classes", btnInvCatClasses));
+        btnInvCatArmors.setOnClickListener(v -> selectInvCategory("Armors", btnInvCatArmors));
+        btnInvCatHelms.setOnClickListener(v -> selectInvCategory("Helms", btnInvCatHelms));
+        btnInvCatCapes.setOnClickListener(v -> selectInvCategory("Capes", btnInvCatCapes));
+        btnInvCatPets.setOnClickListener(v -> selectInvCategory("Pets", btnInvCatPets));
+        btnInvCatMisc.setOnClickListener(v -> selectInvCategory("Misc", btnInvCatMisc));
+        btnInvCatAc.setOnClickListener(v -> selectInvCategory("AC Only", btnInvCatAc));
         btnInvCatEquipped.setOnClickListener(v -> selectInvCategory("Equipped", btnInvCatEquipped));
 
         setupEnterKeyTrigger(editChat, btnSendChat);
@@ -1020,12 +1025,32 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupAdapters() {
-        scriptsAdapter = new ScriptsAdapter(script -> {
-            try {
-                JSONObject body = new JSONObject();
-                body.put("path", script.path != null && !script.path.isEmpty() ? script.path : script.fileName);
-                sendPost("/api/scripts/load", body.toString(), "Loaded " + script.name);
-            } catch (Exception ignored) { }
+        scriptsAdapter = new ScriptsAdapter(new ScriptsAdapter.OnScriptClickListener() {
+            @Override
+            public void onRunScript(Models.ScriptItem script) {
+                try {
+                    String scriptTarget = script.path != null && !script.path.isEmpty() ? script.path : script.fileName;
+                    JSONObject body = new JSONObject();
+                    body.put("script", scriptTarget);
+                    body.put("path", scriptTarget);
+                    body.put("script_path", scriptTarget);
+                    body.put("scriptPath", scriptTarget);
+                    sendPost("/api/scripts/start", body.toString(), "Starting " + script.name);
+                } catch (Exception ignored) { }
+            }
+
+            @Override
+            public void onLoadScript(Models.ScriptItem script) {
+                try {
+                    String scriptTarget = script.path != null && !script.path.isEmpty() ? script.path : script.fileName;
+                    JSONObject body = new JSONObject();
+                    body.put("script", scriptTarget);
+                    body.put("path", scriptTarget);
+                    body.put("script_path", scriptTarget);
+                    body.put("scriptPath", scriptTarget);
+                    sendPost("/api/scripts/load", body.toString(), "Loaded " + script.name);
+                } catch (Exception ignored) { }
+            }
         });
         recyclerScripts.setLayoutManager(new LinearLayoutManager(this));
         recyclerScripts.setAdapter(scriptsAdapter);
@@ -1034,6 +1059,8 @@ public class MainActivity extends AppCompatActivity {
             try {
                 JSONObject body = new JSONObject();
                 body.put("item", dropName);
+                body.put("name", dropName);
+                body.put("item_name", dropName);
                 sendPost("/api/drops/pickup", body.toString(), "Picked up " + dropName);
             } catch (Exception ignored) { }
         });
@@ -1047,7 +1074,9 @@ public class MainActivity extends AppCompatActivity {
         questsAdapter = new QuestsAdapter(quest -> {
             try {
                 JSONObject body = new JSONObject();
+                body.put("id", quest.id);
                 body.put("quest_id", quest.id);
+                body.put("questId", quest.id);
                 sendPost("/api/quests/complete", body.toString(), "Completed " + quest.name);
             } catch (Exception ignored) { }
         });
@@ -1059,9 +1088,13 @@ public class MainActivity extends AppCompatActivity {
             public void onAction(Models.InventoryItem item, boolean isBank) {
                 try {
                     JSONObject body = new JSONObject();
+                    body.put("item", item.name);
+                    body.put("name", item.name);
                     body.put("item_name", item.name);
+                    body.put("id", item.id);
                     body.put("item_id", item.id);
-                    String endpoint = isBank ? "/api/bank/withdraw" : "/api/bank/deposit";
+                    body.put("itemId", item.id);
+                    String endpoint = isBank ? "/api/inventory/unbank" : "/api/inventory/bank";
                     String verb = isBank ? "Withdrew " : "Deposited ";
                     sendPost(endpoint, body.toString(), verb + item.name);
                     new Handler(Looper.getMainLooper()).postDelayed(MainActivity.this::fetchInventoryAndBank, 500);
@@ -1072,7 +1105,12 @@ public class MainActivity extends AppCompatActivity {
             public void onEquip(Models.InventoryItem item) {
                 try {
                     JSONObject body = new JSONObject();
+                    body.put("id", item.id);
                     body.put("item_id", item.id);
+                    body.put("itemId", item.id);
+                    body.put("item", item.name);
+                    body.put("name", item.name);
+                    body.put("item_name", item.name);
                     body.put("char_id", item.charId);
                     sendPost("/api/inventory/equip", body.toString(), "Equipped " + item.name);
                     new Handler(Looper.getMainLooper()).postDelayed(MainActivity.this::fetchInventoryAndBank, 500);
@@ -1204,12 +1242,14 @@ public class MainActivity extends AppCompatActivity {
             if (containerScreenDrops != null) containerScreenDrops.setVisibility(View.GONE);
             if (containerTempDrops != null) containerTempDrops.setVisibility(View.GONE);
             switchInventorySubTab(SUBTAB_INVENTORY);
+            fetchInventoryAndBank();
         } else if (subTab == VAULT_SUBTAB_BANK) {
             if (containerInventoryHub != null) containerInventoryHub.setVisibility(View.VISIBLE);
             if (containerQuests != null) containerQuests.setVisibility(View.GONE);
             if (containerScreenDrops != null) containerScreenDrops.setVisibility(View.GONE);
             if (containerTempDrops != null) containerTempDrops.setVisibility(View.GONE);
             switchInventorySubTab(SUBTAB_BANK);
+            fetchInventoryAndBank();
         } else if (subTab == VAULT_SUBTAB_QUESTS) {
             if (containerInventoryHub != null) containerInventoryHub.setVisibility(View.GONE);
             if (containerQuests != null) containerQuests.setVisibility(View.VISIBLE);
@@ -1257,12 +1297,14 @@ public class MainActivity extends AppCompatActivity {
     private void switchInventorySubTab(int subTab) {
         currentInventorySubTab = subTab;
 
+        if (btnOpenBankInv != null) {
+            btnOpenBankInv.setVisibility(View.VISIBLE);
+        }
+
         if (subTab == SUBTAB_INVENTORY) {
-            btnOpenBankInv.setVisibility(View.GONE);
             inventoryAdapter.setItems(cachedInventory, false);
             updateInventoryCountHeader();
         } else {
-            btnOpenBankInv.setVisibility(isBankLoaded ? View.GONE : View.VISIBLE);
             inventoryAdapter.setItems(cachedBank, true);
             updateInventoryCountHeader();
         }
@@ -1302,16 +1344,18 @@ public class MainActivity extends AppCompatActivity {
                         for (int i = 0; i < invArr.length(); i++) {
                             JSONObject item = invArr.optJSONObject(i);
                             if (item != null) {
+                                int id = item.has("id") ? item.optInt("id", 0) : item.optInt("item_id", item.optInt("itemId", 0));
+                                int charId = item.has("char_item_id") ? item.optInt("char_item_id", 0) : item.optInt("char_id", item.optInt("charItemId", 0));
+                                String name = item.optString("name", item.optString("sName", ""));
+                                int quantity = item.optInt("quantity", item.optInt("iQty", 1));
+                                int maxQuantity = item.has("max_quantity") ? item.optInt("max_quantity", 1) : item.optInt("max_stack", item.optInt("iStk", 1));
+                                boolean isAc = item.has("is_ac") ? item.optBoolean("is_ac", false) : (item.has("ac") ? item.optBoolean("ac", false) : (item.has("coins") ? item.optBoolean("coins", false) : item.optBoolean("bCoins", false)));
+                                boolean isEquipped = item.has("is_equipped") ? item.optBoolean("is_equipped", false) : (item.has("equipped") ? item.optBoolean("equipped", false) : item.optBoolean("bEquip", false));
+                                String category = item.has("category") ? item.optString("category", "Item") : (item.has("type") ? item.optString("type", "Item") : item.optString("sType", "Item"));
+                                boolean isUpgrade = item.has("is_upgrade") ? item.optBoolean("is_upgrade", false) : (item.has("upgrade") ? item.optBoolean("upgrade", false) : (item.has("member") ? item.optBoolean("member", false) : item.optBoolean("bUpg", false)));
+
                                 cachedInventory.add(new Models.InventoryItem(
-                                        item.optInt("id", 0),
-                                        item.optInt("char_item_id", 0),
-                                        item.optString("name", ""),
-                                        item.optInt("quantity", 1),
-                                        item.optInt("max_quantity", 1),
-                                        item.optBoolean("is_ac", false),
-                                        item.optBoolean("is_equipped", false),
-                                        item.optString("category", "Item"),
-                                        item.optBoolean("is_upgrade", false)
+                                        id, charId, name, quantity, maxQuantity, isAc, isEquipped, category, isUpgrade
                                 ));
                             }
                         }
@@ -1348,23 +1392,27 @@ public class MainActivity extends AppCompatActivity {
                         for (int i = 0; i < bankArr.length(); i++) {
                             JSONObject item = bankArr.optJSONObject(i);
                             if (item != null) {
+                                int id = item.has("id") ? item.optInt("id", 0) : item.optInt("item_id", item.optInt("itemId", 0));
+                                int charId = item.has("char_item_id") ? item.optInt("char_item_id", 0) : item.optInt("char_id", item.optInt("charItemId", 0));
+                                String name = item.optString("name", item.optString("sName", ""));
+                                int quantity = item.optInt("quantity", item.optInt("iQty", 1));
+                                int maxQuantity = item.has("max_quantity") ? item.optInt("max_quantity", 1) : item.optInt("max_stack", item.optInt("iStk", 1));
+                                boolean isAc = item.has("is_ac") ? item.optBoolean("is_ac", false) : (item.has("ac") ? item.optBoolean("ac", false) : (item.has("coins") ? item.optBoolean("coins", false) : item.optBoolean("bCoins", false)));
+                                boolean isEquipped = item.has("is_equipped") ? item.optBoolean("is_equipped", false) : (item.has("equipped") ? item.optBoolean("equipped", false) : item.optBoolean("bEquip", false));
+                                String category = item.has("category") ? item.optString("category", "Item") : (item.has("type") ? item.optString("type", "Item") : item.optString("sType", "Item"));
+                                boolean isUpgrade = item.has("is_upgrade") ? item.optBoolean("is_upgrade", false) : (item.has("upgrade") ? item.optBoolean("upgrade", false) : (item.has("member") ? item.optBoolean("member", false) : item.optBoolean("bUpg", false)));
+
                                 cachedBank.add(new Models.InventoryItem(
-                                        item.optInt("id", 0),
-                                        item.optInt("char_item_id", 0),
-                                        item.optString("name", ""),
-                                        item.optInt("quantity", 1),
-                                        item.optInt("max_quantity", 1),
-                                        item.optBoolean("is_ac", false),
-                                        false,
-                                        item.optString("category", "Item"),
-                                        item.optBoolean("is_upgrade", false)
+                                        id, charId, name, quantity, maxQuantity, isAc, isEquipped, category, isUpgrade
                                 ));
                             }
                         }
                     }
 
+                    if (btnOpenBankInv != null) {
+                        btnOpenBankInv.setVisibility(View.VISIBLE);
+                    }
                     if (currentInventorySubTab == SUBTAB_BANK) {
-                        btnOpenBankInv.setVisibility(isBankLoaded ? View.GONE : View.VISIBLE);
                         inventoryAdapter.setItems(cachedBank, true);
                         updateInventoryCountHeader();
                     }
@@ -2851,7 +2899,16 @@ public class MainActivity extends AppCompatActivity {
 
         JSONArray arr = new JSONArray();
         for (Models.ScriptItem s : schedulerQueue) {
-            arr.put(s.path != null && !s.path.isEmpty() ? s.path : s.fileName);
+            JSONObject itemObj = new JSONObject();
+            String p = (s.path != null && !s.path.isEmpty()) ? s.path : s.fileName;
+            String n = (s.name != null && !s.name.isEmpty()) ? s.name : s.fileName;
+            try {
+                itemObj.put("Path", p);
+                itemObj.put("path", p);
+                itemObj.put("Name", n);
+                itemObj.put("name", n);
+            } catch (Exception ignored) { }
+            arr.put(itemObj);
         }
 
         isArmySchedulerRunning = true;
@@ -2922,8 +2979,46 @@ public class MainActivity extends AppCompatActivity {
 
             row.addView(textCol, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f));
 
+            LinearLayout actionsCol = new LinearLayout(this);
+            actionsCol.setOrientation(LinearLayout.HORIZONTAL);
+            actionsCol.setGravity(android.view.Gravity.CENTER_VERTICAL);
+
+            Button btnUp = new Button(this);
+            btnUp.setText("▲");
+            btnUp.setTextSize(11);
+            btnUp.setBackgroundResource(R.drawable.bg_card);
+            btnUp.setTextColor(ContextCompat.getColor(this, index > 0 ? R.color.text_main : R.color.text_muted));
+            btnUp.setEnabled(index > 0);
+            LinearLayout.LayoutParams upLp = new LinearLayout.LayoutParams((int)(32 * density), (int)(32 * density));
+            upLp.setMargins(0, 0, (int)(4 * density), 0);
+            btnUp.setLayoutParams(upLp);
+            btnUp.setOnClickListener(v -> {
+                if (index > 0 && index < schedulerQueue.size()) {
+                    java.util.Collections.swap(schedulerQueue, index, index - 1);
+                    updateSchedulerQueueUi();
+                }
+            });
+            actionsCol.addView(btnUp);
+
+            Button btnDown = new Button(this);
+            btnDown.setText("▼");
+            btnDown.setTextSize(11);
+            btnDown.setBackgroundResource(R.drawable.bg_card);
+            btnDown.setTextColor(ContextCompat.getColor(this, index < schedulerQueue.size() - 1 ? R.color.text_main : R.color.text_muted));
+            btnDown.setEnabled(index < schedulerQueue.size() - 1);
+            LinearLayout.LayoutParams downLp = new LinearLayout.LayoutParams((int)(32 * density), (int)(32 * density));
+            downLp.setMargins(0, 0, (int)(4 * density), 0);
+            btnDown.setLayoutParams(downLp);
+            btnDown.setOnClickListener(v -> {
+                if (index >= 0 && index < schedulerQueue.size() - 1) {
+                    java.util.Collections.swap(schedulerQueue, index, index + 1);
+                    updateSchedulerQueueUi();
+                }
+            });
+            actionsCol.addView(btnDown);
+
             Button btnRemove = new Button(this);
-            btnRemove.setText("X");
+            btnRemove.setText("✕");
             btnRemove.setTextSize(11);
             btnRemove.setBackgroundResource(R.drawable.bg_card);
             btnRemove.setTextColor(ContextCompat.getColor(this, R.color.red));
@@ -2935,7 +3030,9 @@ public class MainActivity extends AppCompatActivity {
                     updateSchedulerQueueUi();
                 }
             });
-            row.addView(btnRemove);
+            actionsCol.addView(btnRemove);
+
+            row.addView(actionsCol);
 
             layoutSchedulerQueue.addView(row);
         }
@@ -3110,35 +3207,70 @@ public class MainActivity extends AppCompatActivity {
         TextView tvTitle = dialogView.findViewById(R.id.tvScriptPickerTitle);
         Button btnClose = dialogView.findViewById(R.id.btnScriptPickerClose);
         EditText editSearch = dialogView.findViewById(R.id.editScriptPickerSearch);
+        Button btnScriptPickerSort = dialogView.findViewById(R.id.btnScriptPickerSort);
+        Button btnScriptPickerDone = dialogView.findViewById(R.id.btnScriptPickerDone);
         TextView tvEmpty = dialogView.findViewById(R.id.tvEmptyScriptPicker);
         RecyclerView recycler = dialogView.findViewById(R.id.recyclerScriptPicker);
 
         Button btnChipAll = dialogView.findViewById(R.id.btnChipAll);
         Button btnChipArmy = dialogView.findViewById(R.id.btnChipArmy);
-        Button btnChipBots = dialogView.findViewById(R.id.btnChipBots);
-        Button btnChipStory = dialogView.findViewById(R.id.btnChipStory);
+        Button btnChipClasses = dialogView.findViewById(R.id.btnChipClasses);
+        Button btnChipDailies = dialogView.findViewById(R.id.btnChipDailies);
+        Button btnChipEvil = dialogView.findViewById(R.id.btnChipEvil);
         Button btnChipFarm = dialogView.findViewById(R.id.btnChipFarm);
+        Button btnChipGood = dialogView.findViewById(R.id.btnChipGood);
+        Button btnChipLegion = dialogView.findViewById(R.id.btnChipLegion);
+        Button btnChipLocal = dialogView.findViewById(R.id.btnChipLocal);
+        Button btnChipNation = dialogView.findViewById(R.id.btnChipNation);
+        Button btnChipOther = dialogView.findViewById(R.id.btnChipOther);
         Button btnChipRep = dialogView.findViewById(R.id.btnChipRep);
-        final Button[] chips = new Button[]{btnChipAll, btnChipArmy, btnChipBots, btnChipStory, btnChipFarm, btnChipRep};
+        Button btnChipSeasonal = dialogView.findViewById(R.id.btnChipSeasonal);
+        Button btnChipStory = dialogView.findViewById(R.id.btnChipStory);
+        Button btnChipUltras = dialogView.findViewById(R.id.btnChipUltras);
 
-        String actionLabel = "QUEUE";
+        final Button[] chips = new Button[]{
+                btnChipAll, btnChipArmy, btnChipClasses, btnChipDailies, btnChipEvil,
+                btnChipFarm, btnChipGood, btnChipLegion, btnChipLocal, btnChipNation,
+                btnChipOther, btnChipRep, btnChipSeasonal, btnChipStory, btnChipUltras
+        };
+
+        boolean isMultiQueue = (mode == SCRIPT_PICKER_MODE_SCHEDULER_QUEUE);
+        String actionLabel = isMultiQueue ? "+ QUEUE" : (mode == SCRIPT_PICKER_MODE_ARMY_LOAD ? "LOAD" : "ASSIGN");
+
         if (mode == SCRIPT_PICKER_MODE_ARMY_LOAD) {
             tvTitle.setText("LOAD SCRIPT (ALL ARMY TABS)");
-            actionLabel = "LOAD";
+            if (btnScriptPickerDone != null) btnScriptPickerDone.setText("CLOSE");
         } else if (mode == SCRIPT_PICKER_MODE_SCHEDULER_QUEUE) {
-            tvTitle.setText("QUEUE SCRIPT TO SCHEDULER");
-            actionLabel = "QUEUE";
+            tvTitle.setText("QUEUE SCRIPTS (" + schedulerQueue.size() + " in Queue)");
+            if (btnScriptPickerDone != null) btnScriptPickerDone.setText("DONE (" + schedulerQueue.size() + " QUEUED)");
         } else if (mode == SCRIPT_PICKER_MODE_ARMY_QUEUE_STEP) {
             tvTitle.setText("ASSIGN SCRIPT (STEP #" + (stepIndex + 1) + ")");
-            actionLabel = "ASSIGN";
+            if (btnScriptPickerDone != null) btnScriptPickerDone.setText("CLOSE");
         }
 
         ScriptPickerAdapter pickerAdapter = new ScriptPickerAdapter(script -> {
-            dialog.dismiss();
-            handleScriptPicked(script, mode, stepIndex);
+            if (isMultiQueue) {
+                handleScriptPicked(script, mode, stepIndex);
+                tvTitle.setText("QUEUE SCRIPTS (" + schedulerQueue.size() + " in Queue)");
+                if (btnScriptPickerDone != null) {
+                    btnScriptPickerDone.setText("DONE (" + schedulerQueue.size() + " QUEUED)");
+                    btnScriptPickerDone.setBackgroundResource(R.drawable.btn_green);
+                }
+            } else {
+                dialog.dismiss();
+                handleScriptPicked(script, mode, stepIndex);
+            }
         });
+        pickerAdapter.setMultiQueueMode(isMultiQueue);
         pickerAdapter.setActionLabel(actionLabel);
         pickerAdapter.setScripts(allCachedScripts);
+
+        activeScriptPickerAdapter = pickerAdapter;
+        dialog.setOnDismissListener(d -> {
+            if (activeScriptPickerAdapter == pickerAdapter) {
+                activeScriptPickerAdapter = null;
+            }
+        });
 
         recycler.setLayoutManager(new LinearLayoutManager(this));
         recycler.setAdapter(pickerAdapter);
@@ -3152,6 +3284,17 @@ public class MainActivity extends AppCompatActivity {
         }
 
         btnClose.setOnClickListener(v -> dialog.dismiss());
+        if (btnScriptPickerDone != null) {
+            btnScriptPickerDone.setOnClickListener(v -> dialog.dismiss());
+        }
+
+        if (btnScriptPickerSort != null) {
+            btnScriptPickerSort.setText(pickerAdapter.getSortLabel());
+            btnScriptPickerSort.setOnClickListener(v -> {
+                pickerAdapter.cycleSortMode();
+                btnScriptPickerSort.setText(pickerAdapter.getSortLabel());
+            });
+        }
 
         editSearch.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
@@ -3164,6 +3307,7 @@ public class MainActivity extends AppCompatActivity {
 
         View.OnClickListener chipListener = v -> {
             for (Button c : chips) {
+                if (c == null) continue;
                 c.setBackgroundResource(R.drawable.bg_box);
                 c.setTextColor(ContextCompat.getColor(MainActivity.this, R.color.text_muted));
             }
@@ -3175,7 +3319,9 @@ public class MainActivity extends AppCompatActivity {
         };
 
         for (Button c : chips) {
-            c.setOnClickListener(chipListener);
+            if (c != null) {
+                c.setOnClickListener(chipListener);
+            }
         }
 
         dialog.show();
@@ -3190,17 +3336,24 @@ public class MainActivity extends AppCompatActivity {
                 JSONObject body = new JSONObject();
                 body.put("script", sPath);
                 body.put("path", sPath);
+                body.put("script_path", sPath);
+                body.put("scriptPath", sPath);
                 sendPost("/api/fleet/load-script", body.toString(), "Loaded " + script.name + " to all army tabs");
             } catch (Exception ignored) { }
         } else if (mode == SCRIPT_PICKER_MODE_SCHEDULER_QUEUE) {
             schedulerQueue.add(script);
             updateSchedulerQueueUi();
-            Toast.makeText(this, "Queued " + script.name + " in scheduler", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Queued " + script.name + " (" + schedulerQueue.size() + " total)", Toast.LENGTH_SHORT).show();
         } else if (mode == SCRIPT_PICKER_MODE_ARMY_QUEUE_STEP) {
             try {
                 JSONObject body = new JSONObject();
+                body.put("step", stepIndex);
                 body.put("step_index", stepIndex);
+                body.put("stepIndex", stepIndex);
+                body.put("script", sPath);
+                body.put("path", sPath);
                 body.put("script_path", sPath);
+                body.put("scriptPath", sPath);
                 sendPost("/api/army/queue/step/script", body.toString(), "Assigned " + script.name + " to step #" + (stepIndex + 1));
                 new Handler(Looper.getMainLooper()).postDelayed(this::pollArmyQueue, 800);
             } catch (Exception ignored) { }
@@ -3263,6 +3416,9 @@ public class MainActivity extends AppCompatActivity {
                     allCachedScripts.addAll(list);
                     if (scriptsAdapter != null) {
                         scriptsAdapter.setScripts(list);
+                    }
+                    if (activeScriptPickerAdapter != null) {
+                        activeScriptPickerAdapter.setScripts(list);
                     }
                     if (editScriptSearch != null) {
                         editScriptSearch.setHint("Search " + list.size() + " scripts...");

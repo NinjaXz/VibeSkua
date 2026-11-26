@@ -44,7 +44,7 @@
   <Grid Margin="12" RowDefinitions="Auto,Auto,*,Auto" RowSpacing="10">
     <!-- Search and private room -->
     <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,96" ColumnSpacing="8">
-      <TextBox Grid.Column="0" Watermark="Search name, map or cell" Text="{Binding SearchText, Mode=TwoWay}">
+      <TextBox Grid.Column="0" PlaceholderText="Search name, map or cell" Text="{Binding SearchText, Mode=TwoWay}">
         <TextBox.InnerLeftContent>
           <materialIcons:MaterialIcon Kind="Magnify" Width="15" Height="15" Margin="10,0,0,0" Foreground="{DynamicResource SkuaMutedTextBrush}" />
         </TextBox.InnerLeftContent>
@@ -57,7 +57,7 @@
                     IsChecked="{Binding MapService.UsePrivateRoom, Mode=TwoWay}"
                     ToolTip.Tip="Join private rooms with this number" />
       <TextBlock Grid.Column="2" Text="Private room" VerticalAlignment="Center" />
-      <TextBox Grid.Column="3" Watermark="Room" Text="{Binding MapService.PrivateRoomNumber, Mode=TwoWay}">
+      <TextBox Grid.Column="3" PlaceholderText="Room" Text="{Binding MapService.PrivateRoomNumber, Mode=TwoWay}">
         <TextBox.InnerLeftContent>
           <materialIcons:MaterialIcon Kind="Pound" Width="15" Height="15" Margin="10,0,0,0" Foreground="{DynamicResource SkuaMutedTextBrush}" />
         </TextBox.InnerLeftContent>
@@ -142,10 +142,10 @@
             CornerRadius="8"
             Padding="6">
       <Grid ColumnDefinitions="1.4*,*,84,84,Auto,Auto" ColumnSpacing="6">
-        <TextBox Grid.Column="0" Height="26" Watermark="Name, e.g. Ultra Alteon" Text="{Binding Editor.Travel.DescriptionName, Mode=TwoWay}" />
-        <TextBox Grid.Column="1" Height="26" Watermark="Map" Text="{Binding Editor.Travel.MapName, Mode=TwoWay}" />
-        <TextBox Grid.Column="2" Height="26" Watermark="Cell" Text="{Binding Editor.Travel.Cell, Mode=TwoWay}" />
-        <TextBox Grid.Column="3" Height="26" Watermark="Pad" Text="{Binding Editor.Travel.Pad, Mode=TwoWay}" />
+        <TextBox Grid.Column="0" Height="26" PlaceholderText="Name, e.g. Ultra Alteon" Text="{Binding Editor.Travel.DescriptionName, Mode=TwoWay}" />
+        <TextBox Grid.Column="1" Height="26" PlaceholderText="Map" Text="{Binding Editor.Travel.MapName, Mode=TwoWay}" />
+        <TextBox Grid.Column="2" Height="26" PlaceholderText="Cell" Text="{Binding Editor.Travel.Cell, Mode=TwoWay}" />
+        <TextBox Grid.Column="3" Height="26" PlaceholderText="Pad" Text="{Binding Editor.Travel.Pad, Mode=TwoWay}" />
         <Button Grid.Column="4" Classes="skua-button small w112" Command="{Binding Editor.GetCurrentCommand}" ToolTip.Tip="Fill in the map, cell and pad you are in">
           <StackPanel Orientation="Horizontal" Spacing="5">
             <materialIcons:MaterialIcon Kind="CrosshairsGps" Width="14" Height="14" />
