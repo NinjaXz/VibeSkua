@@ -17,6 +17,7 @@ public class AgentApiContractTests
 {
     protected FakeWorld World { get; } = new();
     protected string ScriptsRoot { get; } = Path.Combine(Path.GetTempPath(), "vibeskoa-agent-tests-" + Guid.NewGuid().ToString("N"));
+    protected string OptionsRoot { get; } = Path.Combine(Path.GetTempPath(), "vibeskoa-agent-options-" + Guid.NewGuid().ToString("N"));
 
     protected AgentApiRouter Router(AgentApiOptions? overrideOptions = null) =>
         new(overrideOptions ?? Options(), World.Bot, World.Manager, World.Logs);
@@ -25,6 +26,7 @@ public class AgentApiContractTests
     {
         Token = token,
         ScriptsRoot = ScriptsRoot,
+        OptionsRoot = OptionsRoot,
         MaxScriptBytes = maxScriptBytes,
     };
 
@@ -134,8 +136,8 @@ public class AgentApiContractTests
         string[] gets =
         {
             "/health", "/state", "/map", "/map/npcs", "/players", "/inventory", "/monsters",
-            "/servers", "/shop", "/quests", "/quest?id=1", "/quests/cached", "/scripts", "/script", "/logs",
-            "/client", "/bank",
+            "/servers", "/shop", "/quests", "/quest?id=1", "/quests/cached", "/scripts", "/script",
+            "/script/options?name=Missing.cs", "/logs", "/client", "/bank",
         };
         string[] posts =
         {
@@ -143,7 +145,8 @@ public class AgentApiContractTests
             "/exit-combat", "/rest", "/reload-map", "/relogin", "/login", "/logout", "/select-server",
             "/quests/load", "/quests/accept", "/quests/complete", "/quests/abandon", "/shop/load",
             "/shop/buy", "/shop/close", "/scripts/write", "/scripts/run", "/scripts/pause",
-            "/scripts/resume", "/scripts/stop", "/client/start", "/bank/open", "/bank/deposit", "/bank/withdraw",
+            "/scripts/resume", "/scripts/stop", "/script/options", "/client/start", "/bank/open",
+            "/bank/deposit", "/bank/withdraw",
         };
 
         AgentApiRouter router = Router();

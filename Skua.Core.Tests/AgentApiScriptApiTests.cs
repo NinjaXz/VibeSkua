@@ -28,7 +28,7 @@ public class AgentApiScriptApiTests : AgentApiContractTests
     // ------------------------------------------------------------ /scripts
 
     [Fact]
-    public async Task List_ReturnsOnlyTopLevelCsFiles()
+    public async Task List_ReturnsCsFilesAndIgnoresEverythingElse()
     {
         Directory.CreateDirectory(Path.Combine(ScriptsRoot, "sub"));
         File.WriteAllText(Path.Combine(ScriptsRoot, "Farm.cs"), "// farm");
@@ -39,8 +39,9 @@ public class AgentApiScriptApiTests : AgentApiContractTests
 
         Assert.Equal(200, response.Status);
         JsonElement scripts = Json(response.Data!).GetProperty("scripts");
-        Assert.Equal(1, scripts.GetArrayLength());
-        Assert.Equal("Farm.cs", scripts[0].GetProperty("name").GetString());
+        Assert.Equal(2, scripts.GetArrayLength());
+        Assert.Equal("Farm.cs", scripts[0].GetProperty("path").GetString());
+        Assert.Equal("sub/Deep.cs", scripts[1].GetProperty("path").GetString());
         Assert.True(scripts[0].GetProperty("size").GetInt32() > 0);
     }
 
@@ -77,7 +78,7 @@ public class AgentApiScriptApiTests : AgentApiContractTests
     {
         AgentApiRouter router = Router();
 
-        foreach (string name in new[] { "../evil", "sub/Farm", "C:\\Windows\\x", "..", "Farm|Script" })
+        foreach (string name in new[] { "../evil", "a/../../x", "C:\\Windows\\x", "..", "Farm|Script" })
         {
             AgentApiResponse response = await router.HandleAsync(PostScript("/scripts/write", new { name, content = "x = 1;" }));
             Assert.True(response.Status == 400, $"name must be rejected: {name} -> {response.Status}");

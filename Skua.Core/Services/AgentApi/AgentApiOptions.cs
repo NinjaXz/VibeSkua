@@ -33,6 +33,12 @@ public sealed class AgentApiOptions
     /// <summary>Folder the client loads scripts from. Writes and runs stay inside it.</summary>
     public string ScriptsRoot { get; init; } = Models.ClientFileSources.SkuaScriptsDIR;
 
+    /// <summary>Folder holding one .cfg per script: the choices a script shows its window.</summary>
+    public string OptionsRoot { get; init; } = Models.ClientFileSources.SkuaOptionsDIR;
+
+    /// <summary>Scripts to walk when listing the library: the shipped library has near 2000 files.</summary>
+    public int MaxScriptRows { get; init; } = 4000;
+
     /// <summary>Longest time a mutating action may run before it is abandoned.</summary>
     public int ActionTimeoutSeconds { get; init; } = 180;
 

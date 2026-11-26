@@ -35,6 +35,7 @@ public sealed partial class AgentApiRouter
     private readonly SemaphoreSlim _actionGate = new(1, 1);
     private readonly SemaphoreSlim _scriptGate = new(1, 1);
     private readonly string _scriptsRoot;
+    private readonly string _optionsRoot;
 
     public AgentApiRouter(
         AgentApiOptions options,
@@ -51,6 +52,7 @@ public sealed partial class AgentApiRouter
         _mapInfo = mapInfo;
         _client = client;
         _scriptsRoot = Path.GetFullPath(options.ScriptsRoot);
+        _optionsRoot = Path.GetFullPath(options.OptionsRoot);
     }
 
     /// <summary>Handles one request and returns its status plus payload or error.</summary>
@@ -159,7 +161,9 @@ public sealed partial class AgentApiRouter
             case "/quests/cached":
                 return BuildCachedQuests(request);
             case "/scripts":
-                return BuildScripts();
+                return BuildScripts(request);
+            case "/script/options":
+                return ReadScriptOptions(request);
             case "/script":
                 return BuildScriptStatus();
             case "/logs":
@@ -746,8 +750,8 @@ public sealed partial class AgentApiRouter
     internal static readonly IReadOnlySet<string> GetRoutes = new HashSet<string>
     {
         "/", "/health", "/state", "/map", "/map/npcs", "/players", "/inventory", "/monsters",
-        "/servers", "/shop", "/quests", "/quest", "/quests/cached", "/scripts", "/script", "/logs",
-        "/client", "/bank",
+        "/servers", "/shop", "/quests", "/quest", "/quests/cached", "/scripts", "/script", "/script/options",
+        "/logs", "/client", "/bank",
     };
 
     /// <summary>Endpoints answered by POST, including the short script aliases.</summary>
@@ -758,6 +762,7 @@ public sealed partial class AgentApiRouter
         "/quests/load", "/quests/accept", "/quests/complete", "/quests/abandon",
         "/shop/load", "/shop/buy", "/shop/close",
         "/scripts/write", "/scripts/run", "/scripts/pause", "/scripts/resume", "/scripts/stop",
+        "/script/options",
         "/bank/open", "/bank/deposit", "/bank/withdraw", "/client/start", "/pause", "/resume", "/stop",
     };
 
@@ -975,5 +980,8 @@ public sealed partial class AgentApiRouter
     {
         public string Name { get; init; } = string.Empty;
         public bool Force { get; init; }
+
+        /// <summary>Default true: start without opening the script's options window.</summary>
+        public bool Silent { get; init; } = true;
     }
 }

@@ -25,6 +25,7 @@ public sealed partial class AgentApiRouter
         pid = Environment.ProcessId,
         version = Safe(() => _bot.Version.ToString(), string.Empty),
         loggedIn = Safe(() => _bot.Player.LoggedIn, false),
+        member = Safe(() => _bot.Player.IsMember, false),
         playing = Safe(() => _bot.Player.Playing, false),
         scriptRunning = Safe(() => _scriptManager.ScriptRunning, false),
     };
@@ -49,6 +50,7 @@ public sealed partial class AgentApiRouter
         inCombat = Safe(() => _bot.Player.InCombat, false),
         playing = Safe(() => _bot.Player.Playing, false),
         loggedIn = Safe(() => _bot.Player.LoggedIn, false),
+        member = Safe(() => _bot.Player.IsMember, false),
         map = BuildMapSnapshot(),
         target = ToMonsterDto(Safe(() => _bot.Player.Target, (Monster?)null)),
         script = new

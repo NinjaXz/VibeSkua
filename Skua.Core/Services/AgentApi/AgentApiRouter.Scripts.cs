@@ -12,27 +12,132 @@ namespace Skua.Core.Services.AgentApi;
 /// </summary>
 public sealed partial class AgentApiRouter
 {
-    private object BuildScripts()
+    /// <summary>
+    /// One row of the script library. The path is relative to the scripts folder
+    /// and is what the run, write and options routes take as "name".
+    /// </summary>
+    internal sealed record ScriptRow(
+        string Path, string FileName, long Size, string ModifiedUtc, string Title, string Description, string Tags)
     {
-        if (!Directory.Exists(_scriptsRoot))
-            return new { root = _scriptsRoot, exists = false, scripts = new List<object>() };
+        public bool Matches(string filter) =>
+            Path.Contains(filter, StringComparison.OrdinalIgnoreCase)
+            || Title.Contains(filter, StringComparison.OrdinalIgnoreCase)
+            || Description.Contains(filter, StringComparison.OrdinalIgnoreCase)
+            || Tags.Contains(filter, StringComparison.OrdinalIgnoreCase);
+    }
 
-        List<object> scripts = Directory.EnumerateFiles(_scriptsRoot, "*.cs", SearchOption.TopDirectoryOnly)
-            .Select(file =>
+    internal sealed record ScriptHeader(string Title, string Description, string Tags)
+    {
+        /// <summary>Reads the name/description/tags block comment at the top of a script.</summary>
+        public static ScriptHeader Read(string file)
+        {
+            string title = string.Empty, description = string.Empty, tags = string.Empty;
+            bool inside = false;
+            try
             {
-                FileInfo info = new(file);
-                return (object)new
+                int lineNo = 0;
+                foreach (string line in File.ReadLines(file))
                 {
-                    name = Path.GetFileName(file),
-                    fileName = info.Name,
-                    size = info.Length,
-                    modifiedUtc = info.LastWriteTimeUtc.ToString("O", CultureInfo.InvariantCulture),
-                };
-            })
-            .OrderBy(script => ((string)((dynamic)script).name), StringComparer.OrdinalIgnoreCase)
-            .ToList();
+                    if (++lineNo > 40)
+                        break;
 
-        return new { root = _scriptsRoot, exists = true, scripts };
+                    // The library writes "/* name: X" then plain lines, one per key,
+                    // then "*/". A line that is not a comment ends the header.
+                    string text = line.Trim();
+                    if (!inside)
+                    {
+                        if (text.StartsWith("/*"))
+                        {
+                            inside = true;
+                            text = text[2..].Trim();
+                        }
+                        else if (text.StartsWith("//"))
+                        {
+                            text = text[2..].Trim();
+                        }
+                        else
+                        {
+                            if (text.Length > 0)
+                                break;
+                            continue;
+                        }
+                    }
+
+                    if (text.EndsWith("*/"))
+                    {
+                        inside = false;
+                        text = text[..^2];
+                    }
+
+                    string body = text.TrimStart('/', '*', ' ').Trim();
+                    int colon = body.IndexOf(':');
+                    if (colon <= 0)
+                        continue;
+
+                    string key = body[..colon].Trim().ToLowerInvariant();
+                    string value = body[(colon + 1)..].Trim();
+                    switch (key)
+                    {
+                        case "name":
+                            title = value;
+                            break;
+                        case "description":
+                            description = value;
+                            break;
+                        case "tags":
+                            tags = value;
+                            break;
+                    }
+                }
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+
+            return new ScriptHeader(title, description, tags);
+        }
+    }
+
+    private object BuildScripts(AgentApiRequest request)
+    {
+        string filter = QueryText(request, "filter", string.Empty);
+        int limit = Math.Clamp(QueryInt(request, "limit", 300), 1, 1000);
+        int from = Math.Max(0, QueryInt(request, "from", 0));
+
+        if (!Directory.Exists(_scriptsRoot))
+            return new { root = _scriptsRoot, exists = false, scanned = 0, count = 0, from, returned = 0, scripts = new List<ScriptRow>() };
+
+        // The shipped library is near 2000 files in folders, so the walk is recursive
+        // and capped: an agent asks with a filter instead of pulling the whole list.
+        List<ScriptRow> matched = new();
+        int scanned = 0;
+        foreach (string file in Directory.EnumerateFiles(_scriptsRoot, "*.cs", SearchOption.AllDirectories))
+        {
+            if (scanned >= _options.MaxScriptRows)
+                break;
+
+            scanned++;
+            FileInfo info = new(file);
+            ScriptHeader header = ScriptHeader.Read(file);
+            ScriptRow row = new(
+                Path.GetRelativePath(_scriptsRoot, file).Replace('\\', '/'),
+                info.Name,
+                info.Length,
+                info.LastWriteTimeUtc.ToString("O", CultureInfo.InvariantCulture),
+                header.Title,
+                header.Description,
+                header.Tags);
+            if (filter.Length == 0 || row.Matches(filter))
+                matched.Add(row);
+        }
+
+        matched.Sort((a, b) => string.Compare(a.Path, b.Path, StringComparison.OrdinalIgnoreCase));
+        List<ScriptRow> page = matched.GetRange(from, Math.Min(limit, Math.Max(0, matched.Count - from)));
+
+        return new { root = _scriptsRoot, exists = true, scanned, count = matched.Count, from, returned = page.Count, scripts = page };
     }
 
     private object BuildScriptStatus() => new
@@ -51,6 +156,7 @@ public sealed partial class AgentApiRouter
         "/scripts/pause" or "/pause" => await SetPausedAsync(true, ct).ConfigureAwait(false),
         "/scripts/resume" or "/resume" => await SetPausedAsync(false, ct).ConfigureAwait(false),
         "/scripts/stop" or "/stop" => await StopScriptAsync(ct).ConfigureAwait(false),
+        "/script/options" => WriteScriptOptions(request),
         _ => Known(GetRoutes, path)
             ? throw new AgentApiException(405, "method_not_allowed")
             : throw new AgentApiException(404, "not_found"),
@@ -76,6 +182,10 @@ public sealed partial class AgentApiRouter
 
             // Write beside the target, then move: a crash mid-write cannot leave
             // a half-written script where the client would load it.
+            string? parent = Path.GetDirectoryName(target);
+            if (!string.IsNullOrEmpty(parent))
+                Directory.CreateDirectory(parent);
+
             string temp = target + ".tmp";
             await File.WriteAllTextAsync(temp, body.Content, System.Text.Encoding.UTF8, ct).ConfigureAwait(false);
             if (body.Overwrite)
@@ -86,7 +196,8 @@ public sealed partial class AgentApiRouter
             FileInfo info = new(target);
             return (object)new
             {
-                name = Path.GetFileName(target),
+                name,
+                fileName = Path.GetFileName(target),
                 path = target,
                 size = info.Length,
                 created = !exists,
@@ -115,9 +226,23 @@ public sealed partial class AgentApiRouter
             }
 
             _scriptManager.SetLoadedScript(target);
-            // StartScript returns the compile or launch exception instead of
-            // throwing: an agent that just wrote a script needs the C# error.
-            Exception? startError = await _scriptManager.StartScript().ConfigureAwait(false);
+
+            // A script that declares options opens the client's options window, and an
+            // agent cannot click it. The mobile remote control sets the same flag here
+            // (RemoteControlService.StartScriptAsync), so the behaviour is consistent.
+            bool wasSilent = _scriptManager.SilentConfig;
+            _scriptManager.SilentConfig = body.Silent;
+            Exception? startError;
+            try
+            {
+                // StartScript returns the compile or launch exception instead of
+                // throwing: an agent that just wrote a script needs the C# error.
+                startError = await _scriptManager.StartScript().ConfigureAwait(false);
+            }
+            finally
+            {
+                _scriptManager.SilentConfig = wasSilent;
+            }
 
             bool started = _bot.Wait.ForTrue(() => _scriptManager.ScriptRunning, 30);
             if (!started)
@@ -129,7 +254,8 @@ public sealed partial class AgentApiRouter
             {
                 started = true,
                 running = true,
-                name = Path.GetFileName(target),
+                name,
+                silent = body.Silent,
                 path = target,
             };
         }, ct).ConfigureAwait(false);
@@ -182,15 +308,24 @@ public sealed partial class AgentApiRouter
         if (string.IsNullOrWhiteSpace(raw))
             throw new AgentApiException(400, "name is required");
 
-        string name = raw.Trim();
-        if (name.Length > 80)
-            throw new AgentApiException(400, "name is too long (max 80)");
-        if (name.Contains("..") || name.IndexOfAny(Path.GetInvalidPathChars()) >= 0 || name.Any(char.IsControl))
+        // A name may be a relative path: the shipped library keeps scripts in folders
+        // such as Army/Farm, and ResolveScriptPath refuses anything escaping the root.
+        string name = raw.Trim().Replace('\\', '/');
+        if (name.Length > 160)
+            throw new AgentApiException(400, "name is too long (max 160)");
+        if (name.Contains(':') || name.StartsWith('/') || name.EndsWith('/') || name.Any(char.IsControl))
             throw new AgentApiException(400, "name contains an invalid character");
-        if (name.Contains('/') || name.Contains('\\') || name.Contains(':'))
-            throw new AgentApiException(400, "name must not contain a path");
 
-        if (!name.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
+        string[] segments = name.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length == 0)
+            throw new AgentApiException(400, "name is required");
+        foreach (string segment in segments)
+        {
+            if (segment == "." || segment.Contains("..") || segment.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+                throw new AgentApiException(400, "name contains an invalid character");
+        }
+
+        if (!segments[segments.Length - 1].EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
             name += ".cs";
 
         return name;
