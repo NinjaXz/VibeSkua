@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
@@ -148,6 +148,36 @@ internal class Options
                     remoteService.Start();
                 }
             }), s.GetRequiredService<ISettingsService>().Get<int>("RemoteControlPort")),
+            new CommandOptionItemViewModel<bool>("Agent API Enabled", "Run the local HTTP API an AI agent uses to drive this character", "AgentApiEnabled", new RelayCommand<bool>(enabled =>
+            {
+                Ioc.Default.GetRequiredService<ISettingsService>().Set("AgentApiEnabled", enabled);
+                var agentApi = Ioc.Default.GetService<IAgentApiService>();
+                if (enabled)
+                    agentApi?.Start();
+                else
+                    agentApi?.Stop();
+            }), s.GetRequiredService<ISettingsService>().Get<bool>("AgentApiEnabled")),
+            new CommandOptionItemViewModel<int>("Agent API Port", "Port for the agent API, loopback by default (default: 8766)", "AgentApiPort", "Port", new RelayCommand<string>(value =>
+            {
+                if (!int.TryParse(value, out int result) || result < 1024 || result > 65535) return;
+                Ioc.Default.GetRequiredService<ISettingsService>().Set("AgentApiPort", result);
+                var agentApi = Ioc.Default.GetService<IAgentApiService>();
+                if (agentApi != null && agentApi.IsRunning)
+                {
+                    agentApi.Stop();
+                    agentApi.Start();
+                }
+            }), s.GetRequiredService<ISettingsService>().Get<int>("AgentApiPort")),
+            new CommandOptionItemViewModel<string>("Agent API Token", "Required secret for every request, and required when the bind address is not loopback", "AgentApiToken", "Token", new RelayCommand<string>(value =>
+            {
+                Ioc.Default.GetRequiredService<ISettingsService>().Set("AgentApiToken", (value ?? string.Empty).Trim());
+                var agentApi = Ioc.Default.GetService<IAgentApiService>();
+                if (agentApi != null && agentApi.IsRunning)
+                {
+                    agentApi.Stop();
+                    agentApi.Start();
+                }
+            }), s.GetRequiredService<ISettingsService>().Get<string>("AgentApiToken")),
             CreateSettingOptionItem<bool>("Notify on Script Started", "Send alerts and initial statistics when a script starts running", "WebhookNotifyStarted"),
             CreateSettingOptionItem<bool>("Notify on Script Stopped", "Send session summary and statistics when a script finishes or stops", "WebhookNotifyStopped"),
             CreateSettingOptionItem<bool>("Notify on Script Crashed", "Send alerts when a script crashes with an error", "WebhookNotifyCrashed"),

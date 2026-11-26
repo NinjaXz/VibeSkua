@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Skua.App.Avalonia.Plugins;
 using Skua.App.Avalonia.Services;
 using Skua.App.Avalonia.ViewModels;
@@ -23,6 +23,7 @@ using Skua.Core.Plugins;
 using Skua.Core.Scripts;
 using Skua.Core.Scripts.Helpers;
 using Skua.Core.Services;
+using Skua.Core.Services.AgentApi;
 using Skua.Core.Skills;
 using Skua.Shared.Avalonia.ViewModels;
 using Skua.Shared.Avalonia.ViewModels.ScriptRepo;
@@ -99,6 +100,7 @@ public static class Services
         services.AddSingleton<IJunkService, JunkService>();
         services.AddSingleton<BackgroundThemeService>();
         services.AddSingleton<IRemoteControlService, RemoteControlService>();
+        services.AddSingleton<IAgentApiService, AgentApiService>();
 
         return services;
     }

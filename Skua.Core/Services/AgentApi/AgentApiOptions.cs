@@ -78,47 +78,43 @@ public sealed class AgentApiOptions
     }
 
     /// <summary>
-    /// Reads the configuration from client settings, falling back to the
-    /// environment so a headless or test run needs no settings file.
+    /// Builds the configuration from the client's saved settings.
+    ///
+    /// Each value may also come from the environment (VIBESKUA_AGENT_ENABLED,
+    /// _BIND, _PORT, _TOKEN) so an agent can be launched against a test client
+    /// without editing the settings file.
     /// </summary>
-    public static AgentApiOptions FromSettings(Func<string, object?> get, string? environmentPrefix = "VIBESKUA_AGENT")
+    public static AgentApiOptions FromClientSettings(Skua.Core.Models.ClientSettings settings, string environmentPrefix = "VIBESKUA_AGENT")
     {
-        static string Env(string? prefix, string name) =>
-            prefix is null ? string.Empty : (Environment.GetEnvironmentVariable(prefix + "_" + name) ?? string.Empty);
-
-        string BindOf(string name, string prefixName, string fallback)
+        static string Env(string prefix, string name, string fallback)
         {
-            object? fromSettings = get(name);
-            if (fromSettings is string text && !string.IsNullOrWhiteSpace(text))
-                return text.Trim();
-            string fromEnv = Env(environmentPrefix, prefixName);
-            return string.IsNullOrWhiteSpace(fromEnv) ? fallback : fromEnv.Trim();
+            string? value = Environment.GetEnvironmentVariable(prefix + "_" + name);
+            return string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();
         }
 
-        int IntOf(string name, string prefixName, int fallback)
-        {
-            object? value = get(name);
-            if (value is int number)
-                return number;
-            if (value is string text && int.TryParse(text.Trim(), out int parsed))
-                return parsed;
-            string fromEnv = Env(environmentPrefix, prefixName);
-            return int.TryParse(fromEnv, out int parsedEnv) ? parsedEnv : fallback;
-        }
+        string bind = string.IsNullOrWhiteSpace(settings.AgentApiBind)
+            ? "127.0.0.1"
+            : settings.AgentApiBind.Trim();
+        bind = Env(environmentPrefix, "BIND", bind);
 
-        object? enabledSetting = get("AgentApiEnabled");
-        bool enabled = enabledSetting is bool flag
-            ? flag
-            : string.Equals(enabledSetting as string, "true", StringComparison.OrdinalIgnoreCase);
+        int port = settings.AgentApiPort > 0 ? settings.AgentApiPort : DefaultPort;
+        port = IntEnv(environmentPrefix, "PORT", port);
+
+        string token = (settings.AgentApiToken ?? string.Empty).Trim();
+        token = Env(environmentPrefix, "TOKEN", token);
+
+        bool enabled = settings.AgentApiEnabled ||
+                       string.Equals(Environment.GetEnvironmentVariable(environmentPrefix + "_ENABLED"), "1", StringComparison.Ordinal);
 
         return new AgentApiOptions
         {
-            Enabled = enabled || string.Equals(Env(environmentPrefix, "ENABLED"), "1", StringComparison.Ordinal),
-            Bind = BindOf("AgentApiBind", "BIND", "127.0.0.1"),
-            Port = IntOf("AgentApiPort", "PORT", DefaultPort),
-            Token = (get("AgentApiToken") as string ?? string.Empty).Trim() is { Length: > 0 } token
-                ? token
-                : Env(environmentPrefix, "TOKEN").Trim(),
+            Enabled = enabled,
+            Bind = bind,
+            Port = port,
+            Token = token,
         };
     }
+
+    private static int IntEnv(string prefix, string name, int fallback) =>
+        int.TryParse(Environment.GetEnvironmentVariable(prefix + "_" + name), out int value) ? value : fallback;
 }

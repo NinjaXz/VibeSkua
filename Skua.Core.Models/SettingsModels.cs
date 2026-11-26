@@ -290,6 +290,28 @@ public class ClientSettings
     [JsonPropertyName("RemoteControlAuthToken")]
     public string RemoteControlAuthToken { get; set; } = string.Empty;
 
+    /// <summary>
+    /// HTTP endpoint an AI agent uses to drive this character. Off by default:
+    /// it must be switched on per machine, with a token, because it can move
+    /// the character and write scripts.
+    /// </summary>
+    [JsonPropertyName("AgentApiEnabled")]
+    public bool AgentApiEnabled { get; set; }
+
+    /// <summary>Interface to bind. Loopback unless another box is driving it.</summary>
+    [JsonPropertyName("AgentApiBind")]
+    public string AgentApiBind { get; set; } = "127.0.0.1";
+
+    [JsonPropertyName("AgentApiPort")]
+    public int AgentApiPort { get; set; } = 8766;
+
+    /// <summary>
+    /// Shared secret for every request. Required as soon as the bind address is
+    /// not loopback.
+    /// </summary>
+    [JsonPropertyName("AgentApiToken")]
+    public string AgentApiToken { get; set; } = string.Empty;
+
     [JsonPropertyName("WebhookNotifyStarted")]
     public bool WebhookNotifyStarted { get; set; } = true;
 
@@ -365,6 +387,12 @@ public class ClientSettings
         InventoryGoals ??= new();
         if (RemoteControlPort <= 0)
             RemoteControlPort = 8088;
+
+        if (AgentApiPort <= 0)
+            AgentApiPort = 8766;
+
+        if (string.IsNullOrWhiteSpace(AgentApiBind))
+            AgentApiBind = "127.0.0.1";
 
         if (FastTravels == null || FastTravels.Count == 0)
         {
