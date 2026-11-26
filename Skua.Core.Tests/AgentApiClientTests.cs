@@ -205,7 +205,7 @@ public sealed class AgentApiClientTests : AgentApiContractTests
         Assert.Empty(controller.Started);
     }
 
-    private sealed class StubController : IClientController
+    internal sealed class StubController : IClientController
     {
         public string Role { get; init; } = "host";
         public bool CanHostGame { get; init; }

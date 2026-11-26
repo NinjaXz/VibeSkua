@@ -1,4 +1,4 @@
-# Agent API
+﻿# Agent API
 
 A local HTTP endpoint that lets an outside program drive one character: move,
 fight, trade, hand in quests, and load scripts. It is built for agents (LLM
@@ -49,11 +49,13 @@ a driver needs no extra call to see the result.
 |---|---|
 | Health, state | `GET /health`, `GET /state`, `GET /logs` |
 | World | `GET /map`, `GET /map/npcs`, `GET /players`, `GET /monsters`, `GET /servers` |
-| Things | `GET /inventory`, `GET /shop`, `GET /quests`, `GET /quest?id=`, `GET /quests/cached` |
+| Things | `GET /inventory`, `GET /bank`, `GET /shop`, `GET /quests`, `GET /quest?id=`, `GET /quests/cached` |
 | Scripts | `GET /scripts`, `GET /script` |
 | Movement | `POST /join`, `/jump`, `/walk`, `/walk-speed`, `/goto` |
 | Combat | `POST /attack`, `/kill`, `/cancel-attack`, `/exit-combat`, `/rest`, `/reload-map` |
 | Session | `POST /login`, `/logout`, `/relogin`, `/select-server` |
+| Processes | `GET /client`, `POST /client/start` |
+| Bank | `POST /bank/open`, `/bank/deposit`, `/bank/withdraw` |
 | Quests | `POST /quests/load`, `/quests/accept`, `/quests/complete`, `/quests/abandon` |
 | Shop | `POST /shop/load`, `/shop/buy`, `/shop/close` |
 | Scripts | `POST /scripts/write`, `/scripts/run`, `/scripts/pause`, `/scripts/resume`, `/scripts/stop` |
@@ -71,9 +73,9 @@ when it is missing, and an existing file needs `"overwrite": true`.
 | 200 | done, or a snapshot |
 | 400 | the request is missing a value or has the wrong type |
 | 401 | no token or the wrong token |
-| 404 | unknown endpoint |
+| 404 | unknown endpoint, or an item that is not where the request said (`item_not_in_inventory`, `item_not_in_bank`) |
 | 405 | wrong method for a known endpoint |
-| 409 | the game is in the wrong state: `player_not_playing`, `map_not_loaded`, `inventory_full`, `shop_not_loaded`, or another action holds the gate (`another_action_in_progress`, `another_script_action_in_progress`) |
+| 409 | the game is in the wrong state: `player_not_playing`, `map_not_loaded`, `client_not_started`, `bank_not_loaded`, `inventory_full`, `shop_not_loaded`, a move the game refused (`deposit_failed`, `withdraw_failed`), or another action holds the gate (`another_action_in_progress`, `another_script_action_in_progress`) |
 | 500 | the action failed inside the game, or a script did not compile |
 | 501 | no map reader is wired in this build |
 | 502 | the map file could not be fetched or read |
@@ -90,13 +92,15 @@ after a 250 ms wait, and an action that overruns its window gets 504. Long actio
 each one holds, the shops, and the exits to other maps. It downloads the map's
 `Client.swf`, decompiles it, parses the result, and caches it per map id.
 
-It uses the FFDec that ships with the client and its bundled java. Nothing new is
-required. Cache and downloads sit in `%APPDATA%\VibeSkua\cache`, and `?refresh=1`
-forces a fresh read.
+It uses the FFDec folder that sits next to the client (`FFDec/ffdec.jar`) and its
+bundled java when present; with no bundled java it takes `JAVA_HOME`, then `PATH`.
+Cache and downloads sit in `%APPDATA%\VibeSkua\cache`, and `?refresh=1` forces a fresh
+read. Today the parser names the NPCs and their cells; the monster, portal and quest
+columns come back empty until the parser reads the frame scripts.
 
 ## Tests
 
-`Skua.Core.Tests` holds 177 tests for this feature and for the two script members it
+`Skua.Core.Tests` holds 234 tests for this feature and for the two script members it
 adds (`Quests.Abandon`, `Shops.Close`). They run in about a second and need no game,
 no network and no token:
 
@@ -109,10 +113,33 @@ The router sits behind a framework-free seam: a handler receives
 moves bytes, so the whole contract is testable without a socket. The few HTTP tests
 bind a real loopback port to prove auth and framing.
 
-## Known behaviour
+## Which process answers
 
-The client starts two processes: the first relaunches the app with `--embed`. Both
-call the startup code, so one binds the port and the other logs one line and runs on
-without the endpoint. The mobile remote-control server on port 8088 behaves the same
-way today. A wrong setting (bad port, taken port, public bind without a token) costs
-only the endpoint: the client starts either way.
+The tabbed client keeps every character in its own child process, so the process that
+holds this endpoint is often the **tab host**, which holds no character.
+
+- `GET /health` and `GET /client` say the role: `host` or `child`. Check it before you
+  drive a character.
+- A session route in a host answers `409 client_not_started` instead of failing inside
+  the game.
+- `POST /client/start {"username":"hero","server":"Alteon"}` starts a client for a
+  **saved** account. The client uses the password it already stores, so no secret
+  crosses the wire.
+- A child binds a free loopback port of its own and writes that port to
+  `%TEMP%\VibeSkuaTabs\<pid>.agent.txt`. `GET /client` lists the living children, and the
+  character is driven on that child's port. The mobile remote control uses
+  `<pid>.remote.txt` in the same folder.
+
+Both processes call the startup code, so one binds the port and the other logs one
+line and runs on without the endpoint. The mobile remote-control server on port 8088
+behaves the same way today. A wrong setting (bad port, taken port, public bind without
+a token) costs only the endpoint: the client starts either way.
+
+## Bank
+
+`GET /bank` answers `loaded`, the slot counts, and the stored items. The game fills
+that list only after the bank screen has been opened, so an empty list with
+`loaded: false` means "unknown", not "empty". `POST /bank/open` opens it and asks for
+the list; read `GET /bank` again after that. Moves need a loaded list, and a name or an
+item id: `POST /bank/deposit {"name":"Treasure Potion"}` or `{"id":18927}`, and
+`POST /bank/withdraw` the other way.
