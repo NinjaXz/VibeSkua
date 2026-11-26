@@ -64,29 +64,52 @@ public sealed partial class AgentApiRouter
             if (!toBank && !BankListIsKnown())
                 throw new AgentApiException(409, "bank_not_loaded: call POST /bank/open, then read GET /bank");
 
+            bool wasInBag = StillInBag(body);
+
             if (toBank)
             {
-                bool inBag = Safe(() => body.Id is int id ? _bot.Inventory.TryGetItem(id, out _) : _bot.Inventory.TryGetItem(body.Name!, out _), false);
-                if (!inBag)
+                if (!wasInBag)
                     throw new AgentApiException(404, $"item_not_in_inventory: {wanted}");
 
-                bool stored = Safe(() => body.Id is int id ? _bot.Inventory.ToBank(id) : _bot.Inventory.ToBank(body.Name!), false);
-                if (!stored)
-                    throw new AgentApiException(409, $"deposit_failed: the game refused to store {wanted}");
+                Safe(() => body.Id is int id ? _bot.Inventory.ToBank(id) : _bot.Inventory.ToBank(body.Name!), false);
+                if (!WaitUntil(() => !StillInBag(body)))
+                    throw new AgentApiException(409, $"deposit_did_not_take_effect: {wanted} is still in the bag");
             }
             else
             {
-                bool inBank = Safe(() => body.Id is int id ? _bot.Bank.TryGetItem(id, out _) : _bot.Bank.TryGetItem(body.Name!, out _), false);
-                if (!inBank)
+                if (!StillInBank(body))
                     throw new AgentApiException(404, $"item_not_in_bank: {wanted}");
 
-                bool taken = Safe(() => body.Id is int id ? _bot.Bank.ToInventory(id) : _bot.Bank.ToInventory(body.Name!), false);
-                if (!taken)
-                    throw new AgentApiException(409, $"withdraw_failed: the game refused to hand back {wanted}");
+                Safe(() => body.Id is int id ? _bot.Bank.ToInventory(id) : _bot.Bank.ToInventory(body.Name!), false);
+                if (!WaitUntil(() => !StillInBank(body) || StillInBag(body) != wasInBag))
+                    throw new AgentApiException(409, $"withdraw_did_not_take_effect: {wanted} stayed in the bank");
             }
 
             return new { moved = true, name = wanted, toBank, bank = BuildBank() };
         }, ct).ConfigureAwait(false);
+
+    private bool StillInBag(BankMoveRequest body) =>
+        Safe(() => body.Id is int id ? _bot.Inventory.TryGetItem(id, out _) : _bot.Inventory.TryGetItem(body.Name!, out _), false);
+
+    private bool StillInBank(BankMoveRequest body) =>
+        Safe(() => body.Id is int id ? _bot.Bank.TryGetItem(id, out _) : _bot.Bank.TryGetItem(body.Name!, out _), false);
+
+    /// <summary>
+    /// The game moves bank items on its own clock and reports false while doing it,
+    /// so a move is judged by the state it caused. A move that changed nothing is a
+    /// failure, even when the call said otherwise, and vice versa.
+    /// </summary>
+    private static bool WaitUntil(Func<bool> condition, int milliseconds = 6000)
+    {
+        for (int waited = 0; waited < milliseconds; waited += 150)
+        {
+            if (condition())
+                return true;
+            Thread.Sleep(150);
+        }
+
+        return condition();
+    }
 
     /// <summary>True when the bank has told this client what it holds.</summary>
     private bool BankListIsKnown() => Safe(() => _bot.Bank.Loaded, false) || ReadBankRows().Count > 0;

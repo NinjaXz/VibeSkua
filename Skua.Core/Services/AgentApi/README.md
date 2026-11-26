@@ -75,7 +75,7 @@ when it is missing, and an existing file needs `"overwrite": true`.
 | 401 | no token or the wrong token |
 | 404 | unknown endpoint, or an item that is not where the request said (`item_not_in_inventory`, `item_not_in_bank`) |
 | 405 | wrong method for a known endpoint |
-| 409 | the game is in the wrong state: `player_not_playing`, `map_not_loaded`, `client_not_started`, `bank_not_loaded`, `inventory_full`, `shop_not_loaded`, a move the game refused (`deposit_failed`, `withdraw_failed`), or another action holds the gate (`another_action_in_progress`, `another_script_action_in_progress`) |
+| 409 | the game is in the wrong state: `player_not_playing`, `map_not_loaded`, `client_not_started`, `bank_not_loaded`, `inventory_full`, `shop_not_loaded`, a bank move that changed nothing (`deposit_did_not_take_effect`, `withdraw_did_not_take_effect`), or another action holds the gate (`another_action_in_progress`, `another_script_action_in_progress`) |
 | 500 | the action failed inside the game, or a script did not compile |
 | 501 | no map reader is wired in this build |
 | 502 | the map file could not be fetched or read |
@@ -100,7 +100,7 @@ columns come back empty until the parser reads the frame scripts.
 
 ## Tests
 
-`Skua.Core.Tests` holds 236 tests for this feature and for the two script members it
+`Skua.Core.Tests` holds 239 tests for this feature and for the two script members it
 adds (`Quests.Abandon`, `Shops.Close`). They run in about a second and need no game,
 no network and no token:
 
@@ -148,3 +148,8 @@ Potion"}` or `{"id":18927}`, and `POST /bank/withdraw` the other way. A deposit 
 needs the item to be in the bag. A withdrawal waits for the bank list and answers
 `bank_not_loaded` until it exists. An item that is not where the request said it is
 gets 404 (`item_not_in_inventory`, `item_not_in_bank`).
+
+The game moves bank items on its own clock, and it reports false while a hand-back is
+still happening, so a move is judged by the state it caused: the bag is read again. A
+move that changed nothing answers 409 (`deposit_did_not_take_effect`,
+`withdraw_did_not_take_effect`) even when the game's own call said it worked.
