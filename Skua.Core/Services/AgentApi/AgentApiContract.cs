@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 
 namespace Skua.Core.Services.AgentApi;
 
@@ -79,43 +79,53 @@ public sealed class MapInfoException(string code, string message) : Exception(me
     public string Code { get; } = code;
 }
 
-/// <summary>Decompiled contents of the current map, cached per map file.</summary>
+/// <summary>
+/// Decompiled contents of the current map. Plain data: the parser fills it, the
+/// cache stores it, and the API serialises it.
+/// </summary>
 public sealed class MapInfo
 {
-    public string Map { get; init; } = string.Empty;
-    public int RoomId { get; init; }
-    public string FilePath { get; init; } = string.Empty;
-    public List<string> Cells { get; init; } = new();
-    public bool FromCache { get; init; }
-    public List<MapNpc> Npcs { get; init; } = new();
+    public string Map { get; set; } = string.Empty;
+    public int RoomId { get; set; }
+    public string FilePath { get; set; } = string.Empty;
+    public List<string> Cells { get; set; } = new();
+
+    /// <summary>True when this came from the on-disk cache instead of a decompile.</summary>
+    public bool FromCache { get; set; }
+
+    public List<MapNpc> Npcs { get; set; } = new();
 }
 
 /// <summary>An NPC or interactive object in the map, and where it stands.</summary>
 public sealed class MapNpc
 {
-    public string Name { get; init; } = string.Empty;
-    public List<string> Cells { get; init; } = new();
-    public List<NpcQuest> Quests { get; init; } = new();
-    public List<NpcShop> Shops { get; init; } = new();
-    public List<NpcJoin> Joins { get; init; } = new();
-    public bool HasDialogue { get; init; }
+    public string Name { get; set; } = string.Empty;
+    public List<string> Cells { get; set; } = new();
+    public List<NpcQuest> Quests { get; set; } = new();
+    public List<NpcShop> Shops { get; set; } = new();
+    public List<NpcJoin> Joins { get; set; } = new();
+
+    /// <summary>True when the NPC has a dialogue or movie the player can watch.</summary>
+    public bool HasDialogue { get; set; }
 }
 
 public sealed class NpcQuest
 {
-    public int Id { get; init; }
-    public bool TurnIn { get; init; }
+    public int Id { get; set; }
+
+    /// <summary>True for a quest this NPC turns in, false for one it accepts.</summary>
+    public bool TurnIn { get; set; }
 }
 
 public sealed class NpcShop
 {
-    public int Id { get; init; }
+    public int Id { get; set; }
 }
 
 public sealed class NpcJoin
 {
-    public string Map { get; init; } = string.Empty;
-    public string Cell { get; init; } = string.Empty;
+    public string Map { get; set; } = string.Empty;
+    public string Cell { get; set; } = string.Empty;
 }
 
 /// <summary>JSON conventions shared by the request and response bodies.</summary>
