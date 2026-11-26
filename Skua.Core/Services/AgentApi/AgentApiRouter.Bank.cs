@@ -1,4 +1,4 @@
-namespace Skua.Core.Services.AgentApi;
+﻿namespace Skua.Core.Services.AgentApi;
 
 /// <summary>
 /// The bank: a second bag that the game fills only on request.
@@ -15,13 +15,18 @@ public sealed partial class AgentApiRouter
         RequireGameSession();
         RequirePlaying();
 
-        bool loaded = Safe(() => _bot.Bank.Loaded, false);
+        List<InventoryRow> rows = ReadBankRows();
+
+        // The game hands over the item list without ever setting its own loaded
+        // flag, so the list is the proof: an answer that trusted the flag would
+        // call a full bank unknown forever.
+        bool loaded = Safe(() => _bot.Bank.Loaded, false) || rows.Count > 0;
         return new
         {
             loaded,
             usedSlots = Safe(() => _bot.Bank.UsedSlots, 0),
             slots = Safe(() => _bot.Bank.Slots, 0),
-            items = ReadBankRows(),
+            items = rows,
             note = loaded ? string.Empty : "the list is only real when loaded is true: call POST /bank/open, then read again",
         };
     }
@@ -54,7 +59,9 @@ public sealed partial class AgentApiRouter
             BankMoveRequest body = AgentApiJson.Read<BankMoveRequest>(request.Body, request.BodyLength, _options.MaxBodyBytes);
             string wanted = NameOrId(body);
 
-            if (!Safe(() => _bot.Bank.Loaded, false))
+            // A deposit only needs the bag. A withdrawal has to know what the bank
+            // holds, so only that direction waits for the list.
+            if (!toBank && !BankListIsKnown())
                 throw new AgentApiException(409, "bank_not_loaded: call POST /bank/open, then read GET /bank");
 
             if (toBank)
@@ -80,6 +87,9 @@ public sealed partial class AgentApiRouter
 
             return new { moved = true, name = wanted, toBank, bank = BuildBank() };
         }, ct).ConfigureAwait(false);
+
+    /// <summary>True when the bank has told this client what it holds.</summary>
+    private bool BankListIsKnown() => Safe(() => _bot.Bank.Loaded, false) || ReadBankRows().Count > 0;
 
     /// <summary>The one thing a move names, checked for shape before anything moves.</summary>
     private static string NameOrId(BankMoveRequest body)

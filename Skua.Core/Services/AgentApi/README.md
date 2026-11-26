@@ -100,7 +100,7 @@ columns come back empty until the parser reads the frame scripts.
 
 ## Tests
 
-`Skua.Core.Tests` holds 234 tests for this feature and for the two script members it
+`Skua.Core.Tests` holds 236 tests for this feature and for the two script members it
 adds (`Quests.Abandon`, `Shops.Close`). They run in about a second and need no game,
 no network and no token:
 
@@ -138,8 +138,13 @@ a token) costs only the endpoint: the client starts either way.
 ## Bank
 
 `GET /bank` answers `loaded`, the slot counts, and the stored items. The game fills
-that list only after the bank screen has been opened, so an empty list with
-`loaded: false` means "unknown", not "empty". `POST /bank/open` opens it and asks for
-the list; read `GET /bank` again after that. Moves need a loaded list, and a name or an
-item id: `POST /bank/deposit {"name":"Treasure Potion"}` or `{"id":18927}`, and
-`POST /bank/withdraw` the other way.
+that list only after the bank screen has been opened, and it never sets its own loaded
+flag, so an answer with items counts as loaded and an empty list with `loaded: false`
+means "unknown", not "empty". `POST /bank/open` opens the window and asks for the list
+without blocking on it; read `GET /bank` again after that.
+
+A move names one item, by name or by id: `POST /bank/deposit {"name":"Treasure
+Potion"}` or `{"id":18927}`, and `POST /bank/withdraw` the other way. A deposit only
+needs the item to be in the bag. A withdrawal waits for the bank list and answers
+`bank_not_loaded` until it exists. An item that is not where the request said it is
+gets 404 (`item_not_in_inventory`, `item_not_in_bank`).

@@ -60,6 +60,37 @@ public sealed class AgentApiBankTests : AgentApiContractTests
     }
 
     [Fact]
+    public async Task TheBankCountsAsLoadedWhenItsItemsArrive()
+    {
+        World.Set("Player.Playing", true);
+        World.Set("Bank.Loaded", false);
+        World.Set("Bank.Items", new List<InventoryItem>
+        {
+            new() { ID = 598, Name = "Bone Dust", Quantity = 1, MaxStack = 1 },
+        });
+
+        AgentApiResponse response = await Router().HandleAsync(Get("/bank"));
+        JsonElement data = Data(response);
+
+        Assert.True(data.GetProperty("loaded").GetBoolean());
+        Assert.Equal(string.Empty, data.GetProperty("note").GetString());
+    }
+
+    [Fact]
+    public async Task ADepositDoesNotWaitForTheBankList()
+    {
+        World.Set("Player.Playing", true);
+        World.Set("Bank.Loaded", false);
+        World.Set("Inventory.TryGetItem.out", new InventoryItem { ID = 598, Name = "Bone Dust" });
+        World.Set("Inventory.ToBank", true);
+
+        AgentApiResponse response = await Router().HandleAsync(Post("/bank/deposit", """{"name":"Bone Dust"}"""));
+
+        Assert.Equal(200, response.Status);
+        Assert.True(World.WasCalled("Inventory.ToBank"));
+    }
+
+    [Fact]
     public async Task OpeningTheBankOpensItAndAsksForTheList()
     {
         GivenALoadedBank();
