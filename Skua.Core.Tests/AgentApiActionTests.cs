@@ -138,6 +138,30 @@ public class AgentApiActionTests : AgentApiContractTests
     }
 
     [Fact]
+    public async Task Join_ArrivesWithTheRoomItAskedForAndSaysIfTheGameRefusedIt()
+    {
+        Playing();
+        string joined = string.Empty;
+        World.Set("Map.Join", (string map, string cell, string pad, bool ignoreCheck) =>
+        {
+            joined = $"{map}|{cell}|{pad}|{ignoreCheck}";
+            return Task.CompletedTask;
+        });
+
+        AgentApiResponse response = await Router().HandleAsync(
+            Post("/join", """{"map":"nexus","room":231952}"""));
+
+        Assert.Equal(200, response.Status);
+        Assert.Equal("nexus-231952|Enter|Spawn|False", joined);
+        JsonElement data = Data(response);
+        Assert.True(data.TryGetProperty("name", out _), "the character snapshot stays flat");
+        Assert.Equal("nexus", data.GetProperty("wantedMap").GetString());
+        Assert.Equal(231952, data.GetProperty("wantedRoom").GetInt32());
+        Assert.Equal(0, data.GetProperty("landedRoom").GetInt32());
+        Assert.False(data.GetProperty("roomMatched").GetBoolean());
+    }
+
+    [Fact]
     public async Task Join_RejectsOverlongMapName()
     {
         Playing();

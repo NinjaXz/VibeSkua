@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -384,11 +384,28 @@ public sealed partial class AgentApiRouter
         string cell = OptionalText(body.Cell, "Enter", 64);
         string pad = OptionalText(body.Pad, "Spawn", 64);
 
+        int room = body.Room;
+
         return await RunActionAsync(() =>
         {
             RequirePlaying();
-            _bot.Map.Join(map, cell, pad, body.IgnoreCheck);
-            return BuildState();
+            string target = room > 0 && !map.Contains('-') ? $"{map}-{room}" : map;
+            _bot.Map.Join(target, cell, pad, body.IgnoreCheck);
+
+            // A join that landed in a different room used to look like a success. The game
+            // chooses the room on quest maps, so the caller needs the truth in the same
+            // answer: wantedRoom versus landedRoom, and whether they agree.
+            Dictionary<string, object?> data =
+                JsonSerializer.Deserialize<Dictionary<string, object?>>(
+                    JsonSerializer.SerializeToUtf8Bytes(BuildState()))
+                ?? new Dictionary<string, object?>();
+            data["wantedMap"] = map;
+            data["wantedRoom"] = room;
+            data["landedMap"] = _bot.Map.Name;
+            data["landedRoom"] = Safe(() => _bot.Map.RoomID, 0);
+            data["mapArrived"] = string.Equals(_bot.Map.Name, map, StringComparison.OrdinalIgnoreCase);
+            data["roomMatched"] = room <= 0 || Safe(() => _bot.Map.RoomID, 0) == room;
+            return data;
         }, ct).ConfigureAwait(false);
     }
 
@@ -947,6 +964,7 @@ public sealed partial class AgentApiRouter
 
     private sealed record JoinRequest
     {
+        public int Room { get; init; }
         public string Map { get; init; } = string.Empty;
         public string? Cell { get; init; }
         public string? Pad { get; init; }
