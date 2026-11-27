@@ -56,11 +56,21 @@ a driver needs no extra call to see the result.
 | Session | `POST /login`, `/logout`, `/relogin`, `/select-server` |
 | Processes | `GET /client`, `POST /client/start` |
 | Bank | `POST /bank/open`, `/bank/deposit`, `/bank/withdraw` |
+| Party | `GET /party`, `POST /party/on`, `/party/invite`, `/party/accept`, `/party/summon`, `/party/kick`, `/party/leave` |
 | Quests | `POST /quests/load`, `/quests/check`, `/quests/accept`, `/quests/complete`, `/quests/abandon` |
 | Shop | `POST /shop/load`, `/shop/buy`, `/shop/close` |
 | Scripts | `POST /scripts/write`, `/scripts/run` (silent by default), `/script/options`, `/scripts/pause`, `/scripts/resume`, `/scripts/stop` |
 
 `/pause`, `/resume` and `/stop` are short aliases of the script routes.
+
+A map name is not a room. Two accounts that `POST /join` the same map name usually
+land in different rooms, and `GET /state` on each answers the same map name with a
+different `map.roomId`. A carry needs the party channel: `POST /party/on` and
+`/party/invite {name}` on the account that leads, `POST /party/accept` on the other, then
+`POST /party/summon {name}` on the leader pulls the member into the leader's room. The
+member accepts a later summon on its own only if a script listens for the packet; the
+library's `Army/CoreArmyLite.cs` `PartyManagement` does that. The summon worked once the two
+`map.roomId` values match.
 
 Script writes go to the client's own script folder
 (`%APPDATA%\VibeSkua\Scripts`). A name must be a bare file name, `.cs` is added

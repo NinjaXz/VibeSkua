@@ -138,7 +138,7 @@ public class AgentApiContractTests
             "/health", "/state", "/map", "/map/npcs", "/players", "/inventory", "/monsters",
             "/servers", "/shop", "/quests", "/quest?id=1", "/quests/cached", "/quests/completed",
             "/scripts", "/script",
-            "/script/options?name=Missing.cs", "/logs", "/client", "/bank",
+            "/script/options?name=Missing.cs", "/logs", "/client", "/bank", "/party",
         };
         string[] posts =
         {
@@ -148,6 +148,7 @@ public class AgentApiContractTests
             "/shop/buy", "/shop/close", "/scripts/write", "/scripts/run", "/scripts/pause",
             "/scripts/resume", "/scripts/stop", "/script/options", "/client/start", "/bank/open",
             "/bank/deposit", "/bank/withdraw",
+            "/party/on", "/party/invite", "/party/accept", "/party/summon", "/party/kick", "/party/leave",
         };
 
         AgentApiRouter router = Router();
