@@ -1,4 +1,4 @@
-﻿# Agent API
+# Agent API
 
 A local HTTP endpoint that lets an outside program drive one character: move,
 fight, trade, hand in quests, and load scripts. It is built for agents (LLM
@@ -57,6 +57,7 @@ a driver needs no extra call to see the result.
 | Processes | `GET /client`, `POST /client/start` |
 | Bank | `POST /bank/open`, `/bank/deposit`, `/bank/withdraw` |
 | Party | `GET /party`, `POST /party/on`, `/party/invite`, `/party/accept`, `/party/summon`, `/party/kick`, `/party/leave` |
+| Room | `GET /room`, `POST /room` (`{"number":250123}` or `{"public":true}`) |
 | Quests | `POST /quests/load`, `/quests/check`, `/quests/accept`, `/quests/complete`, `/quests/abandon` |
 | Shop | `POST /shop/load`, `/shop/buy`, `/shop/close` |
 | Scripts | `POST /scripts/write`, `/scripts/run` (silent by default), `/script/options`, `/scripts/pause`, `/scripts/resume`, `/scripts/stop` |
@@ -66,7 +67,10 @@ a driver needs no extra call to see the result.
 A map name is not a room. Two accounts that `POST /join` the same map name usually
 land in different rooms, and `GET /state` on each answers the same map name with a
 different `map.roomId`. A carry needs the party channel: `POST /party/on` and
-`/party/invite {name}` on the account that leads, `POST /party/accept` on the other, then
+`/party/invite {name}` on the account that leads, `POST /room {"number":N}` on every account of a party pins them to one room: with the option on
+the client joins `map-N`, so the `map.roomId` values match whatever the accounts' quests say.
+Library story and class scripts call `SetOptions()`, which turns the option off, so re-arm it
+after each script start. `POST /party/accept` on the other, then
 `POST /party/summon {name}` on the leader pulls the member into the leader's room. The
 member accepts a later summon on its own only if a script listens for the packet; the
 library's `Army/CoreArmyLite.cs` `PartyManagement` does that. The summon worked once the two

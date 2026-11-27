@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Skua.Core.Services.AgentApi;
 using Skua.Core.Tests.Fakes;
 using Xunit;
@@ -138,7 +138,7 @@ public class AgentApiContractTests
             "/health", "/state", "/map", "/map/npcs", "/players", "/inventory", "/monsters",
             "/servers", "/shop", "/quests", "/quest?id=1", "/quests/cached", "/quests/completed",
             "/scripts", "/script",
-            "/script/options?name=Missing.cs", "/logs", "/client", "/bank", "/party",
+            "/script/options?name=Missing.cs", "/logs", "/client", "/bank", "/party", "/room",
         };
         string[] posts =
         {
@@ -149,6 +149,7 @@ public class AgentApiContractTests
             "/scripts/resume", "/scripts/stop", "/script/options", "/client/start", "/bank/open",
             "/bank/deposit", "/bank/withdraw",
             "/party/on", "/party/invite", "/party/accept", "/party/summon", "/party/kick", "/party/leave",
+            "/room",
         };
 
         AgentApiRouter router = Router();

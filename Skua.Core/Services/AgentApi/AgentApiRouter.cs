@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -170,6 +170,8 @@ public sealed partial class AgentApiRouter
                 return BuildScriptStatus();
             case "/logs":
                 return BuildLogs(request);
+            case "/room":
+                return BuildRoom();
             case "/party":
                 return BuildParty();
             case "/bank":
@@ -235,6 +237,8 @@ public sealed partial class AgentApiRouter
                 return await LoginAsync(request, ct).ConfigureAwait(false);
             case "/logout":
                 return await LogoutAsync(ct).ConfigureAwait(false);
+            case "/room":
+                return await PostRoomAsync(request, ct).ConfigureAwait(false);
             case "/party/on" or "/party/invite" or "/party/accept" or "/party/summon" or "/party/kick" or "/party/leave":
                 return await PostPartyAsync(path, request, ct).ConfigureAwait(false);
             case "/bank/open":
@@ -813,7 +817,7 @@ public sealed partial class AgentApiRouter
         "/", "/health", "/state", "/map", "/map/npcs", "/players", "/inventory", "/monsters",
         "/servers", "/shop", "/quests", "/quest", "/quests/cached", "/quests/completed",
         "/scripts", "/script", "/script/options",
-        "/logs", "/client", "/bank", "/party",
+        "/logs", "/client", "/bank", "/party", "/room",
     };
 
     /// <summary>Endpoints answered by POST, including the short script aliases.</summary>
@@ -827,6 +831,7 @@ public sealed partial class AgentApiRouter
         "/script/options",
         "/bank/open", "/bank/deposit", "/bank/withdraw", "/client/start", "/pause", "/resume", "/stop",
         "/party/on", "/party/invite", "/party/accept", "/party/summon", "/party/kick", "/party/leave",
+        "/room",
     };
 
     /// <summary>
