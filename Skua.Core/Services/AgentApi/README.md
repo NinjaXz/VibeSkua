@@ -56,7 +56,7 @@ a driver needs no extra call to see the result.
 | Session | `POST /login`, `/logout`, `/relogin`, `/select-server` |
 | Processes | `GET /client`, `POST /client/start` |
 | Bank | `POST /bank/open`, `/bank/deposit`, `/bank/withdraw` |
-| Quests | `POST /quests/load`, `/quests/accept`, `/quests/complete`, `/quests/abandon` |
+| Quests | `POST /quests/load`, `/quests/check`, `/quests/accept`, `/quests/complete`, `/quests/abandon` |
 | Shop | `POST /shop/load`, `/shop/buy`, `/shop/close` |
 | Scripts | `POST /scripts/write`, `/scripts/run` (silent by default), `/script/options`, `/scripts/pause`, `/scripts/resume`, `/scripts/stop` |
 

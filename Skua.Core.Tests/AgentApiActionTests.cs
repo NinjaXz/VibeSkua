@@ -20,6 +20,78 @@ public class AgentApiActionTests : AgentApiContractTests
 
     private JsonElement Data(AgentApiResponse response) => Json(response.Data!);
 
+    // ---------------------------------------------------------- quest state
+
+    [Fact]
+    public async Task QuestCheck_AskedTheGameAndComparedTheSlotValue()
+    {
+        // A quest finished long ago comes back with status null, so status cannot say
+        // "done". The library asks the game for the slot value instead (CoreBots.cs:4890).
+        Playing();
+        World.Set("Quests.Tree", new List<Quest>
+        {
+            new() { ID = 3878, Name = "Defeat Drakath!", Slot = 12, Value = 1 },
+            new() { ID = 3880, Name = "Defeat the 13th Lord of Chaos", Slot = 13, Value = 1 },
+        });
+        List<string> asked = new();
+        World.Set("Flash.CallGameFunction", new Func<string, object[], int>((fn, gameArgs) =>
+        {
+            asked.Add(fn);
+            return gameArgs.Length > 0 && Convert.ToInt32(gameArgs[0]!) == 12 ? 1 : 0;
+        }));
+
+        AgentApiResponse response = await Router().HandleAsync(
+            Post("/quests/check", """{"ids":[3878,3880]}"""));
+
+        Assert.Equal(200, response.Status);
+        JsonElement quests = Data(response).GetProperty("quests");
+        Assert.True(quests[0].GetProperty("complete").GetBoolean());
+        Assert.Equal("world.getQuestValue", asked[0]);
+        Assert.False(quests[1].GetProperty("complete").GetBoolean());
+    }
+
+    [Fact]
+    public async Task QuestCheck_AQuestWithNoSlotIsDoneWithoutAsking()
+    {
+        Playing();
+        World.Set("Quests.Tree", new List<Quest> { new() { ID = 7, Name = "No Slot", Slot = -1, Value = 1 } });
+
+        AgentApiResponse response = await Router().HandleAsync(Post("/quests/check", """{"ids":[7]}"""));
+
+        Assert.Equal(200, response.Status);
+        Assert.True(Data(response).GetProperty("quests")[0].GetProperty("complete").GetBoolean());
+        Assert.Equal(0, World.CallCount("Flash.CallGameFunction"));
+    }
+
+    [Fact]
+    public async Task QuestCheck_AQuestTheLoadNeverFoundIsReportedNotGuessed()
+    {
+        Playing();
+        World.Set("Quests.Tree", new List<Quest>());
+
+        AgentApiResponse response = await Router().HandleAsync(Post("/quests/check", """{"ids":[4242]}"""));
+
+        Assert.Equal(200, response.Status);
+        JsonElement row = Data(response).GetProperty("quests")[0];
+        Assert.False(row.GetProperty("complete").GetBoolean());
+        Assert.Equal("not_loaded", row.GetProperty("state").GetString());
+    }
+
+    [Fact]
+    public async Task QuestCheck_ABigLandmarkListIsAcceptedAndAnEmptyOneIsNot()
+    {
+        Playing();
+        World.Set("Quests.Tree", new List<Quest>());
+
+        AgentApiResponse emptyResponse = await Router().HandleAsync(Post("/quests/check", """{"ids":[]}"""));
+        Assert.Equal(400, emptyResponse.Status);
+
+        string many = string.Join(",", Enumerable.Range(1, 301));
+        AgentApiResponse response = await Router().HandleAsync(Post("/quests/check", $$"""{"ids":[{{many}}]}"""));
+        Assert.Equal(400, response.Status);
+        Assert.Contains("300", response.Error ?? "");
+    }
+
     // ------------------------------------------------------------- movement
 
     [Fact]

@@ -144,7 +144,7 @@ public class AgentApiContractTests
         {
             "/join", "/jump", "/walk", "/walk-speed", "/goto", "/attack", "/kill", "/cancel-attack",
             "/exit-combat", "/rest", "/reload-map", "/relogin", "/login", "/logout", "/select-server",
-            "/quests/load", "/quests/accept", "/quests/complete", "/quests/abandon", "/shop/load",
+            "/quests/load", "/quests/check", "/quests/accept", "/quests/complete", "/quests/abandon", "/shop/load",
             "/shop/buy", "/shop/close", "/scripts/write", "/scripts/run", "/scripts/pause",
             "/scripts/resume", "/scripts/stop", "/script/options", "/client/start", "/bank/open",
             "/bank/deposit", "/bank/withdraw",

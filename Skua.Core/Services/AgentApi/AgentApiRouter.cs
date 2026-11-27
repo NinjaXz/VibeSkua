@@ -245,6 +245,8 @@ public sealed partial class AgentApiRouter
                 return await SelectServerAsync(request, ct).ConfigureAwait(false);
             case "/quests/load":
                 return await LoadQuestsAsync(request, ct).ConfigureAwait(false);
+            case "/quests/check":
+                return await CheckQuestsAsync(request, ct).ConfigureAwait(false);
             case "/quests/accept":
                 return await AcceptQuestAsync(request, ct).ConfigureAwait(false);
             case "/quests/complete":
@@ -613,6 +615,59 @@ public sealed partial class AgentApiRouter
         }, ct, timeoutSeconds: 120).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Is this quest finished? Not by status: a quest finished long ago loads with
+    /// status null. The game answers instead, the way the script library does it
+    /// (CoreBots.cs:4890): finished when the quest has no slot, or when
+    /// world.getQuestValue(slot) reached the quest's own value.
+    /// </summary>
+    private async Task<object?> CheckQuestsAsync(AgentApiRequest request, CancellationToken ct)
+    {
+        LoadQuestsRequest body = AgentApiJson.Read<LoadQuestsRequest>(request.Body, request.BodyLength, _options.MaxBodyBytes);
+        int[] ids = ValidateQuestIds(body.Ids, 300);
+
+        return await RunActionAsync(() =>
+        {
+            RequirePlaying();
+
+            for (int start = 0; start < ids.Length; start += 30)
+            {
+                int[] chunk = ids.Skip(start).Take(30).ToArray();
+                _bot.Quests.Load(chunk);
+                _bot.Wait.ForTrue(() => chunk.All(id => _bot.Quests.Tree.Any(q => q.ID == id)), 30);
+            }
+
+            List<Quest> tree = Safe(() => _bot.Quests.Tree, new List<Quest>());
+            List<object> rows = new();
+            foreach (int id in ids)
+            {
+                Quest? quest = tree.FirstOrDefault(q => q.ID == id);
+                if (quest is null)
+                {
+                    rows.Add(new { id, state = "not_loaded", slot = -1, needed = 0, questValue = 0, complete = false });
+                    continue;
+                }
+
+                bool noSlot = quest.Slot < 0;
+                int questValue = noSlot
+                    ? 0
+                    : Safe(() => _bot.Flash.CallGameFunction<int>("world.getQuestValue", quest.Slot), 0);
+                rows.Add(new
+                {
+                    id,
+                    name = quest.Name,
+                    state = "loaded",
+                    slot = quest.Slot,
+                    needed = quest.Value,
+                    questValue,
+                    complete = noSlot || questValue >= quest.Value,
+                });
+            }
+
+            return (object)new { count = rows.Count, quests = rows };
+        }, ct, timeoutSeconds: 600).ConfigureAwait(false);
+    }
+
     private async Task<object?> AcceptQuestAsync(AgentApiRequest request, CancellationToken ct)
     {
         QuestActionRequest body = AgentApiJson.Read<QuestActionRequest>(request.Body, request.BodyLength, _options.MaxBodyBytes);
@@ -762,7 +817,7 @@ public sealed partial class AgentApiRouter
     {
         "/join", "/jump", "/walk", "/walk-speed", "/goto", "/attack", "/kill", "/cancel-attack",
         "/exit-combat", "/rest", "/reload-map", "/login", "/logout", "/relogin", "/select-server",
-        "/quests/load", "/quests/accept", "/quests/complete", "/quests/abandon",
+        "/quests/load", "/quests/check", "/quests/accept", "/quests/complete", "/quests/abandon",
         "/shop/load", "/shop/buy", "/shop/close",
         "/scripts/write", "/scripts/run", "/scripts/pause", "/scripts/resume", "/scripts/stop",
         "/script/options",
@@ -843,12 +898,12 @@ public sealed partial class AgentApiRouter
         return value;
     }
 
-    private static int[] ValidateQuestIds(int[]? ids)
+    private static int[] ValidateQuestIds(int[]? ids, int maxIds = 30)
     {
         if (ids is null || ids.Length == 0)
             throw new AgentApiException(400, "ids is required");
-        if (ids.Length > 30)
-            throw new AgentApiException(400, "at most 30 quest ids per request");
+        if (ids.Length > maxIds)
+            throw new AgentApiException(400, $"at most {maxIds} quest ids per request");
         if (ids.Any(id => id <= 0))
             throw new AgentApiException(400, "quest ids must be positive");
         return ids.Distinct().ToArray();
