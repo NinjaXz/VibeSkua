@@ -37,6 +37,7 @@ public sealed partial class AgentApiRouter
         RoomRequest body = AgentApiJson.Read<RoomRequest>(request.Body, request.BodyLength, _options.MaxBodyBytes);
         bool toPublic = body.Public;
         int number = body.Number;
+        bool move = body.Teleport;
 
         // A number below the library's own floor, or long enough to overflow the room
         // field, makes the game answer with a room nobody can find.
@@ -64,8 +65,11 @@ public sealed partial class AgentApiRouter
                 // of its own. This is the packet the library's army scripts rely on, and it
                 // is the only thing measured so far that puts several accounts in one room -
                 // one account makes the room, the rest teleport into it by number.
+                // Sending that packet while standing on a farm map parks the character in
+                // the whitemap rooms, which was measured the hard way. So the packet needs
+                // to be asked for: pinning a room number is not the same as moving now.
                 string teleported = string.Empty;
-                if (!toPublic)
+                if (move && !toPublic)
                 {
                     string who = Safe(() => _bot.Player.Username, string.Empty);
                     teleported = $"%xt%zm%cmd%1%tfer%{who}%whitemap-{kept}%";
@@ -93,5 +97,7 @@ public sealed partial class AgentApiRouter
         public int Number { get; init; }
 
         public bool Public { get; init; }
+
+        public bool Teleport { get; init; }
     }
 }
