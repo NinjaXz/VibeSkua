@@ -160,6 +160,8 @@ public sealed partial class AgentApiRouter
                 return BuildQuest(QueryInt(request, "id"));
             case "/quests/cached":
                 return BuildCachedQuests(request);
+            case "/quests/completed":
+                return BuildCompletedQuests();
             case "/scripts":
                 return BuildScripts(request);
             case "/script/options":
@@ -750,7 +752,8 @@ public sealed partial class AgentApiRouter
     internal static readonly IReadOnlySet<string> GetRoutes = new HashSet<string>
     {
         "/", "/health", "/state", "/map", "/map/npcs", "/players", "/inventory", "/monsters",
-        "/servers", "/shop", "/quests", "/quest", "/quests/cached", "/scripts", "/script", "/script/options",
+        "/servers", "/shop", "/quests", "/quest", "/quests/cached", "/quests/completed",
+        "/scripts", "/script", "/script/options",
         "/logs", "/client", "/bank",
     };
 

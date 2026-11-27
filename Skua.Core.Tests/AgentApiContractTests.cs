@@ -136,7 +136,8 @@ public class AgentApiContractTests
         string[] gets =
         {
             "/health", "/state", "/map", "/map/npcs", "/players", "/inventory", "/monsters",
-            "/servers", "/shop", "/quests", "/quest?id=1", "/quests/cached", "/scripts", "/script",
+            "/servers", "/shop", "/quests", "/quest?id=1", "/quests/cached", "/quests/completed",
+            "/scripts", "/script",
             "/script/options?name=Missing.cs", "/logs", "/client", "/bank",
         };
         string[] posts =

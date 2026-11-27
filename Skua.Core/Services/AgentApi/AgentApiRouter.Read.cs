@@ -289,6 +289,25 @@ public sealed partial class AgentApiRouter
         };
     }
 
+    /// <summary>
+    /// The ids this account has finished, sorted. A campaign that helps the account
+    /// furthest behind needs to compare two of these, so it is ids and not details.
+    /// A quest the client has never loaded is not in the tree: that is a gap, and the
+    /// campaign closes it by loading the quest before it judges it.
+    /// </summary>
+    private object BuildCompletedQuests()
+    {
+        List<int> ids = Safe(
+            () => _bot.Quests.Tree
+                .Where(quest => string.Equals(quest.Status, "c", StringComparison.OrdinalIgnoreCase))
+                .Select(quest => quest.ID)
+                .OrderBy(id => id)
+                .ToList(),
+            new List<int>());
+
+        return new { count = ids.Count, ids };
+    }
+
     private object BuildCachedQuests(AgentApiRequest request)
     {
         int start = QueryInt(request, "start", 0);

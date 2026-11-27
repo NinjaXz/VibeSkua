@@ -49,7 +49,7 @@ a driver needs no extra call to see the result.
 |---|---|
 | Health, state | `GET /health`, `GET /state`, `GET /logs` |
 | World | `GET /map`, `GET /map/npcs`, `GET /players`, `GET /monsters`, `GET /servers` |
-| Things | `GET /inventory`, `GET /bank`, `GET /shop`, `GET /quests`, `GET /quest?id=`, `GET /quests/cached` |
+| Things | `GET /inventory`, `GET /bank`, `GET /shop`, `GET /quests`, `GET /quest?id=`, `GET /quests/cached`, `GET /quests/completed` |
 | Scripts | `GET /scripts` (recursive, `filter`, `limit`, `from`), `GET /script`, `GET /script/options?name=` |
 | Movement | `POST /join`, `/jump`, `/walk`, `/walk-speed`, `/goto` |
 | Combat | `POST /attack`, `/kill`, `/cancel-attack`, `/exit-combat`, `/rest`, `/reload-map` |

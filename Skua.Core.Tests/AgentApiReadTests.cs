@@ -185,6 +185,8 @@ public class AgentApiReadTests : AgentApiContractTests
     public async Task Quests_SplitsActiveCompletedAndLoaded()
     {
         Playing();
+
+
         World.Set("Quests.Tree", new List<Quest>
         {
             new() { ID = 1, Name = "Active one", Status = "s", Level = 10 },
@@ -330,5 +332,35 @@ public class AgentApiReadTests : AgentApiContractTests
         Assert.Equal("Farm.cs", data.GetProperty("loadedScript").GetString());
         Assert.Equal(20, data.GetProperty("recentLogs").GetArrayLength());
         Assert.Equal("line40", data.GetProperty("recentLogs")[19].GetString());
+    }
+
+    [Fact]
+    public async Task CompletedQuests_AreLightEnoughToDiffTwoAccounts()
+    {
+        // The campaign question is "who is behind on stories". That is a set
+        // difference over completed quest ids, so the answer is ids, sorted.
+        World.Set("Quests.Tree", new List<Quest>
+        {
+            new() { ID = 30, Name = "Gather Water", Status = "c" },
+            new() { ID = 12, Name = "Shadow Scythe", Status = "c" },
+            new() { ID = 7, Name = "Still Going", Status = "s" },
+        });
+
+        AgentApiResponse response = await Router().HandleAsync(Get("/quests/completed"));
+
+        Assert.Equal(200, response.Status);
+        JsonElement data = Json(response.Data!);
+        Assert.Equal(2, data.GetProperty("count").GetInt32());
+        Assert.Equal(12, data.GetProperty("ids")[0].GetInt32());
+        Assert.Equal(30, data.GetProperty("ids")[1].GetInt32());
+    }
+
+    [Fact]
+    public async Task CompletedQuests_AnEmptyTreeIsAZeroNotAnError()
+    {
+        AgentApiResponse response = await Router().HandleAsync(Get("/quests/completed"));
+
+        Assert.Equal(200, response.Status);
+        Assert.Equal(0, Json(response.Data!).GetProperty("count").GetInt32());
     }
 }
