@@ -50,7 +50,7 @@ a driver needs no extra call to see the result.
 | Health, state | `GET /health`, `GET /state`, `GET /logs` |
 | World | `GET /map`, `GET /map/npcs`, `GET /players`, `GET /monsters`, `GET /servers` |
 | Things | `GET /inventory`, `GET /bank`, `GET /shop`, `GET /quests`, `GET /quest?id=`, `GET /quests/cached` |
-| Scripts | `GET /scripts`, `GET /script` |
+| Scripts | `GET /scripts` (recursive, `filter`, `limit`, `from`), `GET /script`, `GET /script/options?name=` |
 | Movement | `POST /join`, `/jump`, `/walk`, `/walk-speed`, `/goto` |
 | Combat | `POST /attack`, `/kill`, `/cancel-attack`, `/exit-combat`, `/rest`, `/reload-map` |
 | Session | `POST /login`, `/logout`, `/relogin`, `/select-server` |
@@ -58,7 +58,7 @@ a driver needs no extra call to see the result.
 | Bank | `POST /bank/open`, `/bank/deposit`, `/bank/withdraw` |
 | Quests | `POST /quests/load`, `/quests/accept`, `/quests/complete`, `/quests/abandon` |
 | Shop | `POST /shop/load`, `/shop/buy`, `/shop/close` |
-| Scripts | `POST /scripts/write`, `/scripts/run`, `/scripts/pause`, `/scripts/resume`, `/scripts/stop` |
+| Scripts | `POST /scripts/write`, `/scripts/run` (silent by default), `/script/options`, `/scripts/pause`, `/scripts/resume`, `/scripts/stop` |
 
 `/pause`, `/resume` and `/stop` are short aliases of the script routes.
 
@@ -97,6 +97,27 @@ bundled java when present; with no bundled java it takes `JAVA_HOME`, then `PATH
 Cache and downloads sit in `%APPDATA%\VibeSkua\cache`, and `?refresh=1` forces a fresh
 read. Today the parser names the NPCs and their cells; the monster, portal and quest
 columns come back empty until the parser reads the frame scripts.
+
+## Script library and script choices
+
+The script folder holds near 2000 scripts inside folders, and each script can ask
+for choices in a window the client draws. An agent has no window, so three rules make
+a library script usable:
+
+- A name may be a relative path: `Army/Farm/ArmySevenCirclesWar.cs`. `GET /scripts`
+  walks the folders and returns `path`, `title`, `description` and `tags`, so
+  `?filter=army` is how an agent finds work. `limit` and `from` page the answer.
+- `/scripts/run` starts with the options window closed, the same way the mobile remote
+  control does. Pass `"silent": false` only when a person sits at the client.
+- `GET /script/options?name=` reports the questions a script asks, its defaults and the
+  stored choice. `POST /script/options` stores one. The store is the file the client
+  already uses: `options/<OptionsStorage>.cfg`, one `Name=Value` line per choice, with
+  `Category:Name=Value` for a grouped choice.
+
+Two limits worth knowing. A script that borrows a shared option, such as
+`CoreBots.Instance.SkipOptions`, is not listed: only `new Option<T>(...)` rows are.
+And a script with no `OptionsStorage` shares `options/default.cfg` with every other one,
+which is how the client behaves too.
 
 ## Tests
 
