@@ -337,6 +337,94 @@ public class AgentApiScriptLibraryTests : AgentApiContractTests
         Assert.Equal(400, response.Status);
     }
 
+    // ------------------------------------------- borrowed (shared) options
+
+    private const string CoreBotsFixture = """
+        public class CoreBots
+        {
+            public static CoreBots Instance = new CoreBots();
+
+            public Option<bool> SkipOptions = new(
+                "SkipOption",
+                "Skip this window next time",
+                "You can return to this screen via Scripts.",
+                false
+            );
+        }
+        """;
+
+    private const string BorrowingScript = """
+        /*
+        name: Agent Pack
+        description: Runs other scripts work and skips the window.
+        tags: agent
+        */
+        //cs_include Scripts/CoreBots.cs
+        public class AgentPack
+        {
+            public string OptionsStorage = "AgentPack";
+
+            public List<IOption> Options = new()
+            {
+                new Option<bool>("Loud", "Log loudly", "Shout the answer"),
+                CoreBots.Instance.SkipOptions,
+            };
+        }
+        """;
+
+    /// <summary>Scripts borrow shared options, so the questions are not all in one file.</summary>
+    private void WriteBorrowingScript()
+    {
+        File.WriteAllText(Path.Combine(ScriptsRoot, "CoreBots.cs"), CoreBotsFixture);
+        Directory.CreateDirectory(Path.Combine(ScriptsRoot, "Agent"));
+        File.WriteAllText(Path.Combine(ScriptsRoot, "Agent", "AgentPack.cs"), BorrowingScript);
+    }
+
+    [Fact]
+    public async Task Options_ASharedOptionIsListedByItsNameNotTheFieldName()
+    {
+        WriteBorrowingScript();
+
+        AgentApiResponse response = await Router().HandleAsync(Get("/script/options?name=Agent/AgentPack.cs"));
+
+        Assert.Equal(200, response.Status);
+        JsonElement options = Json(response.Data!).GetProperty("options");
+        Assert.Equal(2, options.GetArrayLength());
+        Assert.Equal("Loud", options[0].GetProperty("name").GetString());
+
+        // CoreBots names this option "SkipOption" while the field is SkipOptions. The client
+        // stores the name, so an agent must be told the name.
+        Assert.Equal("SkipOption", options[1].GetProperty("name").GetString());
+        Assert.Equal("bool", options[1].GetProperty("type").GetString());
+        Assert.Equal("false", options[1].GetProperty("default").GetString());
+    }
+
+    [Fact]
+    public async Task Options_ASharedChoiceCanBeStored()
+    {
+        WriteBorrowingScript();
+
+        AgentApiResponse response = await Router().HandleAsync(Post("/script/options",
+            JsonSerializer.Serialize(new { name = "Agent/AgentPack.cs", values = new Dictionary<string, string> { ["SkipOption"] = "True" } }, AgentJsonOptions)));
+
+        Assert.Equal(200, response.Status);
+        Assert.Contains("SkipOption=True", File.ReadAllLines(Path.Combine(OptionsRoot, "AgentPack.cfg")));
+        Assert.Equal("True", Json(response.Data!).GetProperty("options")[1].GetProperty("value").GetString());
+    }
+
+    [Fact]
+    public async Task Options_AnUnresolvableBorrowDoesNotBreakTheList()
+    {
+        Directory.CreateDirectory(Path.Combine(ScriptsRoot, "Agent"));
+        File.WriteAllText(Path.Combine(ScriptsRoot, "Agent", "Mystery.cs"),
+            "public class Mystery { public string OptionsStorage = \"Mystery\"; public List<IOption> Options = new() { Someone.Elses.Option }; }");
+
+        AgentApiResponse response = await Router().HandleAsync(Get("/script/options?name=Agent/Mystery.cs"));
+
+        Assert.Equal(200, response.Status);
+        Assert.Empty(Json(response.Data!).GetProperty("options").EnumerateArray());
+    }
+
     // ------------------------------------------------------------------ state
 
     [Fact]

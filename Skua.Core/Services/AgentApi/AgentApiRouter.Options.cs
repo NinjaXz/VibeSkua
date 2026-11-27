@@ -15,6 +15,8 @@ namespace Skua.Core.Services.AgentApi;
 public sealed partial class AgentApiRouter
 {
     private static readonly Regex StoragePattern = new("OptionsStorage\\s*=\\s*\"([^\"]+)\"", RegexOptions.Compiled);
+    private static readonly Regex IncludePattern = new("//cs_include\\s+(\\S+)", RegexOptions.Compiled);
+    private static readonly Regex OptionsBlockPattern = new("(?<![A-Za-z])(?:Options|MultiOptions)\\s*=\\s*(?:new[^{};]*)?[{]", RegexOptions.Compiled);
     private static readonly Regex CategoryPattern = new("MultipleOptions(?:\\.Add|\\[)\\s*(?:\\(\\s*)?\"([^\"]+)\"", RegexOptions.Compiled);
 
     /// <summary>One script's choices: names, types, defaults and stored values.</summary>
@@ -44,7 +46,7 @@ public sealed partial class AgentApiRouter
             throw new AgentApiException(400, "values is required");
 
         string source = ReadScriptSource(script);
-        List<ScriptOptionRow> rows = ParseOptionRows(source);
+        List<ScriptOptionRow> rows = ParseOptionRows(source, _scriptsRoot);
         string storage = ReadStorage(source, name);
 
         // Only a name the script actually declares may be stored: a typo would sit in
@@ -68,7 +70,7 @@ public sealed partial class AgentApiRouter
     private object BuildScriptOptions(string script, string name, string? storage, Dictionary<string, string>? cfg = null, List<ScriptOptionRow>? rows = null)
     {
         string source = ReadScriptSource(script);
-        rows ??= ParseOptionRows(source);
+        rows ??= ParseOptionRows(source, _scriptsRoot);
         storage ??= ReadStorage(source, name);
         string file = StorageFile(storage);
         bool exists = File.Exists(file);
@@ -139,7 +141,7 @@ public sealed partial class AgentApiRouter
     /// Positional scanning, not a regex, because a default value may itself contain
     /// brackets and the argument list may span lines.
     /// </summary>
-    private static List<ScriptOptionRow> ParseOptionRows(string source)
+    private static List<ScriptOptionRow> ParseOptionRows(string source, string? scriptsRoot = null)
     {
         List<ScriptOptionRow> rows = new();
         int at = 0;
@@ -156,7 +158,7 @@ public sealed partial class AgentApiRouter
             if (open < 0)
                 break;
 
-            int close = MatchingParen(source, open);
+            int close = MatchingBracket(source, open, '(', ')');
             if (close < 0)
                 break;
 
@@ -177,11 +179,110 @@ public sealed partial class AgentApiRouter
             at = close;
         }
 
+        if (scriptsRoot is not null)
+            AddBorrowedOptions(source, scriptsRoot, rows);
+
         return rows;
     }
 
-    /// <summary>Returns the index of the ")" that closes the "(" at open, or -1.</summary>
-    private static int MatchingParen(string source, int open)
+    /// <summary>
+    /// Adds options a script borrows from an included script, such as
+    /// CoreBots.Instance.SkipOptions. The client stores a borrowed choice under the
+    /// name inside its definition ("SkipOption"), not under the field name
+    /// ("SkipOptions"), so the definition must be read to list it honestly.
+    /// </summary>
+    private static void AddBorrowedOptions(string source, string scriptsRoot, List<ScriptOptionRow> rows)
+    {
+        List<string> sources = IncludedSources(source, scriptsRoot);
+
+        foreach (Match block in OptionsBlockPattern.Matches(source))
+        {
+            int open = block.Index + block.Value.LastIndexOf('{');
+            int close = MatchingBracket(source, open, '{', '}');
+            if (close < 0)
+                continue;
+
+            foreach (string entry in SplitArguments(source[(open + 1)..close]))
+            {
+                string trimmed = entry.Trim();
+                if (trimmed.Length == 0 || trimmed.Contains("new Option") || !char.IsLetterOrDigit(trimmed[trimmed.Length - 1]))
+                    continue;
+
+                Match tail = Regex.Match(trimmed, "([A-Za-z_][A-Za-z0-9_]*)$");
+                if (!tail.Success)
+                    continue;
+
+                ScriptOptionRow? borrowed = ResolveBorrowed(tail.Groups[1].Value, sources);
+                if (borrowed is not null && !rows.Exists(r => r.Name.Equals(borrowed.Name, StringComparison.OrdinalIgnoreCase)))
+                    rows.Add(borrowed);
+            }
+        }
+    }
+
+    /// <summary>The script text plus every file it pulls in with //cs_include.</summary>
+    private static List<string> IncludedSources(string source, string scriptsRoot)
+    {
+        List<string> sources = new() { source };
+        string root = Path.GetFullPath(scriptsRoot);
+        string prefix = root.EndsWith(Path.DirectorySeparatorChar) ? root : root + Path.DirectorySeparatorChar;
+
+        foreach (Match include in IncludePattern.Matches(source))
+        {
+            string relative = include.Groups[1].Value.Trim().Replace('\\', '/');
+            if (relative.StartsWith("Scripts/", StringComparison.OrdinalIgnoreCase))
+                relative = relative["Scripts/".Length..];
+
+            string file = Path.GetFullPath(Path.Combine(root, relative));
+            if (!file.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) || !File.Exists(file))
+                continue;
+
+            try
+            {
+                sources.Add(File.ReadAllText(file));
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+        }
+
+        return sources;
+    }
+
+    private static ScriptOptionRow? ResolveBorrowed(string member, List<string> sources)
+    {
+        foreach (string text in sources)
+        {
+            Match definition = Regex.Match(text, "Option<([^>]+)>\\s+" + member + "\\s*=\\s*new");
+            if (!definition.Success)
+                continue;
+
+            int open = text.IndexOf('(', definition.Index + definition.Length - 1);
+            int close = open < 0 ? -1 : MatchingBracket(text, open, '(', ')');
+            if (close < 0)
+                continue;
+
+            List<string> args = SplitArguments(text[(open + 1)..close]);
+            string name = args.Count > 0 ? Unquote(args[0]) : string.Empty;
+            if (name.Length == 0)
+                continue;
+
+            return new ScriptOptionRow(
+                name,
+                definition.Groups[1].Value.Trim(),
+                args.Count > 1 ? Unquote(args[1]) : name,
+                args.Count > 3 ? args[3].Trim() : string.Empty,
+                string.Empty,
+                string.Empty);
+        }
+
+        return null;
+    }
+
+    /// <summary>Returns the index of the bracket closing the one at open, or -1.</summary>
+    private static int MatchingBracket(string source, int open, char openChar, char closeChar)
     {
         int depth = 0;
         bool inText = false;
@@ -200,9 +301,9 @@ public sealed partial class AgentApiRouter
             if (inText || inChar)
                 continue;
 
-            if (c == '(')
+            if (c == openChar)
                 depth++;
-            else if (c == ')')
+            else if (c == closeChar)
             {
                 depth--;
                 if (depth == 0)
