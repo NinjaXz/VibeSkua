@@ -365,7 +365,7 @@ public class HotKeyService : IHotKeyService, IDisposable
             return false;
 
         GetWindowThreadProcessId(fg, out uint fgPid);
-        return global::Skua.Core.AppStartup.HotKeys.IsSkuaProcess(fgPid);
+        return global::Skua.Core.AppStartup.HotKeys.IsOwnedByThisHost(fgPid);
     }
 
     private IntPtr KeyboardHookCallback(int nCode, IntPtr wParam, IntPtr lParam)

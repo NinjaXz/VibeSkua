@@ -649,6 +649,7 @@ public partial class TabbedHostWindow : Window
             var tab = _tabs.Values.FirstOrDefault(t => t.Process != null && (uint)t.Process.Id == pid);
             return tab?.ChildHwnd ?? IntPtr.Zero;
         };
+        HotKeys.IsOwnTabPid = (pid) => _tabs.Values.Any(t => t.Process != null && (uint)t.Process.Id == pid);
 
         try
         {
