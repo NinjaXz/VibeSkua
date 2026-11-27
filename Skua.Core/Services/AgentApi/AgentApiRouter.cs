@@ -399,12 +399,18 @@ public sealed partial class AgentApiRouter
                 JsonSerializer.Deserialize<Dictionary<string, object?>>(
                     JsonSerializer.SerializeToUtf8Bytes(BuildState()))
                 ?? new Dictionary<string, object?>();
+            // Two namespaces live here, and mixing them lied once already: the caller may ask
+            // for a game room id (6 digits, the same kind /state reports as roomId), or for the
+            // library's 5 digit private number, which the game re-ids on arrival. Only the first
+            // kind can be compared, so the second kind answers null and shows what was requested.
+            int landedRoom = Safe(() => _bot.Map.RoomID, 0);
             data["wantedMap"] = map;
             data["wantedRoom"] = room;
+            data["privateNumber"] = room > 0 && room < 100000 ? room : 0;
             data["landedMap"] = _bot.Map.Name;
-            data["landedRoom"] = Safe(() => _bot.Map.RoomID, 0);
+            data["landedRoom"] = landedRoom;
             data["mapArrived"] = string.Equals(_bot.Map.Name, map, StringComparison.OrdinalIgnoreCase);
-            data["roomMatched"] = room <= 0 || Safe(() => _bot.Map.RoomID, 0) == room;
+            data["roomMatched"] = room <= 0 || room < 100000 ? (bool?)null : landedRoom == room;
             return data;
         }, ct).ConfigureAwait(false);
     }

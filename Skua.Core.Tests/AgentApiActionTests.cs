@@ -159,6 +159,22 @@ public class AgentApiActionTests : AgentApiContractTests
         Assert.Equal(231952, data.GetProperty("wantedRoom").GetInt32());
         Assert.Equal(0, data.GetProperty("landedRoom").GetInt32());
         Assert.False(data.GetProperty("roomMatched").GetBoolean());
+        Assert.Equal(0, data.GetProperty("privateNumber").GetInt32());
+    }
+
+    [Fact]
+    public async Task Join_AFiveDigitPrivateNumberIsEchoedAndNotJudgedAgainstTheGameRoomId()
+    {
+        Playing();
+
+        AgentApiResponse response = await Router().HandleAsync(
+            Post("/join", """{"map":"nexus","room":41028}"""));
+
+        Assert.Equal(200, response.Status);
+        JsonElement data = Data(response);
+        Assert.Equal(41028, data.GetProperty("wantedRoom").GetInt32());
+        Assert.Equal(41028, data.GetProperty("privateNumber").GetInt32());
+        Assert.Equal(JsonValueKind.Null, data.GetProperty("roomMatched").ValueKind);
     }
 
     [Fact]
