@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Skua.Core.Services.AgentApi;
 using Xunit;
 
@@ -23,15 +23,20 @@ public class AgentApiRoomTests : AgentApiContractTests
     public async Task Room_PinSetsTheClientPrivateRoomOptionAndNamesTheRoomToJoin()
     {
         Playing();
+        World.Set("Player.Username", "not_a_dumpling");
+        List<string> sent = new();
+        World.Set("Send.Packet", new Action<string, string>((packet, _) => sent.Add(packet)));
 
         AgentApiResponse response = await Router().HandleAsync(Post("/room", """{"number":250123}"""));
 
         Assert.Equal(200, response.Status);
         Assert.Equal(true, World.Received("Options.PrivateRooms"));
         Assert.Equal(250123, World.Received("Options.PrivateNumber"));
+        Assert.Contains("%xt%zm%cmd%1%tfer%not_a_dumpling%whitemap-250123%", sent);
         JsonElement data = Data(response);
         Assert.True(data.GetProperty("privateRooms").GetBoolean());
         Assert.Equal("battleon-250123", data.GetProperty("roomTag").GetString());
+        Assert.Contains("whitemap-250123", data.GetProperty("teleported").GetString());
     }
 
     [Fact]

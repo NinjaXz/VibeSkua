@@ -1,4 +1,4 @@
-namespace Skua.Core.Services.AgentApi;
+﻿namespace Skua.Core.Services.AgentApi;
 
 /// <summary>
 /// The room pin: what makes two accounts stand together.
@@ -60,11 +60,24 @@ public sealed partial class AgentApiRouter
                 int kept = Safe(() => _bot.Options.PrivateNumber, 0);
                 string map = Safe(() => _bot.Map.Name, string.Empty);
 
+                // The number alone moves nobody: the client would only take a private room
+                // of its own. This is the packet the library's army scripts rely on, and it
+                // is the only thing measured so far that puts several accounts in one room -
+                // one account makes the room, the rest teleport into it by number.
+                string teleported = string.Empty;
+                if (!toPublic)
+                {
+                    string who = Safe(() => _bot.Player.Username, string.Empty);
+                    teleported = $"%xt%zm%cmd%1%tfer%{who}%whitemap-{kept}%";
+                    _bot.Send.Packet(teleported);
+                }
+
                 return (object)new
                 {
                     privateRooms = !toPublic,
                     number = kept,
                     map,
+                    teleported,
                     roomTag = toPublic ? string.Empty : $"{map}-{kept}",
                     warning = toPublic
                         ? "public rooms are chosen from each account's own quest state: two accounts on one map name can still stand in different rooms"
