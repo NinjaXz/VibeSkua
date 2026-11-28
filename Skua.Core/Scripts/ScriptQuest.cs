@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using Newtonsoft.Json;
@@ -152,6 +152,17 @@ public partial class ScriptQuest : ObservableRecipient, IScriptQuest
     public bool TryGetQuest(int id, out Quest? quest)
     {
         return (quest = Tree.Find(x => x.ID == id)) != null;
+    }
+
+    public bool Abandon(int id)
+    {
+        if (EnsureLoad(id) is null)
+            return false;
+
+        Flash.CallGameFunction("world.abandonQuest", id);
+        Wait.ForTrue(() => !IsInProgress(id), 5);
+        _cachedTree = null;
+        return !IsInProgress(id);
     }
 
     public bool Accept(int id)

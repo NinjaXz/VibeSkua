@@ -1,4 +1,4 @@
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -413,6 +413,17 @@ public partial class App : Application
             Console.Error.WriteLine($"Startup remote control init failed: {ex.GetType().Name}: {ex.Message}");
         }
 
+        // The agent endpoint is off until the operator switches it on in
+        // settings; a failure here costs the endpoint, never the client.
+        try
+        {
+            Ioc.Default.GetService<IAgentApiService>()?.Start();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Startup agent API init failed: {ex.GetType().Name}: {ex.Message}");
+        }
+
         try
         {
             IGetScriptsService? getScripts = Ioc.Default.GetService<IGetScriptsService>();
@@ -486,6 +497,7 @@ public partial class App : Application
                     try { await Ioc.Default.GetRequiredService<IDiagnosticsService>().DisposeAsync(); } catch { }
                     try { Ioc.Default.GetRequiredService<ICaptureProxy>().Stop(); } catch { }
                     try { Ioc.Default.GetService<IRemoteControlService>()?.Stop(); } catch { }
+                    try { Ioc.Default.GetService<IAgentApiService>()?.Stop(); } catch { }
                     try
                     {
                         await ((IAsyncDisposable)Ioc.Default.GetRequiredService<IScriptBoost>()).DisposeAsync();

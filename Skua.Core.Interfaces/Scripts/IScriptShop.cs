@@ -1,4 +1,4 @@
-using Skua.Core.Models.Shops;
+﻿using Skua.Core.Models.Shops;
 
 namespace Skua.Core.Interfaces;
 
@@ -117,6 +117,11 @@ public interface IScriptShop
     /// <param name="id">The id of the shop to be loaded.</param>
     /// <remarks>Loading invalid shop ids will get you kicked. Be sure to only use updated/recent lists.</remarks>
     void Load(int id);
+
+    /// <summary>
+    /// Closes the open shop or game popup.
+    /// </summary>
+    void Close();
 
     /// <summary>
     /// Loads the armour customizer interface.

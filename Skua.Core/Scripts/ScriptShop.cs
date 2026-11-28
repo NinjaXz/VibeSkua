@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.Messaging;
+﻿using CommunityToolkit.Mvvm.Messaging;
 using Newtonsoft.Json;
 using Skua.Core.Flash;
 using Skua.Core.Interfaces;
@@ -71,6 +71,11 @@ public partial class ScriptShop : IScriptShop
         Wait.ForActionCooldown(GameActions.LoadShop);
         Flash.CallGameFunction("world.sendLoadShopRequest", id);
         Wait.ForTrue(() => IsLoaded && ID == id, 20);
+    }
+
+    public void Close()
+    {
+        Flash.CallGameFunction("world.rootClass.ui.mcPopup.onClose");
     }
 
     public bool ProtectFavorites { get; set; } = true;
