@@ -95,6 +95,10 @@ public interface IClientController
     /// <summary>Start a client process for a saved account. Null means launched,
     /// otherwise the string is the reason in words.</summary>
     string? Start(string username, string? server);
+
+    /// <summary>Stop a client process this host started, and remove the port file
+    /// it left behind. Null means stopped, otherwise the string is the reason.</summary>
+    string? Stop(int pid);
 }
 
 public interface IMapInfoReader

@@ -89,6 +89,47 @@ public sealed class AgentApiClientController : IClientController
         }
     }
 
+    /// <summary>
+    /// Kills a client process and deletes the port file it wrote, so a wedged child
+    /// stops showing up as a worker. The tree is killed because the app relaunches
+    /// itself as an embedded tab, and the outer process would restart the child.
+    /// </summary>
+    public string? Stop(int pid)
+    {
+        if (pid <= 0)
+            return "bad_pid: pid must be greater than zero";
+
+        if (pid == Environment.ProcessId)
+            return "cannot_stop_self: this process answers the agent API";
+
+        try
+        {
+            using Process process = Process.GetProcessById(pid);
+            process.Kill(entireProcessTree: true);
+            if (!process.WaitForExit(5000))
+                return "client_stop_timeout: pid " + pid + " did not exit within 5 seconds";
+        }
+        catch (ArgumentException)
+        {
+            // Already gone: the goal of the call is met, so clean the file and say yes.
+        }
+        catch (Exception ex)
+        {
+            return "client_stop_failed: " + ex.GetType().Name + ": " + ex.Message;
+        }
+
+        try
+        {
+            File.Delete(Path.Combine(_workerDir, pid + WorkerFileSuffix));
+        }
+        catch
+        {
+            // A file another process already removed is the outcome we wanted anyway.
+        }
+
+        return null;
+    }
+
     /// <summary>The same shape the remote control service uses for a launched account.</summary>
     private static ProcessStartInfo BuildStart(string username, string password, string server)
     {

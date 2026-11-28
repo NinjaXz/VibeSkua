@@ -249,6 +249,8 @@ public sealed partial class AgentApiRouter
                 return await MoveBankItemAsync(request, ct, toBank: false).ConfigureAwait(false);
             case "/client/start":
                 return StartClient(request);
+            case "/client/stop":
+                return StopClient(request);
             case "/select-server":
                 return await SelectServerAsync(request, ct).ConfigureAwait(false);
             case "/quests/load":
@@ -852,7 +854,7 @@ public sealed partial class AgentApiRouter
         "/shop/load", "/shop/buy", "/shop/close",
         "/scripts/write", "/scripts/run", "/scripts/pause", "/scripts/resume", "/scripts/stop",
         "/script/options",
-        "/bank/open", "/bank/deposit", "/bank/withdraw", "/client/start", "/pause", "/resume", "/stop",
+        "/bank/open", "/bank/deposit", "/bank/withdraw", "/client/start", "/client/stop", "/pause", "/resume", "/stop",
         "/party/on", "/party/invite", "/party/accept", "/party/summon", "/party/kick", "/party/leave",
         "/room",
     };

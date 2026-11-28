@@ -40,6 +40,36 @@ public sealed partial class AgentApiRouter
     }
 
     /// <summary>
+    /// A worker whose HTTP endpoint never answers, or whose character died and
+    /// never logged in, otherwise fills the host's worker list forever. Only the
+    /// host may stop one: the process that holds a character is busy holding it.
+    /// </summary>
+    private object StopClient(AgentApiRequest request)
+    {
+        StopClientRequest body = AgentApiJson.Read<StopClientRequest>(request.Body, request.BodyLength, _options.MaxBodyBytes);
+
+        if (_client is null)
+            throw new AgentApiException(501, "client_stop_unavailable");
+
+        if (_client.CanHostGame)
+            throw new AgentApiException(409, "client_stop_needs_host: this process holds a character, so ask the tab host that answers on the agent API port.");
+
+        IReadOnlyList<ClientWorker> workers = _client.Workers;
+        ClientWorker? worker = body.Port > 0
+            ? workers.FirstOrDefault(found => found.Port == body.Port)
+            : workers.FirstOrDefault(found => found.Pid == body.Pid);
+
+        if (worker is null)
+            throw new AgentApiException(404, "worker_not_found: no live client process holds " + (body.Port > 0 ? "port " + body.Port : "pid " + body.Pid));
+
+        string? refusal = _client.Stop(worker.Pid);
+        if (!string.IsNullOrEmpty(refusal))
+            throw new AgentApiException(409, refusal!);
+
+        return new { stopped = true, pid = worker.Pid, port = worker.Port };
+    }
+
+    /// <summary>
     /// Stops a session route in a process that cannot hold a game, before the
     /// request reaches the game and fails there.
     /// </summary>
@@ -56,5 +86,11 @@ public sealed partial class AgentApiRouter
     {
         public string Username { get; init; } = string.Empty;
         public string? Server { get; init; }
+    }
+
+    private sealed record StopClientRequest
+    {
+        public int Port { get; init; }
+        public int Pid { get; init; }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Diagnostics;
+using System.Text.Json;
 using Skua.Core.Interfaces;
 using Skua.Core.Services.AgentApi;
 using Skua.Core.Tests.Fakes;
@@ -205,6 +206,90 @@ public sealed class AgentApiClientTests : AgentApiContractTests
         Assert.Empty(controller.Started);
     }
 
+    // ------------------------------------------------------- POST /client/stop
+
+    [Fact]
+    public async Task TheHostStopsTheWorkerThatHoldsThatPort()
+    {
+        StubController host = new()
+        {
+            Role = "host",
+            CanHostGame = false,
+            Workers = new[] { new ClientWorker(4242, 61506), new ClientWorker(4243, 61507) },
+        };
+
+        AgentApiResponse response = await Router(host).HandleAsync(Post("/client/stop", """{"port":61506}"""));
+
+        Assert.Equal(200, response.Status);
+        Assert.Equal(4242, Data(response).GetProperty("pid").GetInt32());
+        Assert.Equal(new[] { 4242 }, host.Stopped);
+    }
+
+    [Fact]
+    public async Task StoppingAPortNoWorkerHoldsSaysNotFound()
+    {
+        StubController host = new()
+        {
+            Role = "host",
+            CanHostGame = false,
+            Workers = new[] { new ClientWorker(4242, 61506) },
+        };
+
+        AgentApiResponse response = await Router(host).HandleAsync(Post("/client/stop", """{"port":99999}"""));
+
+        Assert.Equal(404, response.Status);
+        Assert.StartsWith("worker_not_found", response.Error);
+        Assert.Empty(host.Stopped);
+    }
+
+    [Fact]
+    public async Task TheProcessThatHoldsACharacterCannotStopAnotherOne()
+    {
+        StubController child = new()
+        {
+            Role = "child",
+            CanHostGame = true,
+            Workers = new[] { new ClientWorker(4242, 61506) },
+        };
+
+        AgentApiResponse response = await Router(child).HandleAsync(Post("/client/stop", """{"port":61506}"""));
+
+        Assert.Equal(409, response.Status);
+        Assert.StartsWith("client_stop_needs_host", response.Error);
+    }
+
+    [Fact]
+    public void TheControllerKillsTheWorkerAndDeletesItsPortFile()
+    {
+        string dir = Path.Combine(Path.GetTempPath(), "skua-agent-workers-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        using Process victim = Process.Start(
+            new ProcessStartInfo("cmd.exe", "/c ping -n 40 127.0.0.1") { CreateNoWindow = true, UseShellExecute = false })!;
+        try
+        {
+            string portFile = Path.Combine(dir, victim.Id + ".agent.txt");
+            File.WriteAllText(portFile, "8899");
+
+            AgentApiClientController controller = new(_world.Service<ISettingsService>("Settings"), dir);
+            Assert.Contains(new ClientWorker(victim.Id, 8899), controller.Workers);
+
+            Assert.Null(controller.Stop(victim.Id));
+
+            Assert.False(File.Exists(portFile));
+            Assert.True(victim.HasExited);
+            Assert.Empty(controller.Workers);
+        }
+        finally
+        {
+            if (!victim.HasExited)
+            {
+                victim.Kill(entireProcessTree: true);
+            }
+            victim.Dispose();
+            Directory.Delete(dir, true);
+        }
+    }
+
     internal sealed class StubController : IClientController
     {
         public string Role { get; init; } = "host";
@@ -212,11 +297,19 @@ public sealed class AgentApiClientTests : AgentApiContractTests
         public IReadOnlyList<ClientWorker> Workers { get; init; } = Array.Empty<ClientWorker>();
         public Func<string, string?, string?>? Starter { get; init; }
         public List<(string Username, string? Server)> Started { get; } = new();
+        public Func<int, string?>? Stopper { get; init; }
+        public List<int> Stopped { get; } = new();
 
         public string? Start(string username, string? server)
         {
             Started.Add((username, server));
             return Starter?.Invoke(username, server);
+        }
+
+        public string? Stop(int pid)
+        {
+            Stopped.Add(pid);
+            return Stopper?.Invoke(pid);
         }
     }
 }
