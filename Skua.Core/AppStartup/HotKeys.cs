@@ -33,6 +33,22 @@ public class HotKeys
     public static IntPtr ActiveChildHwnd { get; set; } = IntPtr.Zero;
     public static IntPtr HostHwnd { get; set; } = IntPtr.Zero;
     public static Func<uint, IntPtr>? GetChildHwndForPid { get; set; }
+    // Set by the tab host: whether a process is one of its own tabs.
+    public static Func<uint, bool>? IsOwnTabPid { get; set; }
+
+    /// <summary>
+    /// Whether a window of this process should handle a key pressed while <paramref name="pid"/> is in front. Every
+    /// host window hooks the keyboard system-wide, and the newest hook runs first and swallows the keys it handles, so
+    /// a host only takes keys for itself and its own tabs and leaves other host windows' keys to them.
+    /// </summary>
+    public static bool IsOwnedByThisHost(uint pid)
+    {
+        if (pid == 0)
+            return false;
+        if (pid == (uint)Environment.ProcessId)
+            return true;
+        return IsOwnTabPid?.Invoke(pid) ?? IsSkuaProcess(pid);
+    }
 
     private static readonly List<string> _actionList = new()
     {
