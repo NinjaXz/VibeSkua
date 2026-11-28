@@ -148,6 +148,12 @@ public sealed partial class AgentApiRouter
                 return BuildPlayers();
             case "/inventory":
                 return BuildInventory();
+            case "/classes":
+                return BuildClasses();
+            case "/reps":
+                return BuildReps(request);
+            case "/stats":
+                return BuildStats();
             case "/monsters":
                 return BuildMonsters();
             case "/servers":
@@ -839,7 +845,7 @@ public sealed partial class AgentApiRouter
     /// <summary>Endpoints answered by GET.</summary>
     internal static readonly IReadOnlySet<string> GetRoutes = new HashSet<string>
     {
-        "/", "/health", "/state", "/map", "/map/npcs", "/players", "/inventory", "/monsters",
+        "/", "/health", "/state", "/map", "/map/npcs", "/players", "/inventory", "/classes", "/reps", "/stats", "/monsters",
         "/servers", "/shop", "/quests", "/quest", "/quests/cached", "/quests/completed",
         "/scripts", "/script", "/script/options",
         "/logs", "/client", "/bank", "/party", "/room",
