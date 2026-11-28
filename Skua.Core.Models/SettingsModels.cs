@@ -226,6 +226,30 @@ public class SharedSettings
 
 public class ClientSettings
 {
+    [JsonPropertyName("AuraTrackerOverlay")]
+    public bool AuraTrackerOverlay { get; set; } = false;
+
+    [JsonPropertyName("AuraOverlayFreeDrag")]
+    public bool AuraOverlayFreeDrag { get; set; } = false;
+
+    [JsonPropertyName("AuraPriorityOrder")]
+    public string AuraPriorityOrder { get; set; } = string.Empty;
+
+    [JsonPropertyName("AuraPins")]
+    public string AuraPins { get; set; } = string.Empty;
+
+    [JsonPropertyName("AuraFilterSelf")]
+    public string AuraFilterSelf { get; set; } = string.Empty;
+
+    [JsonPropertyName("AuraFilterTarget")]
+    public string AuraFilterTarget { get; set; } = string.Empty;
+
+    [JsonPropertyName("AuraOverlaySelfPos")]
+    public string AuraOverlaySelfPos { get; set; } = string.Empty;
+
+    [JsonPropertyName("AuraOverlayTargetPos")]
+    public string AuraOverlayTargetPos { get; set; } = string.Empty;
+
     [JsonPropertyName("ServerLatencyThresholdMs")]
     public int ServerLatencyThresholdMs { get; set; } = 200;
 
